@@ -35,6 +35,18 @@ const AlProductDetail = () => {
     return priceBreaks[0]?.price ? parseFloat(priceBreaks[0].price) : 0;
   }, [product]);
 
+  const batchPromises = async (promises, batchSize = 10) => {
+    const results = [];
+    
+    for (let i = 0; i < promises.length; i += batchSize) {
+      const batch = promises.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch);
+      results.push(...batchResults);
+    }
+    
+    return results;
+  };
+
   useEffect(() => {
     if (product?.meta?.id) {
       // initial fetch without interfering with button loaders
@@ -46,15 +58,38 @@ const AlProductDetail = () => {
   // fetchDiscount can be called with isInitial flag to control full-page loader
   const fetchDiscount = async (id, isInitial = false) => {
     if (isInitial) setInitialLoading(true);
+    
     try {
-      const res = await axios.get(
-        `${backednUrl}/api/add-discount/discounts/${id}`,
-        { headers: { Authorization: `Bearer ${aToken}` } }
-      );
-      const { discount, discountPrice } = res.data.data;
-      
-      setDiscountPercent(discount);
-      setDiscountPrice(discountPrice);
+      // If it's a single ID, process normally
+      if (typeof id === 'string' || typeof id === 'number') {
+        const res = await axios.get(
+          `${backednUrl}/api/add-discount/discounts/${id}`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
+        const { discount, discountPrice } = res.data.data;
+        
+        setDiscountPercent(discount);
+        setDiscountPrice(discountPrice);
+      } else if (Array.isArray(id)) {
+        // If it's an array of IDs, process in batches
+        const discountPromises = id.map((productId) =>
+          axios.get(
+            `${backednUrl}/api/add-discount/discounts/${productId}`,
+            { headers: { Authorization: `Bearer ${aToken}` } }
+          ).catch(e => {
+            if (e.response?.status === 404) {
+              return { data: { data: { discount: 0, discountPrice: 0 } } };
+            }
+            throw e;
+          })
+        );
+        
+        // Process in batches of 10 concurrent requests
+        const discountResults = await batchPromises(discountPromises, 10);
+        
+        // Return results for further processing if needed
+        return discountResults.map(result => result.data.data);
+      }
     } catch (e) {
       if (e.response?.status === 404) {
         setDiscountPercent('');
