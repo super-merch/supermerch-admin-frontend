@@ -95,6 +95,7 @@ if (loading)
             <th className="p-3 text-left border-r">Sr. No</th>
             <th className="p-3 text-left border-r">Username</th>
             <th className="pl-4 text-left border-r">Email</th>
+            <th className="pl-4 text-left border-r">Joined</th>
             <th className="pl-4 text-left border-r">Phone</th>
             <th className="pl-4 text-left border-r">Country</th>
             <th className="pl-4 text-left border-r">Address</th>
@@ -108,6 +109,7 @@ if (loading)
               <td className="p-4 border">{index + 1}</td>
               <td className="p-4 border">{user.name}</td>
               <td className="p-4 border">{user.email}</td>
+              <td className="p-4 border">{new Date(user.createdAt).toLocaleString()}</td>
               <td className="p-4 border">{user?.defaultAddress?.phone || "No Phone"}</td>
               <td className="p-4 border">{user?.defaultAddress?.country || "No Country"}</td>
               <td className="p-4 border">{user?.defaultAddress?.addressLine || "No Address"}</td>

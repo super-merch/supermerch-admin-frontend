@@ -12,7 +12,7 @@ const backednUrl = import.meta.env.VITE_BACKEND_URL;
 //     });
 //     return response.data;
 //   } catch (error) {
-//     console.error("Error fetching users:", error);
+//     console.error("Error fetching ", error);
 //     throw error;
 //   }
 // };
@@ -71,9 +71,45 @@ export const ProductsApi = async (id = "") => {
   }
 };
 
+export const addGlobalDiscount = async (discount) => {
+  try {
+    const response = await axios.post(
+      `${backednUrl}/api/add-discount/add-global-discount`,
+      {
+        discount
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
 
+// Get global discount
+export const getGlobalDiscount = async () => {
+  try {
+    const response = await axios.get(
+      `${backednUrl}/api/add-discount/global-discount`
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
 
-export const addDiscount = async (productId, discount,price) => {
+// Remove global discount
+export const removeGlobalDiscount = async () => {
+  try {
+    const response = await axios.delete(
+      `${backednUrl}/api/add-discount/remove-global-discount`
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
+
+export const addDiscount = async (productId, discount, price) => {
   try {
     const response = await axios.post(
       `${backednUrl}/api/add-discount/add-discount`,
@@ -83,15 +119,11 @@ export const addDiscount = async (productId, discount,price) => {
         basePrice: price
       }
     );
-    console.log("API Response:", response);
     return response.data;
-
-    // Return success message and data
   } catch (error) {
     throw error.response?.data || "Something went wrong";
   }
 };
-
 
 export const addMargin = async (productId, margin, price) => {
   try {
@@ -103,10 +135,7 @@ export const addMargin = async (productId, margin, price) => {
         basePrice: price,
       }
     );
-    console.log('API Response:', response);
     return response.data;
-
-    // Return success message and data
   } catch (error) {
     throw error.response?.data || 'Something went wrong';
   }

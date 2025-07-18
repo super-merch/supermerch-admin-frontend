@@ -4,8 +4,10 @@ import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 
 const Orders = () => {
-  const { orders, fetchOrders, loading, updateOrderStatus } = useContext(AdminContext)
+  const { orders, fetchOrders,fetchUsers,users, loading, updateOrderStatus } = useContext(AdminContext)
+  const [byUsers, setByUsers] = useState(false);
   const navigate = useNavigate();
+  const [allUsers,setAllUsers] = useState([]);
   const handleStatusChange = async (orderId, newStatus) => {
     await updateOrderStatus(orderId, newStatus);
   };  
@@ -13,17 +15,29 @@ const Orders = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
+  const fetchUsersOrders = async () => {
+    setByUsers(true);
+    fetchUsers()
+    setAllUsers(users)
+  };
+  const fetchAllOrders = ()=>{
+    setByUsers(false);
+    setAllUsers([])
+  }
 
   return (
     <div className="p-8">
-      <h1 className="mb-8 text-2xl font-bold text-center">Orders</h1>
+      <h1 className="mb-8 text-2xl font-bold text-center">{!allUsers.length > 0?"All Orders": "All Users"}</h1>
+      <button className="bg-blue-500 hover:bg-blue-600 text-white mb-3 py-2 px-4 rounded" onClick={byUsers ? fetchAllOrders : fetchUsersOrders} >
+        {byUsers ? "Fetch All Orders" : "Fetch User's Orders"}
+      </button>
 
       {loading ? (
         <div className="flex items-center justify-center">
           <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
           <p className="ml-4 text-lg font-semibold">Loading orders...</p>
         </div>
-      ) : (
+      ) : !allUsers.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full border border-collapse border-gray-200 table-auto">
             <thead>
@@ -71,6 +85,43 @@ const Orders = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      ):
+      (
+        <div>
+          <div className="overflow-x-auto">
+          <table className="w-full border border-collapse border-gray-200 table-auto">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="px-4 py-2 border border-gray-300">User ID</th>
+                <th className="px-4 py-2 border border-gray-300">Order Name</th>
+                
+                <th className="px-4 py-2 border border-gray-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allUsers.map((user) => (
+                <tr key={user._id}>
+                  <td className="px-4 py-2 text-center border border-gray-300">
+                    {user._id}
+                  </td>
+                  <td className="px-4 py-2 text-center border border-gray-300">
+                    {user.name}
+                  </td>
+                  
+                  <td className="px-4 py-2 text-center border border-gray-300">
+                    <button
+                      className="px-4 py-2 text-center text-white bg-blue-500 rounded"
+                      onClick={() => navigate(`/user-orders/${user._id}`, { state: user.name })}
+                    >
+                      View User's Orders
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         </div>
       )}
     </div>

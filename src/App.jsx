@@ -15,6 +15,10 @@ import { ToastContainer } from "react-toastify";
 import QuoteAdmin from "./components/maincomponent/QuoteAdmin";
 import Blog from "./components/maincomponent/Blog";
 import Reports from "./components/maincomponent/Reports";
+import AlSuppliers from "./components/maincomponent/AlSuppliers";
+import SupplierCategories from "./components/maincomponent/SupplierCategories";
+import UserOrders from "./components/maincomponent/UserOrders";
+import GlobalDiscount from "./components/maincomponent/GlobalDiscount";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -53,7 +57,11 @@ const App = () => {
                 <Route path="/" element={<PrivateRoute element={<Charts isOpen={isSidebarOpen} />} />} />
                 <Route path="/orders" element={<PrivateRoute element={<Orders />} />} />
                 <Route path="/order-details/:id" element={<PrivateRoute element={<Products />} />} />
+                <Route path="/user-orders/:id" element={<PrivateRoute element={<UserOrders />} />} />
                 <Route path="/products" element={<PrivateRoute element={<AlProducts />} />} />
+                <Route path="/suppliers" element={<PrivateRoute element={<AlSuppliers />} />} />
+                <Route path="/supplier-categories" element={<PrivateRoute element={<SupplierCategories />} />} />
+                <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
                 <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
                 <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />

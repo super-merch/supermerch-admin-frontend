@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { addDiscount } from '../apis/UserApi';
@@ -54,11 +53,10 @@ const AlProductDetail = () => {
       fetchMargin(product.meta.id, true);
     }
   }, [product]);
+  
 
-  // fetchDiscount can be called with isInitial flag to control full-page loader
+  // Enhanced fetchDiscount function to handle both single IDs and arrays
   const fetchDiscount = async (id, isInitial = false) => {
-    if (isInitial) setInitialLoading(true);
-    
     try {
       // If it's a single ID, process normally
       if (typeof id === 'string' || typeof id === 'number') {
@@ -70,6 +68,7 @@ const AlProductDetail = () => {
         
         setDiscountPercent(discount);
         setDiscountPrice(discountPrice);
+        return { discount, discountPrice };
       } else if (Array.isArray(id)) {
         // If it's an array of IDs, process in batches
         const discountPromises = id.map((productId) =>
@@ -94,34 +93,105 @@ const AlProductDetail = () => {
       if (e.response?.status === 404) {
         setDiscountPercent('');
         setDiscountPrice(null);
+      } else {
+        console.error('Error fetching discount:', e);
       }
     } finally {
       if (isInitial) setInitialLoading(false);
     }
   };
 
+  // Enhanced fetchMargin function to handle both single IDs and arrays
   const fetchMargin = async (id, isInitial = false) => {
-    if (isInitial) setInitialLoading(true);
     try {
-      const res = await axios.get(
-        `${backednUrl}/api/product-margin/margin/${id}`,
-        { headers: { Authorization: `Bearer ${aToken}` } }
-      );
-      const { margin, marginPrice } = res.data.data;
-      setMarginPercent(margin);
-      setMarginPrice(marginPrice);
+      // If it's a single ID, process normally
+      if (typeof id === 'string' || typeof id === 'number') {
+        const res = await axios.get(
+          `${backednUrl}/api/product-margin/margin/${id}`,
+          { headers: { Authorization: `Bearer ${aToken}` } }
+        );
+        const { margin, marginPrice } = res.data.data;
+        setMarginPercent(margin);
+        setMarginPrice(marginPrice);
+        return { margin, marginPrice };
+      } else if (Array.isArray(id)) {
+        // If it's an array of IDs, process in batches
+        const marginPromises = id.map((productId) =>
+          axios.get(
+            `${backednUrl}/api/product-margin/margin/${productId}`,
+            { headers: { Authorization: `Bearer ${aToken}` } }
+          ).catch(e => {
+            if (e.response?.status === 404) {
+              return { data: { data: { margin: 0, marginPrice: 0 } } };
+            }
+            throw e;
+          })
+        );
+        
+        // Process in batches of 10 concurrent requests
+        const marginResults = await batchPromises(marginPromises, 10);
+        
+        // Return results for further processing if needed
+        return marginResults.map(result => result.data.data);
+      }
     } catch (e) {
       if (e.response?.status === 404) {
         setMarginPercent('');
         setMarginPrice(null);
+      } else {
+        console.error('Error fetching margin:', e);
       }
     } finally {
       if (isInitial) setInitialLoading(false);
     }
   };
 
-  const handleAddDiscount = async (e) => {
-    e.preventDefault();
+  // Enhanced batch processing function for discounts
+  const processBatchDiscounts = async (productIds, discountPercent, prices) => {
+    const batchSize = 10;
+    const results = [];
+    
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      const batch = productIds.slice(i, i + batchSize);
+      const batchPromises = batch.map((productId, index) => 
+        addDiscount(productId, discountPercent, prices[i + index])
+      );
+      
+      try {
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      } catch (error) {
+        console.error('Error in batch discount processing:', error);
+      }
+    }
+    
+    return results;
+  };
+
+  // Enhanced batch processing function for margins
+  const processBatchMargins = async (productIds, marginPercent, prices) => {
+    const batchSize = 10;
+    const results = [];
+    
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      const batch = productIds.slice(i, i + batchSize);
+      const batchPromises = batch.map((productId, index) => 
+        addMarginApi(productId, marginPercent, prices[i + index])
+      );
+      
+      try {
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      } catch (error) {
+        console.error('Error in batch margin processing:', error);
+      }
+    }
+    
+    return results;
+  };
+
+  const handleAddDiscount = async (e, triggered = false) => {
+    if (!triggered && e?.preventDefault) e.preventDefault();
     const p = parseFloat(discountPercent);
     if (isNaN(p) || p < 0 || p > 100) {
       const msg = 'Enter a valid discount (0–100%).';
@@ -135,21 +205,22 @@ const AlProductDetail = () => {
       const res = await addDiscount(product.meta.id, p, price);
       setDiscountMessage(res.data.message);
       
-      
       toast.success(res.data.message || 'Discount applied successfully!');
+      handleAddMargin(null, true);
       // re-fetch without triggering full-page loader
       await fetchDiscount(product.meta.id);
-    } catch {
+    } catch (error) {
       const errorMsg = 'Failed to add discount.';
       setDiscountMessage(errorMsg);
       toast.error(errorMsg);
+      console.error('Error adding discount:', error);
     } finally {
       setIsDiscountLoading(false);
     }
   };
 
-  const handleAddMargin = async (e) => {
-    e.preventDefault();
+  const handleAddMargin = async (e, triggered = false) => {
+    if (!triggered && e?.preventDefault) e.preventDefault();
     const m = parseFloat(marginPercent);
     if (isNaN(m) || m < 0 || m > 100) {
       const msg = 'Enter a valid margin (0–100%).';
@@ -161,16 +232,38 @@ const AlProductDetail = () => {
     try {
       setIsMarginLoading(true);
       const res = await addMarginApi(product.meta.id, m, price);
+      console.log("product:", product);
       setMarginMessage(res.data.message);
-      toast.success(res.data.message  || 'Margin applied successfully!');
+      toast.success(res.data.message || 'Margin applied successfully!');
       // re-fetch only margin data
       await fetchMargin(product.meta.id);
-    } catch {
+    } catch (error) {
       const errorMsg = 'Failed to add margin.';
       setMarginMessage(errorMsg);
       toast.error(errorMsg);
+      console.error('Error adding margin:', error);
     } finally {
       setIsMarginLoading(false);
+    }
+  };
+
+  // Function to handle supplier margin changes (this would be called from a supplier management component)
+  const handleSupplierMarginChange = async (supplierId, newMargin) => {
+    try {
+      // Call the supplier margin API
+      const response = await axios.post(
+        `${backednUrl}/api/supplier-margin/add-margin`,
+        { supplierId, margin: newMargin },
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+      
+      if (response.data.reapplicationResult) {
+        const { successful, failed } = response.data.reapplicationResult.results;
+        toast.success(`Supplier margin updated. Reapplied to ${successful} products. ${failed} failed.`);
+      }
+    } catch (error) {
+      console.error('Error updating supplier margin:', error);
+      toast.error('Failed to update supplier margin');
     }
   };
   
@@ -179,7 +272,6 @@ const AlProductDetail = () => {
       <p className='pt-32 text-5xl text-center text-red-500'>Loading...</p>
     );
   }
-  
   
   return (
     <div className='mx-2 mt-20 mb-12 space-y-12 lg:mx-6 md:mx-6 sm:mx-6'>
@@ -242,7 +334,7 @@ const AlProductDetail = () => {
         <h2 className='mb-4 text-xl font-bold'>Margin</h2>
         {marginPercent !== '' && (
           <p>
-            <strong>Margin:</strong> {marginPercent}
+            <strong>Margin:</strong> {marginPercent}%
           </p>
         )}
         {marginPrice !== null && (

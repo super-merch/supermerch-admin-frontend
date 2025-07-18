@@ -6,7 +6,9 @@ import {
   FaChartBar,
   FaSignOutAlt,
   FaBars,
+  
 } from "react-icons/fa";
+import { MdDiscount } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
@@ -93,6 +95,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </span>
         </Link>
         <Link
+          to="/suppliers"
+          className="flex items-center px-4 py-2 hover:bg-blue-500 group"
+        >
+          <FaShoppingCart size={20} className="mr-3 text-gray-700" />
+          <span
+            className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
+              }`}
+          >
+            Suppliers
+          </span>
+        </Link>
+        <Link
           to="/users"
           className="flex items-center px-4 py-2 hover:bg-blue-500 group"
         >
@@ -126,6 +140,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               }`}
           >
             Reports
+          </span>
+        </Link>
+        <Link
+          to="/global-discount"
+          className="flex items-center px-4 py-2 hover:bg-blue-500 group"
+        >
+          <MdDiscount size={20} className="mr-3 text-gray-700" />
+          <span
+            className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
+              }`}
+          >
+            Global Discount
           </span>
         </Link>
         <button

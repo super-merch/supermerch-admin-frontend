@@ -8,19 +8,22 @@ export const AdminContext = createContext()
 
 const AdminContextProvider = (props) => {
     const backednUrl = import.meta.env.VITE_BACKEND_URL;
+    
 
     const [users, setUsers] = useState([]);
     const [ignoredProductIds, setIgnoredProductIds] = useState(new Set());
     const [loading, setLoading] = useState(true);
     const [allProductLoading, setAllProductLoading] = useState(true);
+    const [userOrders,setUserOrders] = useState([])
 
     const [orders, setOrders] = useState([]);
     const [products, setProducts] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
 
     const [aToken, setAToken] = useState(
         localStorage.getItem("aToken") ? localStorage.getItem("aToken") : false
     );
-
+    
 
     const [showPopup, setShowPopup] = useState(false);
 
@@ -65,6 +68,27 @@ const AdminContextProvider = (props) => {
         setAllProductLoading(false);
     }
 };
+    const fetchSuppliers = async () => {
+    setAllProductLoading(true);
+    try {
+        const response = await fetch(`${backednUrl}/api/supplier-products`);
+        if (!response.ok) throw new Error('Failed to fetch Suppliers');
+
+        const data = await response.json();
+
+        if (!data || !data.data) {
+            throw new Error('Unexpected API response structure');
+        }
+        
+        setSuppliers(data.data);
+        
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setAllProductLoading(false);
+    }
+};
 
 
 
@@ -79,6 +103,26 @@ const AdminContextProvider = (props) => {
             setLoading(false);
         }
     };
+    const fetchUserOrders = async (id) => {
+  try {
+    // 1) fetch exactly as fetchOrders does
+    const response = await axios.get(
+      `${backednUrl}/api/checkout/products`,
+      { headers: { aToken } }
+    );
+
+    // 2) pick out the array, reverse it if you want most‑recent first
+    const all = response.data.data.reverse();
+
+    // 3) filter by the correct key—userId
+    const filtered = all.filter(order => String(order.userId) === String(id));
+
+    setUserOrders(filtered);
+  } catch (error) {
+    console.error("Error fetching user's orders:", error);
+    toast.error("Failed to fetch user's orders");
+  }
+};
 
 
     const fetchOrders = async (id = "") => {
@@ -153,6 +197,7 @@ const AdminContextProvider = (props) => {
             fetchUsers();
             fetchOrders();
             fetchProducts();
+            fetchSuppliers();
             fetchBlogs();
             listQuotes()
         }
@@ -168,10 +213,15 @@ const AdminContextProvider = (props) => {
         updateOrderStatus,
         aToken,
         setAToken,
+        fetchUserOrders,
+        userOrders,
         orderPending,
         orderCompleted,
         fetchProducts,
         products,
+        fetchSuppliers,
+        suppliers,
+        setProducts,
         backednUrl,
         allProductLoading,
         showPopup,
