@@ -8,7 +8,10 @@ import {
   FaBars,
   
 } from "react-icons/fa";
+import { MdBorderColor } from "react-icons/md";
+import { BsChatLeftQuoteFill } from "react-icons/bs";
 import { MdDiscount } from "react-icons/md";
+import { TbLogs } from "react-icons/tb";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
@@ -61,7 +64,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           to="/orders"
           className="flex items-center px-4 py-2 hover:bg-blue-500 group"
         >
-          <FaShoppingCart size={20} className="mr-3 text-gray-700" />
+          <MdBorderColor size={20} className="mr-3 text-gray-700" />
           <span
             className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
               }`}
@@ -74,7 +77,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           to="/quote"
           className="flex items-center px-4 py-2 hover:bg-blue-500 group"
         >
-          <FaShoppingCart size={20} className="mr-3 text-gray-700" />
+          <BsChatLeftQuoteFill size={20} className="mr-3 text-gray-700" />
           <span
             className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
               }`}
@@ -122,7 +125,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           to="/blogs"
           className="flex items-center px-4 py-2 hover:bg-blue-500 group"
         >
-          <FaUser size={20} className="mr-3 text-gray-700" />
+          <TbLogs size={20} className="mr-3 text-gray-700" />
           <span
             className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
               }`}

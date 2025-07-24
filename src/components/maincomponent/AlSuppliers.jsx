@@ -19,6 +19,7 @@ const AlSuppliers = () => {
     useContext(AdminContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [ignoredSuppliers, setIgnoredSuppliers] = useState([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState({});
   const [loading, setLoading] = useState(false);
   const [ignored, setIgnored] = useState(false);
   const [margins, setMargins] = useState({}); // Track margin input per supplier
@@ -161,11 +162,16 @@ const AlSuppliers = () => {
 
   // Add or update margin
   const handleAddMargin = async (supplier) => {
+    setAddLoading(true);
   const marginValue = parseFloat(margins[supplier.id]);
   if (isNaN(marginValue)) {
     toast.error("Please enter a valid margin");
+    setAddLoading(false);
     return;
   }
+  
+  // Set loading for this specific supplier
+  setLoadingSuppliers(prev => ({ ...prev, [supplier.id]: 'adding' }));
   
   try {
     const response = await fetch(
@@ -183,11 +189,10 @@ const AlSuppliers = () => {
     );
 
     if (response.ok) {
-      setAddLoading(true);
       const resp = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/myapi`
-      )
-      setAddLoading(false)
+      );
+      
       const data = await response.json();
       toast.success(data.message || "Margin added/updated successfully");
       // Update local state
@@ -197,52 +202,76 @@ const AlSuppliers = () => {
         detail: { supplierId: supplier.id }
       }));
       fetchSupplierMargins();
+      setAddLoading(false);
     }
   } catch (error) {
     console.error("Error adding/updating margin:", error);
     toast.error("Error adding/updating margin");
+    setAddLoading(false);
+  } finally {
+    // Clear loading for this specific 
+    setAddLoading(false);
+    setLoadingSuppliers(prev => {
+      const newState = { ...prev };
+      delete newState[supplier.id];
+      return newState;
+    });
   }
 };
   // Delete margin
   const handleDeleteMargin = async (supplier) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/product-margin/del-margin/supplier?supplierId=${supplier.id}`,
-        {
-          method: "DELETE",
-        }
-      );
+  // Set loading for this specific supplier
+  setLoadingSuppliers(prev => ({ ...prev, [supplier.id]: 'deleting' }));
+  setAddLoading(true);
+  
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/product-margin/del-margin/supplier?supplierId=${supplier.id}`,
+      {
+        method: "DELETE",
+      }
+    );
 
-      if (response.ok) {
-        setAddLoading(true);
+    if (response.ok) {
       const resp = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/myapi`
-      )
-      setAddLoading(false)
-        const data = await response.json();
-        toast.success(data.message || "Margin deleted successfully");
-        // Update local state
-        setSupplierMargins(prev => {
-          const newState = { ...prev };
-          delete newState[supplier.id];
-          return newState;
-        });
-        setMargins(prev => {
-          const newState = { ...prev };
-          delete newState[supplier.id];
-          return newState;
-        });
-        // Refresh margins from server
-        fetchSupplierMargins();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message);
-      }
-    } catch (error) {
-      console.error("Error deleting margin:", error);
-      toast.error("Error deleting margin");
+      );
+      
+      const data = await response.json();
+      toast.success(data.message || "Margin deleted successfully");
+      // Update local state
+      setSupplierMargins(prev => {
+        const newState = { ...prev };
+        delete newState[supplier.id];
+        return newState;
+      });
+      setMargins(prev => {
+        const newState = { ...prev };
+        delete newState[supplier.id];
+        return newState;
+      });
+      // Refresh margins from server
+      fetchSupplierMargins();
+      setAddLoading(false);
+    } else {
+      const errorData = await response.json();
+      toast.error(errorData.message);
+      setAddLoading(false);
     }
-  };
+  } catch (error) {
+    console.error("Error deleting margin:", error);
+    toast.error("Error deleting margin");
+    setAddLoading(false);
+  } finally {
+    // Clear loading for this specific supplier
+    setLoadingSuppliers(prev => {
+      const newState = { ...prev };
+      delete newState[supplier.id];
+      return newState;
+    });
+    setAddLoading(false);
+  }
+};
 
   return (
     <div className="px-4 pb-6 lg:pb-10 md:pb-10 lg:px-10 md:px-10 sm:px-6">
@@ -313,37 +342,42 @@ const AlSuppliers = () => {
                 <TableCell>{createdAt}</TableCell>
                 {/* Margin Management Cell */}
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-24 p-1 border rounded"
-                      placeholder="Margin"
-                      value={margins[sup.id] || ""}
-                      onChange={(e) =>
-                        handleMarginChange(sup.id, e.target.value)
-                      }
-                    />
-                    <Button
-                      onClick={() => handleAddMargin(sup)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {hasExistingMargin ? "Update" : "Add"}
-                    </Button>
-                    {hasExistingMargin && (
-                      <Button
-                        onClick={() => handleDeleteMargin(sup)}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                  {hasExistingMargin && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      Current: {supplierMargins[sup.id]}
-                    </div>
-                  )}
-                </TableCell>
+  <div className="flex items-center gap-2">
+    <input
+      type="number"
+      className="w-24 p-1 border rounded"
+      placeholder="Margin"
+      value={margins[sup.id] || ""}
+      onChange={(e) =>
+        handleMarginChange(sup.id, e.target.value)
+      }
+    />
+    <Button
+      onClick={() => handleAddMargin(sup)}
+      disabled={loadingSuppliers[sup.id]}
+      className={`${loadingSuppliers[sup.id] ? "cursor-not-allowed bg-blue-400 hover:bg-blue-400" : "bg-blue-600 hover:bg-blue-700"}`}
+    >
+      {loadingSuppliers[sup.id] === 'adding' 
+        ? (hasExistingMargin ? "Updating..." : "Adding...") 
+        : (hasExistingMargin ? "Update" : "Add")
+      }
+    </Button>
+    {hasExistingMargin && (
+      <Button
+        onClick={() => handleDeleteMargin(sup)}
+        disabled={loadingSuppliers[sup.id]}
+        className={`${loadingSuppliers[sup.id] ? "cursor-not-allowed bg-red-400 hover:bg-red-400" : "bg-red-600 hover:bg-red-700"}`}
+      >
+        {loadingSuppliers[sup.id] === 'deleting' ? "Deleting..." : "Delete"}
+      </Button>
+    )}
+  </div>
+  {hasExistingMargin && (
+    <div className="text-sm text-gray-600 mt-1">
+      Current: {supplierMargins[sup.id]}
+    </div>
+  )}
+</TableCell>
                 <TableCell>
                   {!ignored ? (
                     <Button
