@@ -189,9 +189,9 @@ const AlSuppliers = () => {
     );
 
     if (response.ok) {
-      const resp = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/myapi`
-      );
+      // const resp = await fetch(
+      //   `${import.meta.env.VITE_BACKEND_URL}/myapi`
+      // );
       
       const data = await response.json();
       toast.success(data.message || "Margin added/updated successfully");
@@ -233,9 +233,9 @@ const AlSuppliers = () => {
     );
 
     if (response.ok) {
-      const resp = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/myapi`
-      );
+      // const resp = await fetch(
+      //   `${import.meta.env.VITE_BACKEND_URL}/myapi`
+      // );
       
       const data = await response.json();
       toast.success(data.message || "Margin deleted successfully");

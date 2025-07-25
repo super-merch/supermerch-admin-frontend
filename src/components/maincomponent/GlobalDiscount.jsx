@@ -36,9 +36,9 @@ const GlobalDiscount = () => {
     setIsLoading(true);
     try {
       const response = await addGlobalDiscount(parseFloat(discountInput));
-      const resp = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/myapi2`
-      )
+      // const resp = await fetch(
+      //   `${import.meta.env.VITE_BACKEND_URL}/myapi2`
+      // )
       toast.success(response.message);
       setGlobalDiscount({
         discount: parseFloat(discountInput),
@@ -61,9 +61,9 @@ const GlobalDiscount = () => {
     setIsLoading(true);
     try {
       const response = await removeGlobalDiscount();
-      const resp = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/myapi2`
-      )
+      // const resp = await fetch(
+      //   `${import.meta.env.VITE_BACKEND_URL}/myapi2`
+      // )
       toast.success(response.message);
       setGlobalDiscount(null);
       

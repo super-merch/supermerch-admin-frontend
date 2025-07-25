@@ -140,3 +140,14 @@ export const addMargin = async (productId, margin, price) => {
     throw error.response?.data || 'Something went wrong';
   }
 };
+
+export const getDiscount = async()=>{
+  try {
+    const response = await fetch(`${backednUrl}/api/add-discount/list-discounts`);
+    const data = await response.json();
+    return data
+  } catch (error) {
+    throw error
+  }
+
+}

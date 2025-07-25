@@ -41,6 +41,7 @@ const AlProducts = () => {
   const itemsPerPage = 15;
   const processedProductsRef = useRef(new Set());
   const navigate = useNavigate();
+  
 
   const getIgnored = async () => {
     try {

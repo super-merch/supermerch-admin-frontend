@@ -155,7 +155,7 @@ const Blog = () => {
                         <img src={blog?.image} className="w-28 max-sm:w-full rounded-md" />
                         <div className="">
                             <h1 className="text-gray-900 font-medium text-lg">{blog?.title}</h1>
-                            <p className="text-sm text-indigo-600">{blog.createdAt && new Date(blog?.createdAt).toDateString()}</p>
+                            <p className="text-sm text-indigo-600">{blog.createdAt && new Date(blog?.createdAt).toDateString()}</p>   
                         </div>
                     </div>
                     {/* <div dangerouslySetInnerHTML={{ __html: blog.content }} /> */}

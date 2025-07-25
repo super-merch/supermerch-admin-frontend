@@ -187,9 +187,9 @@ export default function SupplierCategories() {
 
       if (response.ok) {
         setAddLoading(true);
-        const resp = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/myapi`
-        );
+        // const resp = await fetch(
+        //   `${import.meta.env.VITE_BACKEND_URL}/myapi`
+        // );
         setAddLoading(false);
         const data = await response.json();
         toast.success(data.message || "Margin added/updated successfully");
@@ -216,9 +216,9 @@ export default function SupplierCategories() {
 
       if (response.ok) {
         setAddLoading(true);
-        const resp = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/myapi`
-        );
+        // const resp = await fetch(
+        //   `${import.meta.env.VITE_BACKEND_URL}/myapi`
+        // );
         setAddLoading(false);
         const data = await response.json();
         toast.success(data.message || "Margin deleted successfully");
