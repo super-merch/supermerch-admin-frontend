@@ -157,6 +157,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             Global Discount
           </span>
         </Link>
+        <Link
+          to="/add-Coupen"
+          className="flex items-center px-4 py-2 hover:bg-blue-500 group"
+        >
+          <MdDiscount size={20} className="mr-3 text-gray-700" />
+          <span
+            className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
+              }`}
+          >
+            Add Coupen
+          </span>
+        </Link>
         <button
           onClick={() => setShowPopup(true)} // Open the popup on click
           className="flex items-center px-4 py-2 hover:bg-blue-500 group w-full"

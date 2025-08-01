@@ -36,8 +36,6 @@ const AlProductDetail = () => {
     return priceBreaks[0]?.price ? parseFloat(priceBreaks[0].price) : 0;
   }, [product]);
 
-  
-
   const batchPromises = async (promises, batchSize = 10) => {
     const results = [];
     
@@ -49,9 +47,7 @@ const AlProductDetail = () => {
     
     return results;
   };
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
+  const fetchInitialData = async () => {
       if (product?.meta?.id && price > 0) {
         try {
           // Fetch discount and margin data
@@ -60,12 +56,8 @@ const AlProductDetail = () => {
             fetchMargin(product.meta.id, true)
           ]);
 
-          // First, calculate the true base price by adding back the discount
           let calculatedTrueBasePrice = price;
           if (discountData && discountData.discount > 0) {
-            // Current price is discounted, so calculate original base price
-            // If current price = base - (base * discount/100)
-            // Then base = current price / (1 - discount/100)
             calculatedTrueBasePrice = price / (1 - discountData.discount / 100);
           }
           setTrueBasePrice(calculatedTrueBasePrice);
@@ -95,6 +87,8 @@ const AlProductDetail = () => {
         }
       }
     };
+
+  useEffect(() => {
 
     fetchInitialData();
   }, [product?.meta?.id, price]);
@@ -269,7 +263,7 @@ const AlProductDetail = () => {
       );
       
       try {
-        const batchResults = await Promise.all(batchResults);
+        const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
       } catch (error) {
         console.error('Error in batch margin processing:', error);
@@ -292,21 +286,32 @@ const AlProductDetail = () => {
     try {
       setIsDiscountLoading(true);
       
-      // Calculate true base price first
-      let trueBasePrice = price;
-      // If there's an existing discount, calculate the original base price
-      const currentDiscountPercent = parseFloat(discountPercent) || 0;
-      if (currentDiscountPercent > 0) {
-        trueBasePrice = price / (1 - currentDiscountPercent / 100);
-      }
+      // Use the true base price for calculation
+      const basePrice = trueBasePrice || price;
       
-      const res = await addDiscount(product.meta.id, p, trueBasePrice);
+      const res = await addDiscount(product.meta.id, p, basePrice);
+      if(res.status == 'global'){
+        return toast.error(res.message);
+      }
       setDiscountMessage(res.data.message);
       
       toast.success(res.data.message || 'Discount applied successfully!');
-      handleAddMargin(null, true);
-      // re-fetch without triggering full-page loader
+      
+      // After applying discount, refresh the data
       await fetchDiscount(product.meta.id);
+      
+      // Recalculate prices
+      const newDiscountPrice = basePrice - (basePrice * p / 100);
+      setDiscountPrice(newDiscountPrice);
+      
+      // Update margin price if margin exists
+      if (marginPercent && parseFloat(marginPercent) > 0) {
+        const newMarginPrice = newDiscountPrice + parseFloat(marginPercent);
+        setMarginPrice(newMarginPrice);
+      } else {
+        setMarginPrice(newDiscountPrice);
+      }
+      
     } catch (error) {
       const errorMsg = 'Failed to add discount.';
       setDiscountMessage(errorMsg);
@@ -319,17 +324,17 @@ const AlProductDetail = () => {
 
   const getDiscounts = async () => {
     try {
-      const res = await getDiscount()
+      const res = await getDiscount();
     } catch (error) {
-      toast.error(error||'Failed to get discounts');
+      toast.error(error || 'Failed to get discounts');
     }
-  }
+  };
 
   const handleAddMargin = async (e, triggered = false) => {
     if (!triggered && e?.preventDefault) e.preventDefault();
-    const m = parseFloat(marginPercent)||0;
-    if (isNaN(m) || m < 0 || m > 100) {
-      const msg = 'Enter a valid margin (0–100%).';
+    const m = parseFloat(marginPercent) || 0;
+    if (isNaN(m) || m < 0) {
+      const msg = 'Enter a valid margin (0 or greater).';
       setMarginMessage(msg);
       toast.error(msg);
       return;
@@ -338,19 +343,23 @@ const AlProductDetail = () => {
     try {
       setIsMarginLoading(true);
       
-      // Calculate true base price first
-      let trueBasePrice = price;
-      // If there's an existing discount, calculate the original base price
+      // Calculate the current discounted price
+      const basePrice = trueBasePrice || price;
       const currentDiscountPercent = parseFloat(discountPercent) || 0;
-      if (currentDiscountPercent > 0) {
-        trueBasePrice = price / (1 - currentDiscountPercent / 100);
-      }
+      const currentDiscountedPrice = basePrice - (basePrice * currentDiscountPercent / 100);
       
-      const res = await addMarginApi(product.meta.id, m, trueBasePrice);
+      const res = await addMarginApi(product.meta.id, m, currentDiscountedPrice);
       setMarginMessage(res.data.message);
       toast.success(res.data.message || 'Margin applied successfully!');
-      // re-fetch only margin data
+      
+      // Update margin price
+      const newMarginPrice = currentDiscountedPrice + m;
+      setMarginPrice(newMarginPrice);
+      
+      // Refresh margin data
       await fetchMargin(product.meta.id);
+
+    fetchInitialData();
     } catch (error) {
       const errorMsg = 'Failed to add margin.';
       setMarginMessage(errorMsg);
@@ -448,7 +457,7 @@ const AlProductDetail = () => {
         <h2 className='mb-4 text-xl font-bold'>Margin</h2>
         {marginPercent !== '' && (
           <p>
-            <strong>Margin:</strong> {marginPercent}$
+            <strong>Margin:</strong> ${marginPercent}
           </p>
         )}
         {marginPrice !== null && (
@@ -464,7 +473,7 @@ const AlProductDetail = () => {
         >
           <input
             type='number'
-            placeholder='Margin %'
+            placeholder='Margin $'
             value={marginPercent}
             onChange={(e) => setMarginPercent(e.target.value)}
             className='w-full p-2 border rounded'

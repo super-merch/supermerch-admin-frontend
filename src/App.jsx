@@ -19,6 +19,7 @@ import AlSuppliers from "./components/maincomponent/AlSuppliers";
 import SupplierCategories from "./components/maincomponent/SupplierCategories";
 import UserOrders from "./components/maincomponent/UserOrders";
 import GlobalDiscount from "./components/maincomponent/GlobalDiscount";
+import AddCoupen from "./components/maincomponent/AddCoupen";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/suppliers" element={<PrivateRoute element={<AlSuppliers />} />} />
                 <Route path="/supplier-categories" element={<PrivateRoute element={<SupplierCategories />} />} />
                 <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
+                <Route path="/add-coupen" element={<PrivateRoute element={<AddCoupen />} />} />
                 <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
                 <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />
