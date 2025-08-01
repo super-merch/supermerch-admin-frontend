@@ -822,9 +822,32 @@ const AlProducts = () => {
                     </button>
 
                     {openDropdown === productId && (
-                      <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-10 overflow-hidden">
+                      <div className="absolute right-0 top-full  mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-10  overflow-auto">
                         <div className="py-2">
                           {isIgnored ? (
+                            <button
+                              className="w-full text-left px-4 py-3 text-sm bg-red-50 hover:bg-red-100 text-green-700 font-medium transition-colors flex items-center gap-3"
+                              onClick={() => {
+                                handleActivateProduct(product);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                              Activate
+                            </button>
+                          ) : (
                             <button
                               className="w-full text-left px-4 py-3 text-sm bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors flex items-center gap-3"
                               onClick={() => {
@@ -846,29 +869,6 @@ const AlProducts = () => {
                                 />
                               </svg>
                               Deactivate
-                            </button>
-                          ):(
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-green-50 hover:bg-green-100 text-green-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                handleActivateProduct(product);
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                              Activate
                             </button>
                           )}
 
