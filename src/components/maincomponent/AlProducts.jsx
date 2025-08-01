@@ -17,7 +17,7 @@ import { addDiscount, addMargin } from "../apis/UserApi";
 const backednUrl = import.meta.env.VITE_BACKEND_URL;
 
 const AlProducts = () => {
-  const { fetchProducts, products, allProductLoading, ignoredProductIds } =
+  const { fetchProducts, products, allProductLoading, ignoredProductIds, fetchSearchedProducts, searchedProducts, searchLoading } =
     useContext(AdminContext);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,6 +37,10 @@ const AlProducts = () => {
   // Store best sellers product IDs from API
   const [bestSellerIds, setBestSellerIds] = useState(new Set());
   const [bestSellerLoading, setBestSellerLoading] = useState(false);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const itemsPerPage = 15;
   const processedProductsRef = useRef(new Set());
@@ -91,6 +95,38 @@ const AlProducts = () => {
       console.log("Local ignored IDs:", localIgnoredIds);
     }
   }, []);
+
+  // Handle search
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) {
+      // If search term is empty, load all products
+      setIsSearching(false);
+      setCurrentPage(1);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setCurrentPage(1);
+      await fetchSearchedProducts(searchTerm.trim());
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("Failed to search products");
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+    setIsSearching(false);
+    setCurrentPage(1);
+  };
+
+  // Get current products based on search state
+  const getCurrentProducts = () => {
+    return isSearching ? (searchedProducts?.data || []) : (products || []);
+  };
 
   // Fetch trending products from API
   const fetchTrendingProducts = async () => {
@@ -453,7 +489,7 @@ const AlProducts = () => {
     return customNames[productId] || product.overview.name || "No Name";
   };
 
-  if (allProductLoading)
+  if (allProductLoading && !isSearching)
     return (
       <div className="flex items-center justify-center mt-20">
         <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
@@ -469,17 +505,19 @@ const AlProducts = () => {
       </div>
     );
 
+  const currentProductList = getCurrentProducts();
+
   const uniqueSuppliers = [
     ...new Set(
-      products?.map((product) => product.supplier?.supplier || "Unknown")
+      currentProductList?.map((product) => product.supplier?.supplier || "Unknown")
     ),
   ];
 
   const filteredProducts = selectedSupplier
-    ? products.filter(
+    ? currentProductList.filter(
         (product) => product.supplier?.supplier === selectedSupplier
       )
-    : products;
+    : currentProductList;
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -545,6 +583,58 @@ const AlProducts = () => {
         All Products
       </h1>
 
+      {/* Search Section */}
+      <div className="mb-6">
+        <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search products..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <Button 
+            type="submit" 
+            disabled={searchLoading}
+            className="px-6 bg-blue-600 hover:bg-blue-700"
+          >
+            {searchLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin"></div>
+                Searching...
+              </div>
+            ) : (
+              "Search"
+            )}
+          </Button>
+        </form>
+        
+        {isSearching && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+            <span>Showing search results for: <strong>"{searchTerm}"</strong></span>
+            <button
+              onClick={clearSearch}
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Show all products
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end mb-4">
         <select
           value={selectedSupplier}
@@ -561,7 +651,12 @@ const AlProducts = () => {
       </div>
 
       <Table>
-        <TableCaption>A list of All Products.</TableCaption>
+        <TableCaption>
+          {isSearching 
+            ? `Search results for "${searchTerm}" (${currentProductList.length} products found)` 
+            : "A list of All Products."
+          }
+        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Image</TableHead>
@@ -731,29 +826,6 @@ const AlProducts = () => {
                         <div className="py-2">
                           {isIgnored ? (
                             <button
-                              className="w-full text-left px-4 py-3 text-sm bg-green-50 hover:bg-green-100 text-green-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                handleActivateProduct(product);
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                              Activate
-                            </button>
-                          ) : (
-                            <button
                               className="w-full text-left px-4 py-3 text-sm bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors flex items-center gap-3"
                               onClick={() => {
                                 handleDeactivateProduct(product);
@@ -774,6 +846,29 @@ const AlProducts = () => {
                                 />
                               </svg>
                               Deactivate
+                            </button>
+                          ):(
+                            <button
+                              className="w-full text-left px-4 py-3 text-sm bg-green-50 hover:bg-green-100 text-green-700 font-medium transition-colors flex items-center gap-3"
+                              onClick={() => {
+                                handleActivateProduct(product);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              Activate
                             </button>
                           )}
 
@@ -978,6 +1073,12 @@ const AlProducts = () => {
         </TableBody>
       </Table>
 
+      {currentProducts.length === 0 && !allProductLoading && !searchLoading && (
+        <div className="text-center py-8 text-gray-500">
+          {isSearching ? `No products found for "${searchTerm}"` : "No products found"}
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-4 mt-12">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
@@ -1005,4 +1106,4 @@ const AlProducts = () => {
   );
 };
 
-export default AlProducts;
+export default AlProducts
