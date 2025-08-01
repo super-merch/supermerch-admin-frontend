@@ -635,7 +635,7 @@ const AlProducts = () => {
         )}
       </div>
 
-      <div className="flex justify-end mb-4">
+      {/* <div className="flex justify-end mb-4">
         <select
           value={selectedSupplier}
           onChange={handleSupplierChange}
@@ -648,7 +648,7 @@ const AlProducts = () => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
 
       <Table>
         <TableCaption>
