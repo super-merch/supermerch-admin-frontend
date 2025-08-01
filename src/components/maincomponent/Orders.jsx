@@ -94,7 +94,7 @@ const Orders = () => {
             <thead>
               <tr className="bg-gray-200">
                 <th className="px-4 py-2 border border-gray-300">User ID</th>
-                <th className="px-4 py-2 border border-gray-300">Order Name</th>
+                <th className="px-4 py-2 border border-gray-300">User Name</th>
                 
                 <th className="px-4 py-2 border border-gray-300">Actions</th>
               </tr>
