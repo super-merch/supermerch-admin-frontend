@@ -23,7 +23,7 @@ import AddCoupen from "./components/maincomponent/AddCoupen";
 import ShippingCharges from "./components/maincomponent/ShippingCharges";
 import AllUsers from "./components/maincomponent/AllUsers";
 import AddBlog from "./components/maincomponent/AddBlog";
-import ChangePassword from "./components/maincomponent/changePassword";
+import ChangePassword from "./components/maincomponent/ChangePassword";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
