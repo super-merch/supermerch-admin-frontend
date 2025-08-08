@@ -392,104 +392,146 @@ const AlProductDetail = () => {
   
   if (initialLoading) {
     return (
-      <p className='pt-32 text-5xl text-center text-red-500'>Loading...</p>
+      <p className='pt-32 text-5xl text-center text-gray-500'>Loading...</p>
     );
   }
   
   return (
-    <div className='mx-2 mt-20 mb-12 space-y-12 lg:mx-6 md:mx-6 sm:mx-6'>
+    <div className='mx-4 mt-20 mb-12 space-y-8 lg:mx-8 md:mx-6 sm:mx-4'>
       <ToastContainer position='top-right' autoClose={3000} />
 
       {/* Product Info */}
-      <div className='max-w-2xl p-6 m-auto border shadow-xl'>
-        <h1 className='mb-4 text-2xl font-bold'>Product Details</h1>
-        <p>
-          <strong>ID:</strong> {product?.meta?.id || 'N/A'}
-        </p>
-        <p>
-          <strong>Code:</strong> {product?.overview?.code || 'N/A'}
-        </p>
-        <p>
-          <strong>Base Price:</strong> ${trueBasePrice ? trueBasePrice.toFixed(2) : price.toFixed(2)}
-        </p>
-        {discountPercent !== '' && (
-          <p>
-            <strong>Discount:</strong> {discountPercent}%
-          </p>
-        )}
-        {discountPrice !== null && (
-          <p>
-            <strong>Discounted Price:</strong> ${discountPrice.toFixed(2)}
-          </p>
-        )}
-        <p>
-          <strong>Supplier:</strong> {product.supplier?.supplier || 'Unknown'}
-        </p>
+      <div className='max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden'>
+        <div className='bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 border-b border-gray-200'>
+          <h1 className='text-3xl font-bold text-gray-800 flex items-center gap-3'>
+            <div className='w-2 h-8 bg-blue-500 rounded-full'></div>
+            Product Details
+          </h1>
+        </div>
+        
+        <div className='p-8 space-y-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            <div className='space-y-4'>
+              <div className='flex items-center justify-between p-4 bg-gray-50 rounded-xl'>
+                <span className='text-sm font-medium text-gray-600'>ID</span>
+                <span className='font-semibold text-gray-800'>{product?.meta?.id || 'N/A'}</span>
+              </div>
+              
+              <div className='flex items-center justify-between p-4 bg-gray-50 rounded-xl'>
+                <span className='text-sm font-medium text-gray-600'>Code</span>
+                <span className='font-semibold text-gray-800'>{product?.overview?.code || 'N/A'}</span>
+              </div>
+              
+              <div className='flex items-center justify-between p-4 bg-gray-50 rounded-xl'>
+                <span className='text-sm font-medium text-gray-600'>Supplier</span>
+                <span className='font-semibold text-gray-800'>{product.supplier?.supplier || 'Unknown'}</span>
+              </div>
+            </div>
+            
+            <div className='space-y-4'>
+              <div className='flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200'>
+                <span className='text-sm font-medium text-blue-700'>Base Price</span>
+                <span className='text-xl font-bold text-blue-800'>${trueBasePrice ? trueBasePrice.toFixed(2) : price.toFixed(2)}</span>
+              </div>
+              
+              {discountPercent !== '' && (
+                <div className='flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-200'>
+                  <span className='text-sm font-medium text-red-700'>Discount</span>
+                  <span className='text-lg font-bold text-red-800'>{discountPercent}%</span>
+                </div>
+              )}
+              
+              {discountPrice !== null && (
+                <div className='flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200'>
+                  <span className='text-sm font-medium text-green-700'>Discounted Price</span>
+                  <span className='text-xl font-bold text-green-800'>${discountPrice.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* Discount Form */}
-        <form
-          onSubmit={handleAddDiscount}
-          className='flex flex-col items-end mt-4 space-y-2 text-end'
-        >
-          <input
-            type='number'
-            placeholder='Discount %'
-            value={discountPercent}
-            onChange={(e) => setDiscountPercent(e.target.value)}
-            className='w-full p-2 border rounded'
-            disabled={isDiscountLoading}
-          />
-          <button
-            type='submit'
-            className='px-4 py-2 text-white bg-blue-600 rounded disabled:opacity-50'
-            disabled={isDiscountLoading}
-          >
-            {isDiscountLoading ? 'Applying...' : 'Apply Discount'}
-          </button>
-          {discountMessage && (
-            <p className='mt-2 text-sm text-gray-700'>{discountMessage}</p>
-          )}
-        </form>
+          {/* Discount Form */}
+          <div className='mt-8 p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200'>
+            <h3 className='text-lg font-semibold text-blue-800 mb-4'>Apply Discount</h3>
+            <form onSubmit={handleAddDiscount} className='flex flex-col space-y-4'>
+              <input
+                type='number'
+                placeholder='Enter discount percentage'
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                className='w-full p-4 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm'
+                disabled={isDiscountLoading}
+              />
+              <div className='flex justify-end'>
+                <button
+                  type='submit'
+                  className='px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
+                  disabled={isDiscountLoading}
+                >
+                  {isDiscountLoading ? 'Applying...' : 'Apply Discount'}
+                </button>
+              </div>
+              {discountMessage && (
+                <p className='text-sm text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200'>{discountMessage}</p>
+              )}
+            </form>
+          </div>
+        </div>
       </div>
 
       {/* Margin Section */}
-      <div className='max-w-2xl p-6 pb-10 m-auto border shadow-xl'>
-        <h2 className='mb-4 text-xl font-bold'>Margin</h2>
-        {marginPercent !== '' && (
-          <p>
-            <strong>Margin:</strong> ${marginPercent}
-          </p>
-        )}
-        {marginPrice !== null && (
-          <p>
-            <strong>Price with Margin:</strong> ${marginPrice.toFixed(2)}
-          </p>
-        )}
+      <div className='max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden'>
+        <div className='bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-gray-200'>
+          <h2 className='text-2xl font-bold text-gray-800 flex items-center gap-3'>
+            <div className='w-2 h-7 bg-green-500 rounded-full'></div>
+            Margin
+          </h2>
+        </div>
+        
+        <div className='p-8 space-y-6'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            {marginPercent !== '' && (
+              <div className='flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200'>
+                <span className='text-sm font-medium text-green-700'>Margin</span>
+                <span className='text-lg font-bold text-green-800'>${marginPercent}</span>
+              </div>
+            )}
+            
+            {marginPrice !== null && (
+              <div className='flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-200'>
+                <span className='text-sm font-medium text-emerald-700'>Price with Margin</span>
+                <span className='text-xl font-bold text-emerald-800'>${marginPrice.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
 
-        {/* Margin Form */}
-        <form
-          onSubmit={handleAddMargin}
-          className='flex flex-col items-end mt-4 space-y-2 text-end'
-        >
-          <input
-            type='number'
-            placeholder='Margin $'
-            value={marginPercent}
-            onChange={(e) => setMarginPercent(e.target.value)}
-            className='w-full p-2 border rounded'
-            disabled={isMarginLoading}
-          />
-          <button
-            type='submit'
-            className='px-4 py-2 text-white bg-green-600 rounded disabled:opacity-50'
-            disabled={isMarginLoading}
-          >
-            {isMarginLoading ? 'Applying...' : 'Apply Margin'}
-          </button>
-          {marginMessage && (
-            <p className='mt-2 text-sm text-gray-700'>{marginMessage}</p>
-          )}
-        </form>
+          {/* Margin Form */}
+          <div className='p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200'>
+            <h3 className='text-lg font-semibold text-green-800 mb-4'>Apply Margin</h3>
+            <form onSubmit={handleAddMargin} className='flex flex-col space-y-4'>
+              <input
+                type='number'
+                placeholder='Enter margin amount in dollars'
+                value={marginPercent}
+                onChange={(e) => setMarginPercent(e.target.value)}
+                className='w-full p-4 border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm'
+                disabled={isMarginLoading}
+              />
+              <div className='flex justify-end'>
+                <button
+                  type='submit'
+                  className='px-6 py-3 text-white bg-green-600 hover:bg-green-700 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
+                  disabled={isMarginLoading}
+                >
+                  {isMarginLoading ? 'Applying...' : 'Apply Margin'}
+                </button>
+              </div>
+              {marginMessage && (
+                <p className='text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200'>{marginMessage}</p>
+              )}
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

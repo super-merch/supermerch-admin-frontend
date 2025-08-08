@@ -20,6 +20,10 @@ import SupplierCategories from "./components/maincomponent/SupplierCategories";
 import UserOrders from "./components/maincomponent/UserOrders";
 import GlobalDiscount from "./components/maincomponent/GlobalDiscount";
 import AddCoupen from "./components/maincomponent/AddCoupen";
+import ShippingCharges from "./components/maincomponent/ShippingCharges";
+import AllUsers from "./components/maincomponent/AllUsers";
+import AddBlog from "./components/maincomponent/AddBlog";
+import ChangePassword from "./components/maincomponent/changePassword";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -59,16 +63,20 @@ const App = () => {
                 <Route path="/orders" element={<PrivateRoute element={<Orders />} />} />
                 <Route path="/order-details/:id" element={<PrivateRoute element={<Products />} />} />
                 <Route path="/user-orders/:id" element={<PrivateRoute element={<UserOrders />} />} />
+                <Route path="/all-users" element={<PrivateRoute element={<AllUsers />} />} />
                 <Route path="/products" element={<PrivateRoute element={<AlProducts />} />} />
                 <Route path="/suppliers" element={<PrivateRoute element={<AlSuppliers />} />} />
                 <Route path="/supplier-categories" element={<PrivateRoute element={<SupplierCategories />} />} />
                 <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
+                <Route path="/shipping" element={<PrivateRoute element={<ShippingCharges />} />} />
                 <Route path="/add-coupen" element={<PrivateRoute element={<AddCoupen />} />} />
                 <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
                 <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />
                 <Route path="/users" element={<PrivateRoute element={<User />} />} />
                 <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
+                <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
+                <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
                 <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

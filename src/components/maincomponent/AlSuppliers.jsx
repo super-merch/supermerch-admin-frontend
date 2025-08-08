@@ -15,7 +15,7 @@ import { Button } from "../ui/button";
 import { toast } from "react-toastify";
 
 const AlSuppliers = () => {
-  const { fetchSuppliers, suppliers, allProductLoading } =
+  const { fetchSuppliers, suppliers, supplierLoading } =
     useContext(AdminContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [ignoredSuppliers, setIgnoredSuppliers] = useState([]);
@@ -78,7 +78,7 @@ const AlSuppliers = () => {
     }
   };
 
-  if (allProductLoading || loading)
+  if (supplierLoading || loading)
     return (
       <div className="flex items-center justify-center mt-20">
         <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
@@ -316,7 +316,7 @@ const AlSuppliers = () => {
         </div>
       )}
       <Table>
-        <TableCaption>A list of all suppliers.</TableCaption>
+        <TableCaption>{ignored ? ignoredSuppliers.length>0 ? "List of inactive suppliers":"No inactive suppliers found" : " A list of all suppliers."}</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>

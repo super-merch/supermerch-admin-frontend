@@ -12,7 +12,7 @@ const Navbar = () => {
     <header className="bg-white shadow p-4 flex items-center justify-between">
      
       <h1 className="text-lg font-semibold text-gray-700">
-        E-Commerce Dashboard
+        SuperMerch Dashboard
       </h1>
       <div className="flex flex-col items-center space-x-4 relative transition-transform duration-300">
         <img onClick={()=> setProfileDropDown(!profileDropDown)} src={dummy} className="w-10 h-10 cursor-pointer rounded-full" alt="" />

@@ -100,9 +100,10 @@ const AdminContextProvider = (props) => {
       setSearchLoading(false);
     }
   };
+    const [supplierLoading, setSupplierLoading] = useState(false);
 
   const fetchSuppliers = async () => {
-    setAllProductLoading(true);
+    setSupplierLoading(true);
     try {
       const response = await fetch(`${backednUrl}/api/supplier-products`);
       if (!response.ok) throw new Error("Failed to fetch Suppliers");
@@ -117,7 +118,7 @@ const AdminContextProvider = (props) => {
     } catch (err) {
       setError(err.message);
     } finally {
-      setAllProductLoading(false);
+      setSupplierLoading(false);
     }
   };
 
@@ -249,6 +250,7 @@ const AdminContextProvider = (props) => {
     fetchUsers,
     setLoading,
     orders,
+    supplierLoading,
     fetchOrders,
     updateOrderStatus,
     aToken,

@@ -24,6 +24,15 @@ export default function UserOrders() {
   const navigate = useNavigate();
   return (
     <div className="p-8">
+      {/* Display back button */}
+      <div className="mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+        > 
+          Back
+        </button>
+      </div>
       <h1 className="mb-8 text-2xl font-bold text-center">
         {" "}
         {userName} Orders

@@ -28,8 +28,8 @@ const GlobalDiscount = () => {
   };
 
   const handleAddGlobalDiscount = async () => {
-    if (!discountInput || discountInput < 0 || discountInput > 100) {
-      toast.error('Please enter a valid discount percentage between 0 and 100');
+    if (!discountInput || Number(discountInput) < 1 || Number(discountInput) > 100) {
+      toast.error('Please enter a valid discount percentage between 1 and 100');
       return;
     }
 

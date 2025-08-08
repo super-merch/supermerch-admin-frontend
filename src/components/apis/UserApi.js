@@ -151,3 +151,71 @@ export const getDiscount = async()=>{
   }
 
 }
+// Add these functions to your UserApi.js file
+
+export const getShippingCharges = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/get`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization headers if needed
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch shipping charges');
+    }
+
+    return { data };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addShippingCharges = async (shipping) => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization headers if needed
+      },
+      body: JSON.stringify({ shipping }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to add shipping charges');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const removeShippingCharges = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization headers if needed
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to remove shipping charges');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};

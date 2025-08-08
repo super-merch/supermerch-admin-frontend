@@ -8,6 +8,7 @@ import {
   FaBars,
   
 } from "react-icons/fa";
+import { FaLock } from "react-icons/fa";
 import { MdBorderColor } from "react-icons/md";
 import { BsChatLeftQuoteFill } from "react-icons/bs";
 import { MdDiscount } from "react-icons/md";
@@ -16,6 +17,8 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { motion } from 'framer-motion';
+import { RiCoupon2Fill } from "react-icons/ri";
+import { MdLocalShipping } from "react-icons/md";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { setAToken, showPopup, setShowPopup } = useContext(AdminContext);
@@ -161,12 +164,36 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           to="/add-Coupen"
           className="flex items-center px-4 py-2 hover:bg-blue-500 group"
         >
-          <MdDiscount size={20} className="mr-3 text-gray-700" />
+          <RiCoupon2Fill size={20} className="mr-3 text-gray-700" />
           <span
             className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
               }`}
           >
             Add Coupen
+          </span>
+        </Link>
+        <Link
+          to="/shipping"
+          className="flex items-center px-4 py-2 hover:bg-blue-500 group"
+        >
+          <MdLocalShipping size={20} className="mr-3 text-gray-700" />
+          <span
+            className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
+              }`}
+          >
+            Add Shipping Charges
+          </span>
+        </Link>
+        <Link
+          to="/change-pass"
+          className="flex items-center px-4 py-2 hover:bg-blue-500 group"
+        >
+          <FaLock size={20} className="mr-3 text-gray-700" />
+          <span
+            className={`text-gray-700 group-hover:text-white transition-all duration-300 ${!isOpen && "hidden"
+              }`}
+          >
+            Change Password
           </span>
         </Link>
         <button
