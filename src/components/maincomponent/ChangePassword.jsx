@@ -55,7 +55,7 @@ const ChangePassword = () => {
       });
 
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message||'Password changed successfully');
         // Reset form
         setStep(1);
         setOtp('');
