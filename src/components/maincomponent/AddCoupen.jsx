@@ -36,7 +36,6 @@ const AddCoupen = () => {
 
     if (!discountInput || Number(discountInput) < 1 || Number(discountInput) > 100) {
       toast.error('Please enter a valid discount percentage between 1 and 100');
-      console.log("error")
       return;
     }
 
