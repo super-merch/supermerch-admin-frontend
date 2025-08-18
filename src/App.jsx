@@ -24,6 +24,8 @@ import ShippingCharges from "./components/maincomponent/ShippingCharges";
 import AllUsers from "./components/maincomponent/AllUsers";
 import AddBlog from "./components/maincomponent/AddBlog";
 import ChangePassword from "./components/maincomponent/ChangePassword";
+import UserQueries from "./components/maincomponent/UserQueries";
+import UserQuery from "./components/maincomponent/UserQuery";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -74,6 +76,8 @@ const App = () => {
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
                 <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />
                 <Route path="/users" element={<PrivateRoute element={<User />} />} />
+                <Route path="/user-queries" element={<PrivateRoute element={<UserQueries />} />} />
+                <Route path="/user-query/:id" element={<PrivateRoute element={<UserQuery />} />} />
                 <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
                 <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
