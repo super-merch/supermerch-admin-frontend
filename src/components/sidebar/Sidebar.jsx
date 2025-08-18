@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           className={` font-bold transition-all duration-300 ${!isOpen && "hidden"
             }`}
         >
-          <img src="/supermerch.png" className="w-28 " alt="" />
+          <img src="/LOGO.png" className="w-28 " alt="" />
         </h1>
         <button className="text-white" onClick={toggleSidebar}>
           <FaBars size={24} />
