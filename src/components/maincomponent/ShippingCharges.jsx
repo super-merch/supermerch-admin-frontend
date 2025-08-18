@@ -12,7 +12,7 @@ const ShippingCharges = () => {
   useEffect(() => {
     fetchShippingCharges();
   }, []);
-  const l[loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const fetchShippingCharges = async () => {
     setLoading(true);
     try {
