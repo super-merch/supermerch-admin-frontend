@@ -12,18 +12,22 @@ const ShippingCharges = () => {
   useEffect(() => {
     fetchShippingCharges();
   }, []);
-
+  const l[loading, setLoading] = useState(false);
   const fetchShippingCharges = async () => {
+    setLoading(true);
     try {
       const response = await getShippingCharges();
       if (response.data && response.data.shipping !== undefined) {
         setShippingCharges(response.data);
+        setLoading(false);
       } else {
         setShippingCharges(null);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching shipping charges:', error);
       // If 404, it means no shipping charges exist
+      setLoading(false);
       if (error.status === 404) {
         setShippingCharges(null);
       }
@@ -74,6 +78,13 @@ const ShippingCharges = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Shipping Charges Management</h2>
+        {/*loader for shipping charger */}
+        {loading && (
+          <div className="flex items-center justify-center">
+            <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+            <p className="ml-4 text-lg font-semibold">Loading...</p>
+          </div>
+        )}
         
         {/* Current Shipping Charges Status */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">

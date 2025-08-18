@@ -12,19 +12,25 @@ const AddCoupen = () => {
   useEffect(() => {
     fetchCurrentCoupon();
   }, []);
-
+  const [loading, setLoading] = useState(false);
   const fetchCurrentCoupon = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`${API_BASE}/api/coupen/get`);
       const data = await response.json();
       
       if (data && data.length > 0) {
         setCurrentCoupon(data[0]);
+        setLoading(false);
+
       } else {
         setCurrentCoupon(null);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching current coupon:', error);
+      setCurrentCoupon(null);
+      setLoading(false);
     }
   };
 
@@ -104,6 +110,13 @@ const AddCoupen = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Coupon Management</h2>
+        {/*Loader for fetching coupon*/ }
+        {loading && (
+          <div className="flex items-center justify-center">
+            <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+            <p className="ml-4 text-lg font-semibold">Loading coupon...</p>
+          </div>
+        )}
         
         {/* Current Coupon Status */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">

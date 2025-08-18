@@ -13,17 +13,22 @@ const GlobalDiscount = () => {
   useEffect(() => {
     fetchGlobalDiscount();
   }, []);
-
+  const [loading, setLoading] = useState(false);
   const fetchGlobalDiscount = async () => {
+    setLoading(true);
     try {
       const response = await getGlobalDiscount();
       if (response.data && response.data.isActive) {
         setGlobalDiscount(response.data);
+        setLoading(false);
       } else {
         setGlobalDiscount(null);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching global discount:', error);
+      setGlobalDiscount(null);
+      setLoading(false);
     }
   };
 
@@ -78,6 +83,13 @@ const GlobalDiscount = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Global Discount Management</h2>
+        {/*Loader for Global Discount */}
+        {loading && (
+          <div className="flex items-center justify-center">
+            <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+            <p className="ml-4 text-lg font-semibold">Loading global discount...</p>
+          </div>
+        )}
         
         {/* Current Global Discount Status */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
