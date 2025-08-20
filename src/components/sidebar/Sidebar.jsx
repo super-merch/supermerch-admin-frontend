@@ -37,7 +37,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <div
       className={`${isOpen ? "w-64" : "w-20"
-        } transition-width duration-300 border-r  max-h-screen fixed flex flex-col text-white bg-[#080a54] z-50`}
+        } transition-width duration-300 border-r  h-screen fixed flex flex-col text-white bg-[#080a54] z-50`}
     >
       {/* Sidebar Header */}
       <div className="px-4 pt-4 flex items-center justify-between">
