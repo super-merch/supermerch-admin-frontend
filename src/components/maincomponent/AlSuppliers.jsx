@@ -275,7 +275,7 @@ const AlSuppliers = () => {
 
   return (
     <div className="px-4 pb-6 lg:pb-10 md:pb-10 lg:px-10 md:px-10 sm:px-6">
-      <h1 className="pt-6 pb-6 text-2xl font-bold text-center text-red-600">
+      <h1 className="pt-3  text-2xl font-bold text-center text-gray-800">
         All Suppliers
       </h1>
 

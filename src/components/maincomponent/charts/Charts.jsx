@@ -14,6 +14,8 @@ const Charts = ({ isOpen }) => {
     blogs,
     quoteData,
     allProductLoading,
+    pagination,
+    prodLength
   } = useContext(AdminContext);
   if (allProductLoading) {
     return (
@@ -57,7 +59,7 @@ const Charts = ({ isOpen }) => {
           <div className="text-center">
             <p className="text-gray-600 font-semibold text-xl">Orders</p>
             <p className="text-xl font-semibold text-gray-600">
-              {orders?.length}
+              {pagination?.totalOrders||orders?.length}
             </p>
           </div>
         </div>
@@ -68,7 +70,7 @@ const Charts = ({ isOpen }) => {
           <div className="text-center">
             <p className="text-gray-600 font-semibold text-xl">products</p>
             <p className="text-xl font-semibold text-gray-600">
-              {products?.length}
+              {prodLength||products?.length}
             </p>
           </div>
         </div>

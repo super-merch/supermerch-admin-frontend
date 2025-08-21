@@ -140,12 +140,12 @@ const User = () => {
 
   return (
     <div className="px-4 overflow-x-auto lg:px-10 md:px-8 sm:px-6">
-      <h1 className="py-10 text-2xl font-medium text-center text-black">Users Page</h1>
+      <h1 className="pt-4 text-2xl font-medium text-start text-black">Users Page</h1>
       
       {/* Search and Results Info */}
-      <div className="mb-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="mb-2 inine">
+        <div className="mb-2 relative max-w-md mx-auto">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Search Users
           </label>
           <input
@@ -158,7 +158,7 @@ const User = () => {
         </div>
         
         {/* Results Info */}
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-gray-600">
           Showing {currentUsers.length} of {totalUsers} users
           {searchTerm && (
             <span className="ml-2 text-blue-600">(filtered)</span>
@@ -179,29 +179,29 @@ const User = () => {
       <table className="w-full border">
         <thead className="border">
           <tr className="border">
-            <th className="p-3 text-left border-r">Sr. No</th>
-            <th className="p-3 text-left border-r">Username</th>
-            <th className="pl-4 text-left border-r">Email</th>
-            <th className="pl-4 text-left border-r">Joined</th>
-            <th className="pl-4 text-left border-r">Phone</th>
-            <th className="pl-4 text-left border-r">Country</th>
-            <th className="pl-4 text-left border-r">Address</th>
-            <th className="pl-4 text-left border-r">Postal Code</th>
-            <th className="pl-4 text-left">Action</th>
+            <th className="px-2 text-left border-r">Sr. No</th>
+            <th className="px-2 text-left border-r">Username</th>
+            <th className="pl-2 text-left border-r">Email</th>
+            <th className="pl-2 text-left border-r">Joined</th>
+            <th className="pl-2 text-left border-r">Phone</th>
+            <th className="pl-2 text-left border-r">Country</th>
+            <th className="pl-2 text-left border-r">Address</th>
+            <th className="pl-2 text-left border-r">Postal Code</th>
+            <th className="pl-2 text-left">Action</th>
           </tr>
         </thead>
         <tbody className="border">
           {currentUsers.map((user, index) => (
             <tr key={user._id} className="border">
-              <td className="p-4 border">{startIndex + index + 1}</td>
-              <td className="p-4 border">{user.name}</td>
-              <td className="p-4 border">{user.email}</td>
-              <td className="p-4 border">{new Date(user.createdAt).toLocaleString()}</td>
-              <td className="p-4 border">{user?.defaultAddress?.phone || "No Phone"}</td>
-              <td className="p-4 border">{user?.defaultAddress?.country || "No Country"}</td>
-              <td className="p-4 border">{user?.defaultAddress?.addressLine || "No Address"}</td>
-              <td className="p-4 border">{user?.defaultAddress?.postalCode || "No Code"}</td>
-              <td className="flex p-4">
+              <td className="p-2 border">{startIndex + index + 1}</td>
+              <td className="p-2 border">{user.name}</td>
+              <td className="p-2 border">{user.email}</td>
+              <td className="p-2 border">{new Date(user.createdAt).toLocaleString()}</td>
+              <td className="p-2 border">{user?.defaultAddress?.phone || "No Phone"}</td>
+              <td className="p-2 border">{user?.defaultAddress?.country || "No Country"}</td>
+              <td className="p-2 border">{user?.defaultAddress?.addressLine || "No Address"}</td>
+              <td className="p-2 border">{user?.defaultAddress?.postalCode || "No Code"}</td>
+              <td className="flex items-center px-2">
                 <FaEdit
                   className="text-xl cursor-pointer hover:text-blue-600"
                   onClick={() => handleEdit(user)}

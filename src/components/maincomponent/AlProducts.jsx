@@ -24,6 +24,8 @@ const AlProducts = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [localIgnoredIds, setLocalIgnoredIds] = useState(new Set());
+  const [lastPage, setLastPage] = useState(false);
+  const [page, setPage] = useState(1);
   const [editingProductId, setEditingProductId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [customNames, setCustomNames] = useState({});
@@ -488,6 +490,15 @@ const AlProducts = () => {
     const productId = product.meta.id;
     return customNames[productId] || product.overview.name || "No Name";
   };
+  //call next products if page is last
+  const [pageLoading, setPageLoading] = useState(false);
+  useEffect(()=>{
+    if(lastPage){
+      fetchProducts(page+1);
+      setPage(page+1)
+      setLastPage(false)
+    }
+  },[lastPage])
 
   if (allProductLoading && !isSearching)
     return (
@@ -528,6 +539,10 @@ const AlProducts = () => {
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
+    //make setLastPage true if last page
+    if (newPage === totalPages) {
+      setLastPage(true);
+    }
   };
 
   const handleSupplierChange = (e) => {
@@ -579,12 +594,12 @@ const AlProducts = () => {
 
   return (
     <div className="px-4 pb-6 lg:pb-10 md:pb-10 lg:px-10 md:px-10 sm:px-6">
-      <h1 className="pt-6 pb-6 text-2xl font-bold text-center text-gray-600">
+      <h1 className="pt-3 pb-3 text-2xl font-bold text-center text-gray-600">
         All Products
       </h1>
 
       {/* Search Section */}
-      <div className="mb-6">
+      <div className="mb-3">
         <form onSubmit={handleSearch} className="flex gap-2 mb-4">
           <div className="flex-1 relative">
             <input
@@ -623,6 +638,9 @@ const AlProducts = () => {
         </form>
         
         {isSearching && (
+          searchLoading ? (
+          <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin" ></div>
+        ) :(
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
             <span>Showing search results for: <strong>"{searchTerm}"</strong></span>
             <button
@@ -632,7 +650,7 @@ const AlProducts = () => {
               Show all products
             </button>
           </div>
-        )}
+        ))}
       </div>
 
       {/* <div className="flex justify-end mb-4">
@@ -653,7 +671,7 @@ const AlProducts = () => {
       <Table>
         <TableCaption>
           {isSearching 
-            ? `Search results for "${searchTerm}" (${currentProductList.length} products found)` 
+            ? searchLoading ? "Searching..." : `Search results for "${searchTerm}" (${currentProductList.length} products found)` 
             : "A list of All Products."
           }
         </TableCaption>

@@ -130,11 +130,11 @@ const UserQueries = () => {
 
   return (
     <div className="px-4 overflow-x-auto lg:px-10 md:px-8 sm:px-6">
-      <h1 className="py-10 text-2xl font-medium text-center text-black">User Queries Page</h1>
+      <h1 className="py-4 text-2xl font-medium text-center text-black">User Queries Page</h1>
       
       {/* Search and Results Info */}
-      <div className="mb-6">
-        <div className="mb-4">
+      <div className="mb-3">
+        <div className="mb-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Search Queries
           </label>
@@ -148,7 +148,7 @@ const UserQueries = () => {
         </div>
         
         {/* Results Info */}
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-gray-600 ">
           Showing {currentQueries.length} of {totalQueries} queries
           {searchTerm && (
             <span className="ml-2 text-blue-600">(filtered)</span>

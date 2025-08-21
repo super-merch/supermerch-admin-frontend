@@ -26,6 +26,7 @@ import AddBlog from "./components/maincomponent/AddBlog";
 import ChangePassword from "./components/maincomponent/ChangePassword";
 import UserQueries from "./components/maincomponent/UserQueries";
 import UserQuery from "./components/maincomponent/UserQuery";
+import QuoteDetail from "./components/maincomponent/QuoteDetail";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -81,6 +82,7 @@ const App = () => {
                 <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
                 <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
+                <Route path="/quote-detail" element={<PrivateRoute element={<QuoteDetail />} />} /> 
                 <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

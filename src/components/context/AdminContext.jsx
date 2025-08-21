@@ -17,6 +17,7 @@ const AdminContextProvider = (props) => {
 
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [prodLength, setProdLength] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
 
   const [aToken, setAToken] = useState(
@@ -39,32 +40,39 @@ const AdminContextProvider = (props) => {
   }, [aToken]);
 
   // client api
-  const fetchProducts = async () => {
-    setAllProductLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/client-products?filter=false`
-      );
-      if (!response.ok) throw new Error("Failed to fetch products");
+  const fetchProducts = async (page = 1) => {
+  setAllProductLoading(true);
 
-      const data = await response.json();
+  try {
+    const response = await fetch(
+      `${backednUrl}/api/client-products?filter=false&page=${page}&limit=50`
+    );
+    if (!response.ok) throw new Error("Failed to fetch products");
 
-      if (!data || !data.data) {
-        throw new Error("Unexpected API response structure");
-      }
+    const data = await response.json();
 
-      setProducts(data.data);
-
-      // Set ignored product IDs if they exist in the response
-      if (data.ignoredProductIds) {
-        setIgnoredProductIds(new Set(data.ignoredProductIds));
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setAllProductLoading(false);
+    if (!data || !data.data) {
+      throw new Error("Unexpected API response structure");
     }
-  };
+
+    // If it's page 1, replace products. Otherwise, append to existing products.
+    if (page === 1) {
+      setProducts(data.data);
+    } else {
+      setProducts(prevProducts => [...prevProducts, ...data.data]);
+    }
+
+    // Set ignored product IDs if they exist in the response
+    if (data.ignoredProductIds) {
+      setIgnoredProductIds(new Set(data.ignoredProductIds));
+    }
+    setProdLength(data.item_count)
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setAllProductLoading(false);
+  }
+};
 
   const [searchedProducts, setSearchedProducts] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -135,6 +143,7 @@ const AdminContextProvider = (props) => {
       setLoading(false);
     }
   };
+  const [pagination, setPagination] = useState(null);
   const fetchUserOrders = async (id) => {
     try {
       // 1) fetch exactly as fetchOrders does
@@ -157,18 +166,94 @@ const AdminContextProvider = (props) => {
     }
   };
 
-  const fetchOrders = async (id = "") => {
-    try {
-      const url = id
-        ? `${backednUrl}/api/checkout/products/${id}`
-        : `${backednUrl}/api/checkout/products`;
-      const response = await axios.get(url, { headers: { aToken } });
-      setOrders(response.data.data.reverse());
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to fetch orders");
+  const fetchOrders = async (id = "", page = 1, filters = {},limit) => {
+  setLoading(true);
+  try {
+    const url = id
+      ? `${backednUrl}/api/checkout/products/${id}`
+      : `${backednUrl}/api/checkout/products`;
+    
+    const params = id ? {} : {
+      page,
+      limit: 15,
+      search: filters.searchTerm || '',
+      status: filters.filterStatus || 'All',
+      date: filters.filterDate || '',
+      sortBy: filters.sortBy || 'orderDate',
+      sortOrder: filters.sortOrder || 'desc'
+    };
+
+    const response = await axios.get(url, { 
+      headers: { aToken },
+      params 
+    });
+    
+    setOrders(response.data.data);
+    setPagination(response.data.pagination || null);
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    toast.error("Failed to fetch orders");
+    setLoading(false);
+  }
+};
+
+const updateOrder = async (orderId, orderData) => {
+  try {
+    const response = await axios.put(
+      `${backednUrl}/api/checkout/checkout/${orderId}`,
+      orderData,
+      {
+        headers: { aToken }
+      }
+    );
+    
+    if (response.data.success) {
+      // Update the local orders state with the updated order
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order._id === orderId ? response.data.data : order
+        )
+      );
+      return response.data;
     }
-  };
+    return response.data;
+  } catch (error) {
+    console.error("Error updating order:", error);
+    throw error;
+  }
+};
+
+  //delete order
+  const [deleteLoading, setDeleteLoading] = useState({}); // Object instead of boolean
+
+const deleteOrder = async(_id) => {
+  // Set loading for specific order
+  setDeleteLoading(prev => ({ ...prev, [_id]: true }));
+  
+  try {
+    const response = await axios.delete(`${backednUrl}/api/checkout/delete/${_id}`, {
+      headers: { aToken }
+    });
+    
+    if (response.data.success) {
+      toast.success("Order deleted successfully!");
+      await fetchOrders();
+    } else {
+      toast.error(response.data.message || "Failed to delete order");
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    toast.error(`Failed to delete order: ${error.response?.data?.message || error.message}`);
+  } finally {
+    // Clear loading for specific order
+    setDeleteLoading(prev => {
+      const newState = { ...prev };
+      delete newState[_id];
+      return newState;
+    });
+  }
+}
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       if (!aToken) {
@@ -263,10 +348,13 @@ const AdminContextProvider = (props) => {
     products,
     fetchSuppliers,
     suppliers,
+    deleteOrder,
     setProducts,
+    deleteLoading,
     backednUrl,
     allProductLoading,
     showPopup,
+    prodLength,
     setShowPopup,
     fetchSearchedProducts,  // Add this
     searchedProducts,       // Add this
@@ -278,7 +366,9 @@ const AdminContextProvider = (props) => {
     quoteData,
     setQuoteData,
     quoteLoading,
+    pagination,
     setQuoteLoading,
+    updateOrder,
   };
 
   return (
