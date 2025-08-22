@@ -17,8 +17,24 @@ import { addDiscount, addMargin } from "../apis/UserApi";
 const backednUrl = import.meta.env.VITE_BACKEND_URL;
 
 const AlProducts = () => {
-  const { fetchProducts, products, allProductLoading, ignoredProductIds, fetchSearchedProducts, searchedProducts, searchLoading } =
-    useContext(AdminContext);
+  const {
+    fetchProducts,
+    products,
+    setProducts,
+    allProductLoading,
+    setAllProductLoading,
+    ignoredProductIds,
+    prodLength,
+    fetchSearchedProducts,
+    searchedProducts,
+    searchLoading,
+    fetchTrendingProduct,
+    trendingProducts,
+    fetchBestSellerProduct,
+    bestSellerProducts,
+    fetchNewArrivalProduct,
+    arrivalProducts,
+  } = useContext(AdminContext);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -30,6 +46,10 @@ const AlProducts = () => {
   const [editingName, setEditingName] = useState("");
   const [customNames, setCustomNames] = useState({});
   const [updatingName, setUpdatingName] = useState(false);
+  const [trending, setTrending] = useState([]);
+  const [arrival, setArrival] = useState([]);
+  const [sortOption, setSortOption] = useState("all");
+  const [best, setBest] = useState([]);
   // Store trending product IDs from API
   const [trendingIds, setTrendingIds] = useState(new Set());
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -39,16 +59,72 @@ const AlProducts = () => {
   // Store best sellers product IDs from API
   const [bestSellerIds, setBestSellerIds] = useState(new Set());
   const [bestSellerLoading, setBestSellerLoading] = useState(false);
-  
+
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const processedProductsRef = useRef(new Set());
   const navigate = useNavigate();
-  
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
+  useEffect(() => {
+    const fetchNextBatch = async () => {
+      if (lastPage && sortOption === "all") {
+        setPageLoading(true);
+        try {
+          await fetchProducts(page + 1);
+          setPage(page + 1);
+          setLastPage(false);
+        } catch (error) {
+          console.error("Error fetching next batch:", error);
+        } finally {
+          setPageLoading(false);
+        }
+      }
+    };
+
+    fetchNextBatch();
+  }, [lastPage, sortOption]);
+  useEffect(() => {
+    const search = async () => {
+      setLoadingProducts(true);
+
+      try {
+        let productData = [];
+        setPage(1);
+
+        switch (sortOption) {
+          case "trending":
+            productData = await fetchTrendingProduct();
+            console.log(productData);
+            break;
+          case "bestSellers":
+            productData = await fetchBestSellerProduct();
+            break;
+          case "newArrivals":
+            productData = await fetchNewArrivalProduct();
+            break;
+          case "all":
+            productData = await fetchProducts();
+            break;
+          default:
+            await fetchProducts();
+            productData = products;
+            break;
+        }
+
+        setProducts(productData);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    search();
+  }, [sortOption]);
   const getIgnored = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
@@ -76,6 +152,13 @@ const AlProducts = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        if (products.length > 0) {
+          fetchCustomNames(),
+            fetchTrendingProducts(),
+            fetchNewArrivalProducts(),
+            fetchBestSellerProducts();
+          return;
+        }
         await Promise.all([
           fetchProducts(),
           fetchCustomNames(),
@@ -127,7 +210,7 @@ const AlProducts = () => {
 
   // Get current products based on search state
   const getCurrentProducts = () => {
-    return isSearching ? (searchedProducts?.data || []) : (products || []);
+    return isSearching ? searchedProducts?.data || [] : products || [];
   };
 
   // Fetch trending products from API
@@ -492,15 +575,21 @@ const AlProducts = () => {
   };
   //call next products if page is last
   const [pageLoading, setPageLoading] = useState(false);
-  useEffect(()=>{
-    if(lastPage){
-      fetchProducts(page+1);
-      setPage(page+1)
-      setLastPage(false)
-    }
-  },[lastPage])
+  // useEffect(() => {
+  //   const nextPage = async () => {
+  //     setPageLoading(true);
+  //     if (lastPage) {
+  //       await fetchProducts(page + 1);
+  //       setPageLoading(false);
+  //       setPage(page + 1);
+  //       setLastPage(false);
+  //     }
+  //     setPageLoading(false);
+  //   };
+  //   nextPage();
+  // }, [lastPage]);
 
-  if (allProductLoading && !isSearching)
+  if (pageLoading || (allProductLoading && !isSearching) || loadingProducts)
     return (
       <div className="flex items-center justify-center mt-20">
         <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
@@ -520,7 +609,9 @@ const AlProducts = () => {
 
   const uniqueSuppliers = [
     ...new Set(
-      currentProductList?.map((product) => product.supplier?.supplier || "Unknown")
+      currentProductList?.map(
+        (product) => product.supplier?.supplier || "Unknown"
+      )
     ),
   ];
 
@@ -539,8 +630,12 @@ const AlProducts = () => {
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    //make setLastPage true if last page
-    if (newPage === totalPages) {
+
+    // Only trigger backend fetch for "all" products when reaching last page
+    if (
+      sortOption === "all" &&
+      newPage === Math.ceil(filteredProducts.length / itemsPerPage)
+    ) {
       setLastPage(true);
     }
   };
@@ -615,14 +710,24 @@ const AlProducts = () => {
                 onClick={clearSearch}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
           </div>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={searchLoading}
             className="px-6 bg-blue-600 hover:bg-blue-700"
           >
@@ -636,21 +741,36 @@ const AlProducts = () => {
             )}
           </Button>
         </form>
-        
-        {isSearching && (
-          searchLoading ? (
-          <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin" ></div>
-        ) :(
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <span>Showing search results for: <strong>"{searchTerm}"</strong></span>
-            <button
-              onClick={clearSearch}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Show all products
-            </button>
-          </div>
-        ))}
+        {/* dropdown to show sort by trendings, new arrivals, best sellers and all products(default) */}
+        <div className="flex justify-end mb-4">
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            className="px-4 py-2 border rounded"
+          >
+            <option value="all">All Products</option>
+            <option value="trending">Trending</option>
+            <option value="newArrivals">New Arrivals</option>
+            <option value="bestSellers">Best Sellers</option>
+          </select>
+        </div>
+
+        {isSearching &&
+          (searchLoading ? (
+            <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <span>
+                Showing search results for: <strong>"{searchTerm}"</strong>
+              </span>
+              <button
+                onClick={clearSearch}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Show all products
+              </button>
+            </div>
+          ))}
       </div>
 
       {/* <div className="flex justify-end mb-4">
@@ -670,10 +790,11 @@ const AlProducts = () => {
 
       <Table>
         <TableCaption>
-          {isSearching 
-            ? searchLoading ? "Searching..." : `Search results for "${searchTerm}" (${currentProductList.length} products found)` 
-            : "A list of All Products."
-          }
+          {isSearching
+            ? searchLoading
+              ? "Searching..."
+              : `Search results for "${searchTerm}" (${currentProductList.length} products found)`
+            : "A list of All Products."}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -1093,7 +1214,9 @@ const AlProducts = () => {
 
       {currentProducts.length === 0 && !allProductLoading && !searchLoading && (
         <div className="text-center py-8 text-gray-500">
-          {isSearching ? `No products found for "${searchTerm}"` : "No products found"}
+          {isSearching
+            ? `No products found for "${searchTerm}"`
+            : "No products found"}
         </div>
       )}
 
@@ -1108,13 +1231,28 @@ const AlProducts = () => {
           Previous
         </button>
         <span className="text-lg font-medium">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of{" "}
+          {sortOption === "all"
+            ? Math.ceil(prodLength / 10)
+            : Math.ceil(filteredProducts.length / itemsPerPage)}
         </span>
         <button
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={
+            sortOption === "all"
+              ? currentPage === Math.ceil(prodLength / 10)
+              : currentPage ===
+                Math.ceil(filteredProducts.length / itemsPerPage)
+          }
           className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-            currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+            (
+              sortOption === "all"
+                ? currentPage === Math.ceil(prodLength / 10)
+                : currentPage ===
+                  Math.ceil(filteredProducts.length / itemsPerPage)
+            )
+              ? "opacity-50 cursor-not-allowed"
+              : ""
           }`}
         >
           Next
@@ -1124,4 +1262,4 @@ const AlProducts = () => {
   );
 };
 
-export default AlProducts
+export default AlProducts;

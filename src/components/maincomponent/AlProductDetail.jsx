@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { addDiscount, getDiscount } from '../apis/UserApi';
 import { addMargin as addMarginApi } from '../apis/UserApi';
 import axios from 'axios';
@@ -12,6 +12,7 @@ const AlProductDetail = () => {
 
   // track initial page loading only
   const [initialLoading, setInitialLoading] = useState(true);
+    const navigate = useNavigate()
 
   // button-level loading states
   const [isDiscountLoading, setIsDiscountLoading] = useState(false);
@@ -398,6 +399,28 @@ const AlProductDetail = () => {
   
   return (
     <div className='mx-4 mt-20 mb-12 space-y-8 lg:mx-8 md:mx-6 sm:mx-4'>
+      {/* good designed back button to navigate(-1) */}
+      <button
+        onClick={() => navigate(-1)}
+        className='flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-100'
+      >
+        <svg
+          xmlns='http://www.w3.org/2000/svg'
+          className='w-6 h-6'
+          fill='none'
+          viewBox='0 0 24 24'
+          stroke='currentColor'
+        >
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            strokeWidth={2}
+            d='M15 19l-7-7 7-7'
+          />
+        </svg>
+        <span>Back</span>
+      </button>
+      
       <ToastContainer position='top-right' autoClose={3000} />
 
       {/* Product Info */}

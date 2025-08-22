@@ -6,9 +6,17 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
+import { Search } from "lucide-react";
+
 
 const User = () => {
-  const { users, setUsers, loading, fetchUsers } = useContext(AdminContext);
+  const { 
+    users, 
+    setUsers, 
+    loading, 
+    fetchUsers, 
+    usersPagination  // Add this to AdminContext
+  } = useContext(AdminContext);
   
   // Existing states
   const [editingUser, setEditingUser] = useState(null);
@@ -18,16 +26,28 @@ const User = () => {
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   
-  // New states for pagination and search
+  // Updated pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const usersPerPage = 10;
+  const [mySearch, setMySearch] = useState("");
   
-  console.log(users);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Updated useEffect for pagination and search
+  useEffect(() => {
+    const filters = {
+      searchTerm,
+    };
+    fetchUsers(currentPage, filters);
+  }, [currentPage, searchTerm]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleEdit = (user) => {
     setEditingUser(user._id);
@@ -61,7 +81,8 @@ const User = () => {
       toast.success("User updated successfully!");
       setEditingUser(null);
       setShowEditPopup(false);
-      fetchUsers();
+      // Refresh current page
+      fetchUsers(currentPage, { searchTerm });
     } catch (error) {
       toast.error(error?.response?.data?.error || error.message);
       console.error(error);
@@ -78,7 +99,8 @@ const User = () => {
       await deleteUser(userToDelete);
       setUsers(users.filter((user) => user._id !== userToDelete));
       toast.success("User deleted successfully!");
-      fetchUsers();
+      // Refresh current page
+      fetchUsers(currentPage, { searchTerm });
     } catch (error) {
       toast.error("Error deleting user");
       console.error(error);
@@ -88,27 +110,7 @@ const User = () => {
     }
   };
 
-  // Search and filter logic
-  const filteredUsers = users.filter((user) => {
-    const userName = (user.name || "").toLowerCase();
-    const userEmail = (user.email || "").toLowerCase();
-    const userPhone = (user?.defaultAddress?.phone || "").toLowerCase();
-    const searchLower = searchTerm.toLowerCase();
-
-    return (
-      userName.includes(searchLower) ||
-      userEmail.includes(searchLower) ||
-      userPhone.includes(searchLower)
-    );
-  });
-
-  // Pagination logic
-  const totalUsers = filteredUsers.length;
-  const totalPages = Math.ceil(totalUsers / usersPerPage);
-  const startIndex = (currentPage - 1) * usersPerPage;
-  const endIndex = startIndex + usersPerPage;
-  const currentUsers = filteredUsers.slice(startIndex, endIndex);
-
+  // Updated pagination functions
   const goToPage = (page) => {
     setCurrentPage(page);
   };
@@ -120,15 +122,10 @@ const User = () => {
   };
 
   const goToNextPage = () => {
-    if (currentPage < totalPages) {
+    if (usersPagination && currentPage < usersPagination.totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   if (loading)
     return (
@@ -142,38 +139,48 @@ const User = () => {
     <div className="px-4 overflow-x-auto lg:px-10 md:px-8 sm:px-6">
       <h1 className="pt-4 text-2xl font-medium text-start text-black">Users Page</h1>
       
-      {/* Search and Results Info */}
+      {/* Updated Search and Results Info */}
       <div className="mb-2 inine">
         <div className="mb-2 relative max-w-md mx-auto">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Search Users
           </label>
-          <input
-            type="text"
-            placeholder="Search by name, email, or phone number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name, email, or phone number..."
+              value={mySearch}
+              onChange={(e) => setMySearch(e.target.value)}
+              className="w-full max-w-md px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Search
+              onClick={() => setSearchTerm(mySearch)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-800 hover:text-blue-600"
+            />
+          </div>
         </div>
         
-        {/* Results Info */}
+        {/* Updated Results Info */}
         <div className="text-sm text-gray-600">
-          Showing {currentUsers.length} of {totalUsers} users
+          Showing {users.length} of {usersPagination?.totalUsers || 0} users
+          from page: {currentPage}
           {searchTerm && (
             <span className="ml-2 text-blue-600">(filtered)</span>
           )}
         </div>
 
-        {/* Clear Search Button */}
-        {searchTerm && (
+        {/* Updated Clear Search Button */}
+        <div className="mt-2">
           <button
-            onClick={() => setSearchTerm("")}
-            className="mb-4 px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md"
+            onClick={() => {
+              setSearchTerm("");
+              setMySearch("");
+            }}
+            className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md"
           >
             Clear Search
           </button>
-        )}
+        </div>
       </div>
 
       <table className="w-full border">
@@ -191,9 +198,11 @@ const User = () => {
           </tr>
         </thead>
         <tbody className="border">
-          {currentUsers.map((user, index) => (
+          {users.map((user, index) => (
             <tr key={user._id} className="border">
-              <td className="p-2 border">{startIndex + index + 1}</td>
+              <td className="p-2 border">
+                {((currentPage - 1) * 15) + index + 1}
+              </td>
               <td className="p-2 border">{user.name}</td>
               <td className="p-2 border">{user.email}</td>
               <td className="p-2 border">{new Date(user.createdAt).toLocaleString()}</td>
@@ -217,67 +226,70 @@ const User = () => {
       </table>
 
       {/* No Users Found */}
-      {currentUsers.length === 0 && !loading && (
+      {users.length === 0 && !loading && (
         <div className="text-center py-8 text-gray-500">
           {searchTerm ? "No users found matching your search." : "No users found."}
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Updated Pagination */}
+      {usersPagination && usersPagination.totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center space-x-2">
           <button
             onClick={goToPreviousPage}
-            disabled={currentPage === 1}
+            disabled={!usersPagination.hasPrevPage}
             className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Previous
           </button>
 
           <div className="flex space-x-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
+            {Array.from(
+              { length: Math.min(5, usersPagination.totalPages) },
+              (_, i) => {
+                let pageNum;
+                if (usersPagination.totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= usersPagination.totalPages - 2) {
+                  pageNum = usersPagination.totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
 
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => goToPage(pageNum)}
-                  className={`px-3 py-2 border border-gray-300 rounded-md ${
-                    currentPage === pageNum
-                      ? "bg-blue-500 text-white"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`px-3 py-2 border border-gray-300 rounded-md ${
+                      currentPage === pageNum
+                        ? "bg-blue-500 text-white"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              }
+            )}
           </div>
 
           <button
             onClick={goToNextPage}
-            disabled={currentPage === totalPages}
+            disabled={!usersPagination.hasNextPage}
             className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Next
           </button>
 
           <span className="ml-4 text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
+            Page {usersPagination.currentPage} of {usersPagination.totalPages}
           </span>
         </div>
       )}
 
-      {/* Edit Popup */}
+      {/* Edit Popup - No changes needed */}
       {showEditPopup && (
         <div className="fixed top-0 left-0 flex items-center justify-center w-full h-full bg-black backdrop-blur-sm bg-opacity-50 z-50">
           <div className="p-6 bg-white rounded shadow-lg">
@@ -314,7 +326,7 @@ const User = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Popup */}
+      {/* Delete Confirmation Popup - No changes needed */}
       {showDeletePopup && (
         <div className="fixed top-0 left-0 flex items-center justify-center w-full h-full bg-black backdrop-blur-sm bg-opacity-50 z-50">
           <div className="p-6 bg-white rounded shadow-lg">
