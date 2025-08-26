@@ -7,6 +7,7 @@ import {
   FaSignOutAlt,
   FaBars,
 } from "react-icons/fa";
+import { BiCategory } from "react-icons/bi";
 import { FaLock } from "react-icons/fa";
 import { MdBorderColor } from "react-icons/md";
 import { BsChatLeftQuoteFill } from "react-icons/bs";
@@ -121,6 +122,19 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             }`}
           >
             Suppliers
+          </span>
+        </Link>
+        <Link
+          to="/categories"
+          className={`flex ${location.pathname == "/categories" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+        >
+          <BiCategory size={20} className="mr-3 text-white"  />
+          <span
+            className={`text-white group-hover:text-white transition-all duration-300 ${
+              !isOpen && "hidden"
+            }`}
+          >
+            Categories
           </span>
         </Link>
         <Link

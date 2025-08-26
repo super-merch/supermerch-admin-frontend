@@ -1,6 +1,14 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Mail, Phone, MessageSquare, Truck, FileImage } from "lucide-react";
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  MessageSquare,
+  Truck,
+  FileImage,
+} from "lucide-react";
 
 const QuoteDetail = () => {
   const location = useLocation();
@@ -89,7 +97,9 @@ const QuoteDetail = () => {
                   <div className="flex items-start gap-3">
                     <MessageSquare className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Comment</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Comment
+                      </p>
                       <p className="text-gray-800 leading-relaxed break-words">
                         {quote.comment}
                       </p>
@@ -99,7 +109,9 @@ const QuoteDetail = () => {
                   <div className="flex items-start gap-3">
                     <Truck className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Delivery Information</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Delivery Information
+                      </p>
                       <p className="text-gray-800 leading-relaxed break-words">
                         {quote.delivery}
                       </p>
@@ -107,6 +119,53 @@ const QuoteDetail = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            {/* Show product details properly in a section */}
+            <div className="mt-8 pt-6 border-t flex flex-col border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Product Details
+              </h3>
+              <div>
+                <h1>Product:</h1>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed break-words">
+                    {quote.product}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <h1>ID:</h1>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed break-words">
+                    {quote.productId}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <h1>Description:</h1>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed break-words">
+                    {quote.description}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <h1>Quantity:</h1>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed break-words">
+                    {quote.quantity}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <h1>Price:</h1>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed break-words">
+                    {quote.price}
+                  </p>
+                </div>
+              </div>
+              
             </div>
 
             {/* File Attachment Section */}
@@ -123,16 +182,19 @@ const QuoteDetail = () => {
                       alt="Quote attachment"
                       className="max-w-full max-h-96 object-contain rounded-lg shadow-md"
                       onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'block';
+                        e.target.style.display = "none";
+                        e.target.nextElementSibling.style.display = "block";
                       }}
                     />
-                    <div style={{display: 'none'}} className="text-gray-600 p-8">
+                    <div
+                      style={{ display: "none" }}
+                      className="text-gray-600 p-8"
+                    >
                       <FileImage className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                       <p>Unable to load image</p>
-                      <a 
-                        href={quote.file} 
-                        target="_blank" 
+                      <a
+                        href={quote.file}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
                       >

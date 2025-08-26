@@ -123,22 +123,22 @@ const AdminContextProvider = (props) => {
       toast.error(err.message);
     }
   };
-  const [bestSellerProducts,setBestSellerProducts] = useState([])
+  const [bestSellerProducts, setBestSellerProducts] = useState([]);
 
-  const fetchBestSellerProduct = async (page = 1, sort = '',limit) => {
+  const fetchBestSellerProduct = async (page = 1, sort = "", limit) => {
     try {
       if (!limit) limit = 100; // Default to 100 if limit is not provided
       const response = await fetch(
         `${backednUrl}/api/client-products-bestSellers?page=${page}&limit=${limit}&sort=${sort}?filter=true`
       );
 
-      if (!response.ok) throw new Error('Failed to fetch products');
+      if (!response.ok) throw new Error("Failed to fetch products");
 
       const data = await response.json();
 
       // Validate response structure if needed
       if (!data || !data.data) {
-        throw new Error('Unexpected API response structure');
+        throw new Error("Unexpected API response structure");
       }
 
       setBestSellerProducts(data.data);
@@ -155,7 +155,35 @@ const AdminContextProvider = (props) => {
 
   // Add this function to your AdminContext
 
-  const fetchSearchedProducts = async (searchTerm) => {
+  const fetchSearchedProducts = async (searchTerm,categpryId,myLimit,supplierId) => {
+    setSearchLoading(true);
+    try {
+      // Set limit to 100 to get maximum products for admin, no pagination needed
+      const limit = myLimit||100;
+      const response = await fetch(
+        `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch products");
+
+      const data = await response.json();
+
+      // Validate response structure
+      if (!data || !data.data) {
+        throw new Error("Unexpected API response structure");
+      }
+
+      setSearchedProducts(data); // Store the full response object
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err; // Re-throw so the component can handle it
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+   const fetchSearchedProduct = async (searchTerm) => {
     setSearchLoading(true);
     try {
       // Set limit to 100 to get maximum products for admin, no pagination needed
@@ -184,6 +212,8 @@ const AdminContextProvider = (props) => {
       setSearchLoading(false);
     }
   };
+
+
   const [supplierLoading, setSupplierLoading] = useState(false);
 
   const [suppliersPagination, setSuppliersPagination] = useState(null);
@@ -329,6 +359,35 @@ const AdminContextProvider = (props) => {
       throw error;
     }
   };
+  const [paramProducts, setParamProducts] = useState([]);
+  const [paramLoading, setParamLoading] = useState(false);
+  const [totalApiPages, setTotalApiPages] = useState(0);
+  const fetchParamProducts = async (categoryId, page,supplierId) => {
+    setParamLoading(true);
+    try {
+      const itemCount = 9;
+      const response = await fetch(
+        `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId}&items_per_page=${itemCount}&page=${page}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch products");
+      const data = await response.json();
+
+      if (!data || !data.data) {
+        throw new Error("Unexpected API response structure");
+      }
+
+      // Always get exactly 9 products (or less if not enough exist)
+      setParamProducts(data);
+      setTotalApiPages(data.total_pages);
+
+      return data;
+    } catch (err) {
+      setError(err.message);
+    }
+    finally{
+      setParamLoading(false);
+    }
+  };
 
   //delete order
   const [deleteLoading, setDeleteLoading] = useState({}); // Object instead of boolean
@@ -365,6 +424,17 @@ const AdminContextProvider = (props) => {
         delete newState[_id];
         return newState;
       });
+    }
+  };
+  const [categories, setCategories] = useState([]);
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${backednUrl}/api/v1-categories`, {
+        headers: { aToken },
+      });
+      setCategories(response.data.data);
+    } catch (error) {
+      toast.error("Failed to fetch categories");
     }
   };
   const updateOrderStatus = async (orderId, newStatus) => {
@@ -407,16 +477,29 @@ const AdminContextProvider = (props) => {
       console.error(error);
     }
   };
-
-  const listQuotes = async () => {
+  const [quotesPagination, setQuotesPagination] = useState(null);
+  const listQuotes = async (page = 1, filters = {}) => {
     setQuoteLoading(true);
     try {
+      const params = {
+        page,
+        limit: 10,
+        search: filters.searchTerm || "",
+        sortBy: filters.sortBy || "createdAt",
+        sortOrder: filters.sortOrder || "desc",
+      };
+
       const { data } = await axios.get(
         `${backednUrl}/api/checkout/list-quote`,
-        { headers: { aToken } }
+        {
+          headers: { aToken },
+          params,
+        }
       );
+
       if (data.success) {
-        setQuoteData(data.quotes.reverse());
+        setQuoteData(data.quotes);
+        setQuotesPagination(data.pagination || null);
       } else {
         toast.error(data?.error);
       }
@@ -473,13 +556,17 @@ const AdminContextProvider = (props) => {
     prodLength,
     setShowPopup,
     fetchSearchedProducts, // Add this
-    searchedProducts, // Add this
+    searchedProducts,
+    fetchSearchedProduct, // Add this
     searchLoading,
     blogs,
     setBlogs,
     fetchBlogs,
     listQuotes,
+    totalApiPages,
+    paramLoading,
     quoteData,
+    setParamProducts,
     setQuoteData,
     quoteLoading,
     pagination,
@@ -491,7 +578,12 @@ const AdminContextProvider = (props) => {
     bestSellerProducts,
     fetchNewArrivalProduct,
     arrivalProducts,
-    setAllProductLoading
+    setAllProductLoading,
+    quotesPagination,
+    categories,
+    fetchCategories,
+    paramProducts,
+    fetchParamProducts
   };
 
   return (

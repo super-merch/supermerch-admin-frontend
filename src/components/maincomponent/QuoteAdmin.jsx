@@ -6,74 +6,68 @@ import noimage from "../../assets/noimage.png";
 import { useNavigate } from "react-router-dom";
 
 const QuoteAdmin = () => {
-  const { aToken, quoteLoading, quoteData, listQuotes } =
+  const { aToken, quoteLoading, quoteData, listQuotes, quotesPagination } =
     useContext(AdminContext);
 
   // State for pagination and search
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredData, setFilteredData] = useState([]);
   const navigate = useNavigate();
+  const [mySearch, setMySearch] = useState("");
 
   useEffect(() => {
     listQuotes();
-  }, [aToken]);
+    console.log(quoteData);
+  }, []);
 
-  // Filter data based on search term
   useEffect(() => {
-    if (!quoteData) {
-      setFilteredData([]);
-      return;
-    }
+    const filters = {
+      searchTerm,
+    };
+    listQuotes(currentPage, filters);
+  }, [currentPage, searchTerm]);
 
-    const filtered = quoteData.filter((quote) => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        quote?.name?.toLowerCase().includes(searchLower) ||
-        quote?.email?.toLowerCase().includes(searchLower) ||
-        quote?.phone?.toLowerCase().includes(searchLower)
-      );
-    });
-    setFilteredData(filtered);
-    setCurrentPage(1); // Reset to first page when searching
-  }, [quoteData, searchTerm]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
+  const totalPages = quotesPagination?.totalPages || 1;
+  const currentData = quoteData || [];
 
-  // Pagination handlers
+  // Update pagination handlers:
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
   const handlePrevious = () => {
-    if (currentPage > 1) {
+    if (quotesPagination?.hasPrevPage) {
       setCurrentPage(currentPage - 1);
     }
   };
 
   const handleNext = () => {
-    if (currentPage < totalPages) {
+    if (quotesPagination?.hasNextPage) {
       setCurrentPage(currentPage + 1);
     }
   };
 
-  // Generate page numbers for pagination
+  // Update getPageNumbers function:
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
+    const totalPagesCount = quotesPagination?.totalPages || 1;
 
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
+    if (totalPagesCount <= maxVisiblePages) {
+      for (let i = 1; i <= totalPagesCount; i++) {
         pageNumbers.push(i);
       }
     } else {
       const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      const endPage = Math.min(
+        totalPagesCount,
+        startPage + maxVisiblePages - 1
+      );
 
       for (let i = startPage; i <= endPage; i++) {
         pageNumbers.push(i);
@@ -93,13 +87,16 @@ const QuoteAdmin = () => {
           <input
             type="text"
             placeholder="Search quotes using name, email, or phone"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={mySearch}
+            onChange={(e) => setMySearch(e.target.value)}
             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+          <div
+            className="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer"
+            onClick={() => setSearchTerm(mySearch)}
+          >
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-5 h-5 text-gray-400 hover:text-blue-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -113,6 +110,19 @@ const QuoteAdmin = () => {
             </svg>
           </div>
         </div>
+
+        {/* Add clear search button */}
+        <div className="mt-2">
+          <button
+            onClick={() => {
+              setSearchTerm("");
+              setMySearch("");
+            }}
+            className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md"
+          >
+            Clear Search
+          </button>
+        </div>
       </div>
 
       {quoteLoading ? (
@@ -124,13 +134,10 @@ const QuoteAdmin = () => {
         <>
           {/* Results Info */}
           <div className="mb-4 text-sm text-gray-600">
-            Showing {Math.min(startIndex + 1, filteredData.length)} to{" "}
-            {Math.min(endIndex, filteredData.length)} of {filteredData.length}{" "}
-            results
+            Showing {currentData.length} of {quotesPagination?.totalQuotes || 0}{" "}
+            quotes from page: {currentPage}
             {searchTerm && (
-              <span className="ml-2 text-blue-600">
-                (filtered from {quoteData?.length || 0} total)
-              </span>
+              <span className="ml-2 text-blue-600">(filtered)</span>
             )}
           </div>
 
@@ -147,6 +154,9 @@ const QuoteAdmin = () => {
                   </th>
                   <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
                     Phone
+                  </th>
+                  <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
+                    Product
                   </th>
                   <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
                     Delivery
@@ -179,6 +189,9 @@ const QuoteAdmin = () => {
                       </td>
                       <td className="px-4 py-3 border border-gray-300">
                         <div className="text-gray-600">{quote?.phone}</div>
+                      </td>
+                      <td className="px-4 py-3 border border-gray-300">
+                        <div className="text-gray-600">{quote.product}</div>
                       </td>
                       <td className="px-4 py-3 border border-gray-300">
                         <span
@@ -250,18 +263,19 @@ const QuoteAdmin = () => {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {quotesPagination && quotesPagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
+                Page {quotesPagination.currentPage} of{" "}
+                {quotesPagination.totalPages}
               </div>
 
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handlePrevious}
-                  disabled={currentPage === 1}
+                  disabled={!quotesPagination.hasPrevPage}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === 1
+                    !quotesPagination.hasPrevPage
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
@@ -287,9 +301,9 @@ const QuoteAdmin = () => {
 
                 <button
                   onClick={handleNext}
-                  disabled={currentPage === totalPages}
+                  disabled={!quotesPagination.hasNextPage}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === totalPages
+                    !quotesPagination.hasNextPage
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}

@@ -25,7 +25,7 @@ const AlProducts = () => {
     setAllProductLoading,
     ignoredProductIds,
     prodLength,
-    fetchSearchedProducts,
+    fetchSearchedProduct,
     searchedProducts,
     searchLoading,
     fetchTrendingProduct,
@@ -63,6 +63,32 @@ const AlProducts = () => {
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [productionIds, setProductionIds] = useState(new Set());
+  const [productionLoading, setProductionLoading] = useState(false);
+
+  const getAll24HourProduction = async () => {
+    try {
+      const response = await fetch(`${backednUrl}/api/24hour/get`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const productIds = data.map((item) => String(item.id));
+        setProductionIds(new Set(productIds));
+        console.log("Fetched 24 Hour Production products:", data);
+      } else {
+        console.error(
+          "Failed to fetch 24 Hour Production products:",
+          response.status
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching 24 Hour Production products:", error);
+    }
+  };
 
   const itemsPerPage = 10;
   const processedProductsRef = useRef(new Set());
@@ -156,7 +182,9 @@ const AlProducts = () => {
           fetchCustomNames(),
             fetchTrendingProducts(),
             fetchNewArrivalProducts(),
-            fetchBestSellerProducts();
+            fetchBestSellerProducts(),
+            getAllAustralia();
+          getAll24HourProduction();
           return;
         }
         await Promise.all([
@@ -165,6 +193,8 @@ const AlProducts = () => {
           fetchTrendingProducts(),
           fetchNewArrivalProducts(),
           fetchBestSellerProducts(),
+          getAllAustralia(),
+          getAll24HourProduction(),
         ]);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -180,6 +210,174 @@ const AlProducts = () => {
       console.log("Local ignored IDs:", localIgnoredIds);
     }
   }, []);
+  const [australiaIds, setAustraliaIds] = useState(new Set());
+  const [australiaLoading, setAustraliaLoading] = useState(false);
+  const getAllAustralia = async () => {
+    try {
+      const response = await fetch(`${backednUrl}/api/australia/get`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Ensure consistent data types (convert to strings)
+        const productIds = data.map((item) => String(item.id));
+        setAustraliaIds(new Set(productIds));
+        console.log("Fetched Australia products:", data);
+      } else {
+        console.error("Failed to fetch Australia products:", response.status);
+      }
+    } catch (error) {
+      console.error("Error fetching Australia products:", error);
+    }
+  };
+
+  const addToAustralia = async (product) => {
+    console.log(product);
+    setAustraliaLoading(true);
+    try {
+      const response = await fetch(`${backednUrl}/api/australia/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: product.meta.id,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data === "Already added") {
+          toast.info("Product is already in Australia");
+        } else {
+          // Add to local state
+          setAustraliaIds((prev) => new Set([...prev, product.meta.id]));
+          toast.success("Product added to Australia!");
+          // Refresh Australia data to ensure consistency
+          await getAllAustralia();
+        }
+      } else {
+        toast.error("Failed to add to Australia", response.message);
+      }
+    } catch (error) {
+      console.error("Error adding to Australia:", error);
+      toast.error("Error adding to Australia");
+    } finally {
+      setAustraliaLoading(false);
+    }
+  };
+
+  const removeFromAustralia = async (product) => {
+    setAustraliaLoading(true);
+    try {
+      const response = await fetch(
+        `${backednUrl}/api/australia/delete/${product.meta.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data === "Not found") {
+          toast.info("Product was not in Australia");
+        } else {
+          // Remove from local state
+          setAustraliaIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(product.meta.id);
+            return newSet;
+          });
+          toast.success("Product removed from Australia!");
+          // Refresh Australia data to ensure consistency
+          await getAllAustralia();
+        }
+      } else {
+        toast.error("Failed to remove from Australia");
+      }
+    } catch (error) {
+      console.error("Error removing from Australia:", error);
+      toast.error("Error removing from Australia");
+    } finally {
+      setAustraliaLoading(false);
+    }
+  };
+  const addTo24HourProduction = async (product) => {
+    console.log(product);
+    setProductionLoading(true);
+    try {
+      const response = await fetch(`${backednUrl}/api/24hour/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: product.meta.id,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data === "Already added") {
+          toast.info("Product is already in 24 Hour Production");
+        } else {
+          setProductionIds((prev) => new Set([...prev, product.meta.id]));
+          toast.success("Product added to 24 Hour Production!");
+          await getAll24HourProduction();
+        }
+      } else {
+        toast.error("Failed to add to 24 Hour Production", response.message);
+      }
+    } catch (error) {
+      console.error("Error adding to 24 Hour Production:", error);
+      toast.error("Error adding to 24 Hour Production");
+    } finally {
+      setProductionLoading(false);
+    }
+  };
+
+  const removeFrom24HourProduction = async (product) => {
+    setProductionLoading(true);
+    try {
+      const response = await fetch(
+        `${backednUrl}/api/24hour/delete/${product.meta.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data === "Not found") {
+          toast.info("Product was not in 24 Hour Production");
+        } else {
+          setProductionIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(product.meta.id);
+            return newSet;
+          });
+          toast.success("Product removed from 24 Hour Production!");
+          await getAll24HourProduction();
+        }
+      } else {
+        toast.error("Failed to remove from 24 Hour Production");
+      }
+    } catch (error) {
+      console.error("Error removing from 24 Hour Production:", error);
+      toast.error("Error removing from 24 Hour Production");
+    } finally {
+      setProductionLoading(false);
+    }
+  };
 
   // Handle search
   const handleSearch = async (e) => {
@@ -194,7 +392,7 @@ const AlProducts = () => {
     try {
       setIsSearching(true);
       setCurrentPage(1);
-      await fetchSearchedProducts(searchTerm.trim());
+      await fetchSearchedProduct(searchTerm.trim());
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search products");
@@ -804,6 +1002,8 @@ const AlProducts = () => {
             <TableHead>Trending</TableHead>
             <TableHead>New Arrival</TableHead>
             <TableHead>Best Seller</TableHead>
+            <TableHead>Australia</TableHead>
+            <TableHead>24Hr Production</TableHead>
             <TableHead>Code</TableHead>
             <TableHead className="">Price</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -830,6 +1030,8 @@ const AlProducts = () => {
             const isNewArrival = newArrivalIds.has(String(productId));
             // Check if this product is in best sellers by comparing product.meta.id with best seller productIds
             const isBestSeller = bestSellerIds.has(String(productId));
+            const isAustralia = australiaIds.has(String(productId));
+            const is24HourProduction = productionIds.has(String(productId));
 
             return (
               <TableRow key={index}>
@@ -938,6 +1140,46 @@ const AlProducts = () => {
                   >
                     {isBestSeller ? "Yes" : "No"}
                   </span>
+                </TableCell>
+                <TableCell>
+                  {isAustralia ? (
+                    <button
+                      className="px-2 py-1 rounded text-xs font-medium bg-red-700 text-white hover:bg-red-800 transition-colors"
+                      onClick={() => removeFromAustralia(product)}
+                      disabled={australiaLoading}
+                    >
+                      {australiaLoading ? "..." : "Remove"}
+                    </button>
+                  ) : (
+                    <button
+                      className="px-2 py-1 rounded text-xs font-medium bg-green-700 text-white hover:bg-green-800 transition-colors"
+                      onClick={() => addToAustralia(product)}
+                      disabled={australiaLoading}
+                    >
+                      {australiaLoading ? "..." : "Add"}
+                    </button>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {" "}
+                  {/* Add this entire cell */}
+                  {is24HourProduction ? (
+                    <button
+                      className="px-2 py-1 rounded text-xs font-medium bg-red-700 text-white hover:bg-red-800 transition-colors"
+                      onClick={() => removeFrom24HourProduction(product)}
+                      disabled={productionLoading}
+                    >
+                      {productionLoading ? "..." : "Remove"}
+                    </button>
+                  ) : (
+                    <button
+                      className="px-2 py-1 rounded text-xs font-medium bg-green-700 text-white hover:bg-green-800 transition-colors"
+                      onClick={() => addTo24HourProduction(product)}
+                      disabled={productionLoading}
+                    >
+                      {productionLoading ? "..." : "Add"}
+                    </button>
+                  )}
                 </TableCell>
                 <TableCell>{product.overview.code || "No Code"}</TableCell>
                 <TableCell>${realPrice}</TableCell>
