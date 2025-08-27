@@ -6,10 +6,12 @@ import { useNavigate } from "react-router-dom";
 export default function Categories() {
   const { categories, fetchCategories } = useContext(AdminContext);
   const [expandedCategories, setExpandedCategories] = useState({});
-  
+  const [loading,setLoading] = useState(false)
   useEffect(() => {
     const getCategories = async () => {
+      setLoading(true)
       await fetchCategories();
+      setLoading(false)
     };
     getCategories();
     console.log(categories);
@@ -23,6 +25,15 @@ export default function Categories() {
       [categoryId]: !prev[categoryId]
     }));
   };
+  // circuler loading icon
+  if(loading){
+    return (
+      <div className="flex items-center justify-center py-12">
+          <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+          <p className="ml-4 text-lg font-semibold">Loading Categories...</p>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

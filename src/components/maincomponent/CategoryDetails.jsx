@@ -24,23 +24,34 @@ export default function CategoryDetails() {
   const navigate = useNavigate();
   const id = location.state?.id;
   const categoryName = location.state?.name || "Category";
-  const { fetchSearchedProducts, setParamProducts, searchLoading } =
-    useContext(AdminContext);
+  const {
+    fetchSearchedProducts,
+    fetchParamProducts,
+    setParamProducts,
+    paramProducts,
+    paramLoading,
+    totalApiPages,
+    searchLoading,
+  } = useContext(AdminContext);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [maxVisiblePages, setMaxVisiblePages] = useState(5);
   const [suppliers, setSuppliers] = useState([]);
-  const [supplierId, setSupplierId] = useState(1);
+  const [supplierId, setSupplierId] = useState(null);
   const [mySearch, setMySearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [search, setSearch] = useState(false);
 
   // NEW STATE FOR PRIORITIZATION
-  const [prioritizedProducts, setPrioritizedProducts] = useState(() => new Set());
+  const [prioritizedProducts, setPrioritizedProducts] = useState(
+    () => new Set()
+  );
   const [loadingPrioritize, setLoadingPrioritize] = useState({});
+  const [supplierLoading, setSupplierLoading] = useState(false);
 
   const getSuppliers = async () => {
     try {
+      setSupplierLoading(true);
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/supplier-products?limit=200`,
         {
@@ -52,8 +63,10 @@ export default function CategoryDetails() {
       );
       const result = await response.json();
       setSuppliers(result.data);
+      setSupplierLoading(false);
     } catch (error) {
       toast.error("Failed to fetch suppliers");
+      setSupplierLoading(false);
     }
   };
 
@@ -68,9 +81,10 @@ export default function CategoryDetails() {
         );
         const result = await response.json();
         // result.data is either null or the prioritize entry for this category
-        const ids = (result.data && Array.isArray(result.data.productIds))
-          ? result.data.productIds
-          : [];
+        const ids =
+          result.data && Array.isArray(result.data.productIds)
+            ? result.data.productIds
+            : [];
         const normalized = ids.map((pid) => String(pid));
         setPrioritizedProducts(new Set(normalized));
         // optional debug
@@ -169,40 +183,48 @@ export default function CategoryDetails() {
   };
 
   useEffect(() => {
+    if (!searchTerm) return;
+
     const searchProducts = async () => {
-      setSearch(true);
-      const response = await fetchSearchedProducts(
-        mySearch,
-        id,
-        50,
-        supplierId
-      );
-      setParamProducts(response);
+      try {
+        setSearch(true);
+        const response = await fetchSearchedProducts(
+          searchTerm, // use searchTerm (the committed term), not mySearch
+          id,
+          50,
+          supplierId
+        );
+        // fetchSearchedProducts returns the API object — store it into paramProducts like the normal flow
+        setParamProducts(response);
+        setMySearch("");
+      } catch (err) {
+        console.error("Search failed", err);
+      } finally {
+        setSearch(false);
+      }
     };
-    setMySearch("");
+
     searchProducts();
-  }, [searchTerm]);
+  }, [searchTerm, id, supplierId]);
 
   useEffect(() => {
+    // reset UI page state
     setCurrentPage(1);
-    fetchParamProducts(id, currentPage, supplierId);
+    // fetch page 1 right away (don't rely on setState being applied)
+    fetchParamProducts(id, 1, supplierId || null);
     setSearch(false);
-  }, [supplierId]);
+  }, [supplierId, id]);
 
   useEffect(() => {
     getSuppliers();
     // NEW: Fetch prioritized products when component mounts (handled above)
   }, [id]);
 
-  const { fetchParamProducts, paramProducts, paramLoading, totalApiPages } =
-    useContext(AdminContext);
-
   useEffect(() => {
-    if (id) {
-      fetchParamProducts(id, currentPage, supplierId);
-      setSearch(false);
-    }
-  }, [id, currentPage]);
+    // fetch using the current page value
+    fetchParamProducts(id, currentPage, supplierId || null);
+    setSearch(false);
+  }, [id, currentPage, supplierId]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -266,12 +288,10 @@ export default function CategoryDetails() {
             <select
               id="supplier"
               value={supplierId || ""}
-              onChange={(e) => setSupplierId(e.target.value)}
+              onChange={(e) => setSupplierId(e.target.value || null)}
               className="border rounded-lg p-2 w-64"
             >
-              <option value="" disabled>
-                -- Choose a Supplier --
-              </option>
+              <option value="">-- All Suppliers --</option>
               {suppliers.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>
                   {supplier.name}
@@ -311,13 +331,14 @@ export default function CategoryDetails() {
           </div>
         </div>
 
-        {!paramLoading && (
+        {!paramLoading && !search&& (
           <div className="text-sm text-gray-600">
             Showing {currentProducts.length} of {paramProducts?.item_count || 0}{" "}
             products
             {totalApiPages > 1 && ` (Page ${currentPage} of ${totalApiPages})`}
           </div>
         )}
+        
       </div>
 
       {/* Loading State */}
@@ -405,7 +426,9 @@ export default function CategoryDetails() {
                             disabled={isLoading}
                             className={`px-2 rounded-md py-1 text-white ${
                               isPrioritized ? "bg-red-600" : "bg-blue-600"
-                            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                            } ${
+                              isLoading ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           >
                             {isLoading
                               ? "..."

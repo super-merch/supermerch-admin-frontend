@@ -161,7 +161,7 @@ const AdminContextProvider = (props) => {
       // Set limit to 100 to get maximum products for admin, no pagination needed
       const limit = myLimit||100;
       const response = await fetch(
-        `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`
+        supplierId ? `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`:`${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}`
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -367,7 +367,7 @@ const AdminContextProvider = (props) => {
     try {
       const itemCount = 9;
       const response = await fetch(
-        `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId}&items_per_page=${itemCount}&page=${page}`
+        supplierId ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId||null}&items_per_page=${itemCount}&page=${page}`:`${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${itemCount}&page=${page}`
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
