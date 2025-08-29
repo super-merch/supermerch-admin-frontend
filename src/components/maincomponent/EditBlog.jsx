@@ -8,7 +8,7 @@ import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import upload_area from "../../assets/upload_area.png";
 
-const AddBlog = () => {
+const EditBlog = () => {
     const [value, setValue] = useState("");
     const [selectedImages, setSelectedImages] = useState(false);
     const [title, setTitle] = useState("");
@@ -52,7 +52,7 @@ const AddBlog = () => {
         } catch (error) {
             console.error("Error fetching blog:", error);
             toast.error("Failed to load blog data");
-            navigate("/blogs");
+            // navigate("/blogs");
         } finally {
             setIsLoading(false);
         }
@@ -266,4 +266,4 @@ const AddBlog = () => {
     );
 };
 
-export default AddBlog;
+export default EditBlog;

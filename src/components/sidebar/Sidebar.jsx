@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/orders"
-          className={`flex ${location.pathname == "/orders" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/orders" && "bg-blue-700" || location.pathname == "/all-users" && "bg-blue-700" || location.pathname.slice(0, 12) == "/user-orders" && "bg-blue-700" || location.pathname.slice(0, 14) == "/order-details" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <MdBorderColor size={20} className="mr-3 text-white" />
           <span
@@ -87,7 +87,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
         <Link
           to="/quote"
-          className={`flex ${location.pathname == "/quotes" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/quote" && "bg-blue-700" || location.pathname == "/quote-detail" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <BsChatLeftQuoteFill size={20} className="mr-3 text-white" />
           <span
@@ -100,7 +100,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/products"
-          className={`flex ${location.pathname == "/products" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/products" && "bg-blue-700" || location.pathname.slice(0, 8) == "/product" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <BsFillBoxFill size={20} className="mr-3 text-white" />
           <span
@@ -113,7 +113,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/suppliers"
-          className={`flex ${location.pathname == "/suppliers" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/suppliers" && "bg-blue-700" || location.pathname == "/supplier-categories" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <img src="/supplier.png" className="mr-2 w-6 text-white" />
           <span
@@ -126,7 +126,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/categories"
-          className={`flex ${location.pathname == "/categories" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/categories" && "bg-blue-700" || location.pathname == "/category-detail" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <BiCategory size={20} className="mr-3 text-white"  />
           <span
@@ -139,7 +139,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/users"
-          className={`flex ${location.pathname == "/users" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/users" && "bg-blue-700"  } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <FaUser size={20} className="mr-3 text-white" />
           <span
@@ -152,7 +152,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/user-queries"
-          className={`flex ${location.pathname == "/user-queries" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/user-queries" && "bg-blue-700" || location.pathname.slice(0, 11) == "/user-query" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <FaUser size={20} className="mr-3 text-white" />
           <span
@@ -165,7 +165,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </Link>
         <Link
           to="/blogs"
-          className={`flex ${location.pathname == "/blogs" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+          className={`flex ${location.pathname == "/blogs" && "bg-blue-700" || location.pathname == "/add-blog" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >
           <FaBloggerB size={20} className="mr-3 text-white" />
           <span

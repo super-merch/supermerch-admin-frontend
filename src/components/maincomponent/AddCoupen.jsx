@@ -2,34 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 const AddCoupen = () => {
-  const [currentCoupon, setCurrentCoupon] = useState(null);
+  const [coupons, setCoupons] = useState([]);
   const [couponCode, setCouponCode] = useState('');
   const [discountInput, setDiscountInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
-    fetchCurrentCoupon();
+    fetchAllCoupons();
   }, []);
-  const [loading, setLoading] = useState(false);
-  const fetchCurrentCoupon = async () => {
+
+  const fetchAllCoupons = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/api/coupen/get`);
       const data = await response.json();
       
-      if (data && data.length > 0) {
-        setCurrentCoupon(data[0]);
-        setLoading(false);
-
+      if (data && Array.isArray(data)) {
+        setCoupons(data);
       } else {
-        setCurrentCoupon(null);
-        setLoading(false);
+        setCoupons([]);
       }
     } catch (error) {
-      console.error('Error fetching current coupon:', error);
-      setCurrentCoupon(null);
+      console.error('Error fetching coupons:', error);
+      setCoupons([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -62,10 +61,8 @@ const AddCoupen = () => {
 
       if (response.ok) {
         toast.success(data.message || 'Coupon added successfully!');
-        setCurrentCoupon({
-          coupen: couponCode.trim().toUpperCase(),
-          discount: parseFloat(discountInput)
-        });
+        // Add new coupon to the list
+        setCoupons(prev => [...prev, data.data]);
         setCouponCode('');
         setDiscountInput('');
       } else {
@@ -79,8 +76,36 @@ const AddCoupen = () => {
     }
   };
 
-  const handleRemoveCoupon = async () => {
-    if (!window.confirm('Are you sure you want to remove the current coupon?')) {
+  const handleRemoveCoupon = async (couponId, couponCode) => {
+    if (!window.confirm(`Are you sure you want to remove the coupon "${couponCode}"?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/coupen/delete/${couponId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message || 'Coupon removed successfully!');
+        // Remove coupon from the list
+        setCoupons(prev => prev.filter(coupon => coupon._id !== couponId));
+      } else {
+        toast.error(data.message || 'Failed to remove coupon');
+      }
+    } catch (error) {
+      toast.error('Network error. Please try again.');
+      console.error('Error removing coupon:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveAllCoupons = async () => {
+    if (!window.confirm('Are you sure you want to remove ALL coupons? This action cannot be undone.')) {
       return;
     }
 
@@ -93,54 +118,73 @@ const AddCoupen = () => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(data.message || 'Coupon removed successfully!');
-        setCurrentCoupon(null);
+        toast.success(data.message || 'All coupons removed successfully!');
+        setCoupons([]);
       } else {
-        toast.error(data.message || 'Failed to remove coupon');
+        toast.error(data.message || 'Failed to remove coupons');
       }
     } catch (error) {
       toast.error('Network error. Please try again.');
-      console.error('Error removing coupon:', error);
+      console.error('Error removing coupons:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Coupon Management</h2>
-        {/*Loader for fetching coupon*/ }
+        
+        {/* Loader for fetching coupons */}
         {loading && (
           <div className="flex items-center justify-center">
             <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-            <p className="ml-4 text-lg font-semibold">Loading coupon...</p>
+            <p className="ml-4 text-lg font-semibold">Loading coupons...</p>
           </div>
         )}
         
-        {/* Current Coupon Status */}
+        {/* Current Coupons Status */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2">Current Status</h3>
-          {currentCoupon ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 font-medium">
-                  ✅ Active Coupon: <span className="font-mono bg-green-100 px-2 py-1 rounded">{currentCoupon.coupen}</span>
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Discount: {currentCoupon.discount}% - Customers can use this code at checkout.
-                </p>
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Active Coupons ({coupons.length})</h3>
+            {coupons.length > 0 && (
               <button
-                onClick={handleRemoveCoupon}
+                onClick={handleRemoveAllCoupons}
                 disabled={isLoading}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors text-sm"
               >
-                {isLoading ? 'Removing...' : 'Remove Coupon'}
+                {isLoading ? 'Removing...' : 'Remove All'}
               </button>
+            )}
+          </div>
+          
+          {coupons.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coupons.map((coupon) => (
+                <div key={coupon._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-600 font-medium">
+                        ✅ <span className="font-mono bg-green-100 px-2 py-1 rounded">{coupon.coupen}</span>
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Discount: {coupon.discount}%
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveCoupon(coupon._id, coupon.coupen)}
+                      disabled={isLoading}
+                      className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <p className="text-gray-600">No coupon is currently active.</p>
+            <p className="text-gray-600">No coupons are currently active.</p>
           )}
         </div>
 
@@ -191,11 +235,11 @@ const AddCoupen = () => {
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <h4 className="font-semibold text-yellow-800 mb-2">📋 How it works:</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Only one coupon can be active at a time</li>
-              <li>• Adding a new coupon will replace the current one</li>
-              <li>• Customers enter the coupon code at checkout to get the discount</li>
+              <li>• You can now add multiple active coupons at the same time</li>
+              <li>• Each coupon code must be unique</li>
+              <li>• Customers can use any active coupon code at checkout</li>
               <li>• Coupon codes are automatically converted to uppercase</li>
-              <li>• Make sure to use memorable and unique coupon codes</li>
+              <li>• Remove individual coupons or clear all coupons at once</li>
             </ul>
           </div>
         </div>
@@ -210,6 +254,7 @@ const AddCoupen = () => {
                 <li>• SAVE20 (clear purpose)</li>
                 <li>• WELCOME10 (for new customers)</li>
                 <li>• FLASH30 (for flash sales)</li>
+                <li>• STUDENT15 (for students)</li>
               </ul>
             </div>
             <div>
@@ -218,6 +263,7 @@ const AddCoupen = () => {
                 <li>• Keep codes short and memorable</li>
                 <li>• Use numbers to indicate discount</li>
                 <li>• Avoid confusing characters (0, O)</li>
+                <li>• Create different codes for different campaigns</li>
               </ul>
             </div>
           </div>

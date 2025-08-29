@@ -46,8 +46,56 @@ export default function CategoryDetails() {
   const [prioritizedProducts, setPrioritizedProducts] = useState(
     () => new Set()
   );
+  const [prioritizedOrder, setPrioritizedOrder] = useState({});
+  
   const [loadingPrioritize, setLoadingPrioritize] = useState({});
   const [supplierLoading, setSupplierLoading] = useState(false);
+  const [editingOrder, setEditingOrder] = useState({});
+  const [orderValue, setOrderValue] = useState({});
+
+  // Add this function to handle order updates
+  const handleOrderUpdate = async (productId, newOrder) => {
+    if(newOrder>prioritizedOrder.length){
+      return toast.error("Cannot reorder to a position that doesn't exist");
+    }
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prioritize/reorder`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            categoryId: id,
+            productId: productId,
+            newPosition: parseInt(newOrder),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Order updated successfully!");
+        // Refresh the prioritized products
+        const prioritizeResponse = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/prioritize/${id}`,
+          { method: "GET", headers: { "Content-Type": "application/json" } }
+        );
+        const prioritizeResult = await prioritizeResponse.json();
+        const ids =
+          prioritizeResult.data &&
+          Array.isArray(prioritizeResult.data.productIds)
+            ? prioritizeResult.data.productIds
+            : [];
+        setPrioritizedOrder(ids);
+      } else {
+        toast.error(result.message || "Failed to update order");
+      }
+    } catch (error) {
+      toast.error("Failed to update order");
+      console.error("Error updating order:", error);
+    }
+  };
 
   const getSuppliers = async () => {
     try {
@@ -71,39 +119,53 @@ export default function CategoryDetails() {
   };
 
   // Fetch prioritized IDs only for the current category (efficient)
+  const getPrioritizeForCategory = async () => {
+    if (!id) return;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prioritize/${id}`,
+        { method: "GET", headers: { "Content-Type": "application/json" } }
+      );
+      const result = await response.json();
+      // result.data is either null or the prioritize entry for this category
+      const ids =
+        result.data && Array.isArray(result.data.productIds)
+          ? result.data.productIds
+          : [];
+      const normalized = ids.map((pid) => String(pid));
+      setPrioritizedProducts(new Set(normalized));
+      setPrioritizedOrder(normalized);
+      
+      // optional debug
+      // console.log("prioritized ids for this category:", normalized);
+    } catch (err) {
+      console.error("Failed to fetch prioritized products for category", err);
+    }
+  };
   useEffect(() => {
-    const getPrioritizeForCategory = async () => {
-      if (!id) return;
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/prioritize/${id}`,
-          { method: "GET", headers: { "Content-Type": "application/json" } }
-        );
-        const result = await response.json();
-        // result.data is either null or the prioritize entry for this category
-        const ids =
-          result.data && Array.isArray(result.data.productIds)
-            ? result.data.productIds
-            : [];
-        const normalized = ids.map((pid) => String(pid));
-        setPrioritizedProducts(new Set(normalized));
-        // optional debug
-        // console.log("prioritized ids for this category:", normalized);
-      } catch (err) {
-        console.error("Failed to fetch prioritized products for category", err);
-      }
-    };
 
     getPrioritizeForCategory();
   }, [id]);
+  const [prioritizeLoading, setPrioritizeLoading] = useState(false);
 
   // NEW FUNCTION: Add/remove toggle
-  const handlePrioritizeToggle = (productId, productName) => {
+  const handlePrioritizeToggle = async (productId, productName) => {
     const idStr = String(productId);
     if (prioritizedProducts.has(idStr)) {
-      removeFromPrioritize(productId, productName);
+      setPrioritizeLoading(true);
+      await removeFromPrioritize(productId, productName);
+      await fetchParamProducts(id, 1, supplierId);
+      getPrioritizeForCategory();
+
+      setCurrentPage(1);
+      setPrioritizeLoading(false);
     } else {
-      addToPrioritize(productId, productName);
+      setPrioritizeLoading(true);
+      await addToPrioritize(productId, productName);
+      await fetchParamProducts(id, 1, supplierId);
+      getPrioritizeForCategory();
+      setCurrentPage(1);
+      setPrioritizeLoading(false);
     }
   };
 
@@ -331,18 +393,17 @@ export default function CategoryDetails() {
           </div>
         </div>
 
-        {!paramLoading && !search&& (
+        {!paramLoading && !search && (
           <div className="text-sm text-gray-600">
             Showing {currentProducts.length} of {paramProducts?.item_count || 0}{" "}
             products
             {totalApiPages > 1 && ` (Page ${currentPage} of ${totalApiPages})`}
           </div>
         )}
-        
       </div>
 
       {/* Loading State */}
-      {(paramLoading || searchLoading) && (
+      {(paramLoading || searchLoading || prioritizeLoading) && (
         <div className="flex items-center justify-center py-12">
           <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
           <p className="ml-4 text-lg font-semibold">Loading Products...</p>
@@ -352,7 +413,8 @@ export default function CategoryDetails() {
       {/* Products Table */}
       {!paramLoading && (
         <>
-          {currentProducts.length > 0 ? (
+          {currentProducts.length > 0 ?
+          (
             <div className="overflow-x-auto bg-white rounded-lg shadow">
               {search && !searchLoading && (
                 <p>Showing results for "{searchTerm}"</p>
@@ -375,6 +437,12 @@ export default function CategoryDetails() {
                     <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
                       Supplier Name
                     </th>
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
+                      Priority
+                    </th>
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
+                      Edit Priority
+                    </th>
                     <th className="px-4 py-3 text-center border border-gray-300 font-semibold text-gray-700">
                       Action
                     </th>
@@ -386,6 +454,11 @@ export default function CategoryDetails() {
                     const idStr = String(productId);
                     const isPrioritized = prioritizedProducts.has(idStr);
                     const isLoading = loadingPrioritize[idStr];
+                    //get the index number of the product by using product id from prioritizedOrder set
+                    const priorityIndex = [...prioritizedOrder].findIndex(
+                      (id) => id === idStr
+                    );
+                    
 
                     return (
                       <tr
@@ -414,6 +487,69 @@ export default function CategoryDetails() {
                           <div className="text-gray-600">
                             {product.supplier?.supplier || "N/A"}
                           </div>
+                        </td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          {isPrioritized ?(editingOrder[productId] ? (
+                            <input
+                              type="number"
+                              min="1"
+                              max={prioritizedOrder.length}
+                              defaultValue={priorityIndex + 1}
+                              onChange={(e) =>
+                                setOrderValue({
+                                  ...orderValue,
+                                  [productId]: e.target.value,
+                                })
+                              }
+                              className="w-16 border rounded p-1"
+                            />
+                          ) : (
+                            priorityIndex+1
+                          )):"-"}
+                        </td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          {isPrioritized ? (editingOrder[productId]  ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleOrderUpdate(
+                                    productId,
+                                    orderValue[productId] || index + 1
+                                  );
+                                  setEditingOrder({
+                                    ...editingOrder,
+                                    [productId]: false,
+                                  });
+                                }}
+                                className="bg-green-600 text-white px-2 py-1 rounded mr-2"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setEditingOrder({
+                                    ...editingOrder,
+                                    [productId]: false,
+                                  })
+                                }
+                                className="bg-gray-600 text-white px-2 py-1 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                setEditingOrder({
+                                  ...editingOrder,
+                                  [productId]: true,
+                                })
+                              }
+                              className="bg-blue-600 text-white px-2 py-1 rounded"
+                            >
+                              Edit Order
+                            </button>
+                          )):"-"}
                         </td>
                         <td className="px-4 py-3 text-center border border-gray-300">
                           <button

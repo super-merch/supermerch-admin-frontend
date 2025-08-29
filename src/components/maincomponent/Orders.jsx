@@ -187,6 +187,11 @@ const Orders = () => {
                     placeholder="Search by name, order ID, or date..."
                     value={mySearch}
                     onChange={(e) => setMySearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setSearchTerm(mySearch);
+                      }
+                    }}
                     className="w-full pl-2 pr-10 py-2 border border-gray-300 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-800"
                   />
                   <Search

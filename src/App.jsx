@@ -29,6 +29,7 @@ import UserQuery from "./components/maincomponent/UserQuery";
 import QuoteDetail from "./components/maincomponent/QuoteDetail";
 import Categories from "./components/maincomponent/Categories";
 import CategoryDetails from "./components/maincomponent/CategoryDetails";
+import EditBlog from "./components/maincomponent/EditBlog";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -86,6 +87,7 @@ const App = () => {
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
                 <Route path="/quote-detail" element={<PrivateRoute element={<QuoteDetail />} />} /> 
                 <Route path="/categories" element={<PrivateRoute element={<Categories />} />} /> 
+                <Route path="/edit-blog/:id" element={<EditBlog />} />
                 <Route path="/category-detail" element={<PrivateRoute element={<CategoryDetails />} />} /> 
                 <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
