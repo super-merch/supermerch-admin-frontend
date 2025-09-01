@@ -289,28 +289,35 @@ const Products = () => {
               </div>
               <div className="flex flex-wrap items-center gap-2 ">
                 <strong>Name:</strong>
-                <p className="pt-1 text-sm font-medium text-gray-600">
+                <p className=" text-sm font-medium text-gray-600">
                   {" "}
                   {product.name}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 ">
                 <strong>Color:</strong>
-                <p className="pt-1 text-sm font-medium text-gray-600">
+                <p className=" text-sm font-medium text-gray-600">
                   {" "}
                   {product.color}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 ">
                 <strong>Print:</strong>
-                <p className="pt-1 text-sm font-medium text-gray-600">
+                <p className=" text-sm font-medium text-gray-600">
                   {" "}
                   {product.print}
                 </p>
               </div>
+              {product.size !=="None" && <div className="flex flex-wrap items-center gap-2 ">
+                <strong>Size:</strong>
+                <p className=" text-sm font-medium text-gray-600">
+                  {" "}
+                  {product.size}
+                </p>
+              </div>}
               <div className="flex flex-wrap items-center gap-2 ">
                 <strong>Logo Color:</strong>
-                <p className="pt-1 text-sm font-medium text-gray-600">
+                <p className=" text-sm font-medium text-gray-600">
                   {" "}
                   {product?.logoColor}
                 </p>
