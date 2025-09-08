@@ -217,7 +217,7 @@ const Products = () => {
               <strong>Postal Code:</strong>{" "}
               {checkout.billingAddress?.postalCode}
             </p>
-            <p className=" flex items-center gap-1.5">
+            {/* <p className=" flex items-center gap-1.5">
               <strong>Email:</strong>{" "}
               <span className="font-medium text-blue-500 underline cursor-pointer">
                 {checkout.user?.email}
@@ -228,7 +228,7 @@ const Products = () => {
               <p className="font-semibold text-gray-600">
                 {checkout.user?.phone}
               </p>
-            </p>
+            </p> */}
             <p className="pb-1.5">
               <strong>Company: </strong>{" "}
               {checkout.billingAddress?.companyName || "No Name"}

@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useState } from "react";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const AdminContext = createContext();
 
@@ -155,13 +156,20 @@ const AdminContextProvider = (props) => {
 
   // Add this function to your AdminContext
 
-  const fetchSearchedProducts = async (searchTerm,categpryId,myLimit,supplierId) => {
+  const fetchSearchedProducts = async (
+    searchTerm,
+    categpryId,
+    myLimit,
+    supplierId
+  ) => {
     setSearchLoading(true);
     try {
       // Set limit to 100 to get maximum products for admin, no pagination needed
-      const limit = myLimit||100;
+      const limit = myLimit || 100;
       const response = await fetch(
-        supplierId ? `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`:`${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}`
+        supplierId
+          ? `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`
+          : `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}`
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -183,7 +191,7 @@ const AdminContextProvider = (props) => {
     }
   };
 
-   const fetchSearchedProduct = async (searchTerm) => {
+  const fetchSearchedProduct = async (searchTerm) => {
     setSearchLoading(true);
     try {
       // Set limit to 100 to get maximum products for admin, no pagination needed
@@ -212,7 +220,6 @@ const AdminContextProvider = (props) => {
       setSearchLoading(false);
     }
   };
-
 
   const [supplierLoading, setSupplierLoading] = useState(false);
 
@@ -251,6 +258,7 @@ const AdminContextProvider = (props) => {
   };
 
   const [usersPagination, setUsersPagination] = useState(null);
+  const navigate = useNavigate();
 
   const fetchUsers = async (page = 1, filters = {}) => {
     setLoading(true);
@@ -275,6 +283,15 @@ const AdminContextProvider = (props) => {
       console.error("Error fetching users:", error);
       toast.error("Failed to fetch users");
       setLoading(false);
+      if (error.response.data.message == "Not Authorized Login Again") {
+        const handleLogout = () => {
+          localStorage.removeItem("aToken");
+          setAToken("");
+          navigate("/login");
+          setShowPopup(false); // Close the popup after logout
+        };
+        handleLogout();
+      }
     }
   };
   const [pagination, setPagination] = useState(null);
@@ -362,12 +379,16 @@ const AdminContextProvider = (props) => {
   const [paramProducts, setParamProducts] = useState([]);
   const [paramLoading, setParamLoading] = useState(false);
   const [totalApiPages, setTotalApiPages] = useState(0);
-  const fetchParamProducts = async (categoryId, page,supplierId) => {
+  const fetchParamProducts = async (categoryId, page, supplierId) => {
     setParamLoading(true);
     try {
       const itemCount = 9;
       const response = await fetch(
-        supplierId ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId||null}&items_per_page=${itemCount}&page=${page}`:`${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${itemCount}&page=${page}`
+        supplierId
+          ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${
+              supplierId || null
+            }&items_per_page=${itemCount}&page=${page}`
+          : `${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${itemCount}&page=${page}`
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
@@ -383,8 +404,7 @@ const AdminContextProvider = (props) => {
       return data;
     } catch (err) {
       setError(err.message);
-    }
-    finally{
+    } finally {
       setParamLoading(false);
     }
   };
@@ -583,7 +603,7 @@ const AdminContextProvider = (props) => {
     categories,
     fetchCategories,
     paramProducts,
-    fetchParamProducts
+    fetchParamProducts,
   };
 
   return (
