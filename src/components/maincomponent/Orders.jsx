@@ -65,9 +65,20 @@ const Orders = () => {
     }
     await updateOrderStatus(orderId, newStatus);
   };
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [deliveredOrders, setDeliveredOrders] = useState(0);
+  const [cancelledOrders, setCancelledOrders] = useState(0);
 
   useEffect(() => {
-    fetchOrders();
+    const loadData = async()=>{
+      const response = await fetchOrders();
+      setTotalOrders(response.pagination.totalOrders);
+      setPendingOrders(response.pendingOrders);
+      setDeliveredOrders(response.deliveredOrders);
+      setCancelledOrders(response.cancelledOrders);
+    }
+    loadData();
   }, []);
   const handlePaymentStatusChange = async (orderId, newPaymentStatus) => {
     try {
@@ -309,6 +320,21 @@ const Orders = () => {
                   </button>
                 </div>
               </div>
+            </div>
+            {/* show all orders number, pending orders number, delivered orders number, cancelled orders number */}
+            <div className="mt-4 grid grid-cols-4 max-w-[600px]">
+              <p className="text-sm text-gray-600">
+                Total Orders: {totalOrders}
+              </p>
+              <p className="text-sm text-gray-600">
+                Pending Orders: {pendingOrders}
+              </p>
+              <p className="text-sm text-gray-600">
+                Delivered Orders: {deliveredOrders}
+              </p>
+              <p className="text-sm text-gray-600">
+                Cancelled Orders: {cancelledOrders}
+              </p>
             </div>
 
             {/* Clear Filters Button */}

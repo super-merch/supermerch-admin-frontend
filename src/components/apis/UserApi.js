@@ -2,22 +2,6 @@ import axios from "axios";
 
 const backednUrl = import.meta.env.VITE_BACKEND_URL;
 
-// Get all users
-// export const UserApi = async () => {
-//   try {
-//     const response = await axios.get("${backednUrl}/api/auth/users", {
-//       headers: {
-//         Authorization: `Bearer ${localStorage.getItem("token")}`, // Include token if using auth
-//       },
-//     });
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error fetching ", error);
-//     throw error;
-//   }
-// };
-
-// Edit user
 export const editUser = async (userId, updatedData) => {
   try {
     const response = await axios.put(
@@ -102,6 +86,43 @@ export const removeGlobalDiscount = async () => {
   try {
     const response = await axios.delete(
       `${backednUrl}/api/add-discount/remove-global-discount`
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
+export const addGlobalMargin = async (margin) => {
+  try {
+    const response = await axios.post(
+      `${backednUrl}/api/add-margin/add-global-margin`,
+      {
+        margin
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
+
+// Get global margin
+export const getGlobalMargin = async () => {
+  try {
+    const response = await axios.get(
+      `${backednUrl}/api/add-margin/global-margin`
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || "Something went wrong";
+  }
+};
+
+// Remove global margin
+export const removeGlobalMargin = async () => {
+  try {
+    const response = await axios.delete(
+      `${backednUrl}/api/add-margin/remove-global-margin`
     );
     return response.data;
   } catch (error) {

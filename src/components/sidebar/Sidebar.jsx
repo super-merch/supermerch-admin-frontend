@@ -203,6 +203,19 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </span>
         </Link>
         <Link
+          to="/global-margin"
+          className={`flex ${location.pathname == "/global-margin" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
+        >
+          <MdDiscount size={20} className="mr-3 text-white" />
+          <span
+            className={`text-white group-hover:text-white transition-all duration-300 ${
+              !isOpen && "hidden"
+            }`}
+          >
+            Global Margin
+          </span>
+        </Link>
+        <Link
           to="/add-Coupen"
           className={`flex ${location.pathname == "/add-coupen" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >

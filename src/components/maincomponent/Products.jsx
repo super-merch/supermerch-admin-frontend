@@ -33,9 +33,9 @@ const Products = () => {
 
     if (mounted) {
       setCheckout(found);
+      console.log(found);
       setLoading(false);
     }
-    console.log(found);
 
     return () => {
       mounted = false;
@@ -44,75 +44,79 @@ const Products = () => {
 
   const handleEditClick = () => {
     if (!checkout) return;
-    
+
     setEditData({
       user: {
-        firstName: checkout.user?.firstName || '',
-        lastName: checkout.user?.lastName || '',
-        email: checkout.user?.email || '',
-        phone: checkout.user?.phone || ''
+        firstName: checkout.user?.firstName || "",
+        lastName: checkout.user?.lastName || "",
+        email: checkout.user?.email || "",
+        phone: checkout.user?.phone || "",
       },
       billingAddress: {
-        addressLine: checkout.billingAddress?.addressLine || '',
-        country: checkout.billingAddress?.country || '',
-        state: checkout.billingAddress?.state || '',
-        city: checkout.billingAddress?.city || '',
-        postalCode: checkout.billingAddress?.postalCode || '',
-        companyName: checkout.billingAddress?.companyName || ''
+        addressLine: checkout.billingAddress?.addressLine || "",
+        country: checkout.billingAddress?.country || "",
+        state: checkout.billingAddress?.state || "",
+        city: checkout.billingAddress?.city || "",
+        postalCode: checkout.billingAddress?.postalCode || "",
+        companyName: checkout.billingAddress?.companyName || "",
       },
       shippingAddress: {
-        firstName: checkout.shippingAddress?.firstName || '',
-        lastName: checkout.shippingAddress?.lastName || '',
-        addressLine: checkout.shippingAddress?.addressLine || '',
-        country: checkout.shippingAddress?.country || '',
-        state: checkout.shippingAddress?.state || '',
-        city: checkout.shippingAddress?.city || '',
-        postalCode: checkout.shippingAddress?.postalCode || '',
-        companyName: checkout.shippingAddress?.companyName || '',
-        email: checkout.shippingAddress?.email || '',
-        phone: checkout.shippingAddress?.phone || ''
+        firstName: checkout.shippingAddress?.firstName || "",
+        lastName: checkout.shippingAddress?.lastName || "",
+        addressLine: checkout.shippingAddress?.addressLine || "",
+        country: checkout.shippingAddress?.country || "",
+        state: checkout.shippingAddress?.state || "",
+        city: checkout.shippingAddress?.city || "",
+        postalCode: checkout.shippingAddress?.postalCode || "",
+        companyName: checkout.shippingAddress?.companyName || "",
+        email: checkout.shippingAddress?.email || "",
+        phone: checkout.shippingAddress?.phone || "",
       },
-      products: checkout.products?.map(product => ({
-        ...product,
-        name: product.name || '',
-        quantity: product.quantity || 0,
-        price: product.price || 0,
-        subTotal: product.subTotal || 0
-      })) || []
+      products:
+        checkout.products?.map((product) => ({
+          ...product,
+          name: product.name || "",
+          quantity: product.quantity || 0,
+          price: product.price || 0,
+          subTotal: product.subTotal || 0,
+        })) || [],
     });
     setShowEditModal(true);
   };
 
   const handleInputChange = (section, field, value, index = null) => {
-    setEditData(prev => {
+    setEditData((prev) => {
       const newData = { ...prev };
-      
-      if (section === 'products' && index !== null) {
+
+      if (section === "products" && index !== null) {
         newData.products = [...prev.products];
         newData.products[index] = {
           ...newData.products[index],
-          [field]: field === 'quantity' || field === 'price' ? Number(value) || 0 : value
+          [field]:
+            field === "quantity" || field === "price"
+              ? Number(value) || 0
+              : value,
         };
-        
+
         // Recalculate subTotal when quantity or price changes
-        if (field === 'quantity' || field === 'price') {
+        if (field === "quantity" || field === "price") {
           const product = newData.products[index];
           product.subTotal = product.quantity * product.price;
         }
       } else {
         newData[section] = {
           ...prev[section],
-          [field]: value
+          [field]: value,
         };
       }
-      
+
       return newData;
     });
   };
 
   const handleUpdateOrder = async () => {
     if (!editData) return;
-    
+
     setUpdating(true);
     try {
       const result = await updateOrder(id, editData);
@@ -120,7 +124,7 @@ const Products = () => {
       if (result.success) {
         toast.success("Order updated successfully!");
         setShowEditModal(false);
-        
+
         // Refresh the orders to get updated data
         await fetchOrders(id);
       } else {
@@ -133,6 +137,9 @@ const Products = () => {
       setUpdating(false);
     }
   };
+
+  const formatCurrency = (v) =>
+    typeof v === "number" ? `$${v.toFixed(2)}` : `$${Number(v || 0).toFixed(2)}`;
 
   if (loading) {
     return (
@@ -151,218 +158,210 @@ const Products = () => {
 
   return (
     <div className="p-8">
-      {/* Display back button and edit button */}
-      <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => window.history.back()}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Back to Orders
-        </button>
-        <button
-          onClick={handleEditClick}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Edit Order
-        </button>
-      </div>
-      
-      <h1 className="mb-8 text-2xl font-bold text-center">Checkout Details</h1>
-      
-      {/* Display status */}
-      <div className="mb-1 ">
-        <p className="text-lg font-semibold">
-          Order Status: <span className="text-blue-600">{checkout.status}</span>
-        </p>
-      </div>
-      
-      {/* Display order id */}
-      <div className="flex justify-between">
-        <div className="mb-6 ">
-          <p className="text-lg font-semibold">
-            Order ID: <span className="text-gray-600">{checkout._id}</span>
-          </p>
+      {/* Header actions */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Back to Orders
+          </button>
+          <button
+            onClick={handleEditClick}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Edit Order
+          </button>
         </div>
-        {/* Display order date */}
-        <div className="mb-6 ">
-          <p className="text-lg font-semibold">
-            Order Date:{" "}
-            <span className="text-gray-600">
-              {new Date(checkout.orderDate).toLocaleDateString()}
+
+        <div className="text-right">
+          <h1 className="text-2xl font-bold">Order Details</h1>
+          <p className="text-sm text-gray-600">
+            Status: <span className="font-semibold text-blue-600">{checkout.status}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Order ID: <span className="font-semibold">{checkout.orderId || checkout._id}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Date:{" "}
+            <span className="font-semibold">
+              {checkout.orderDate ? new Date(checkout.orderDate).toLocaleString() : "-"}
             </span>
           </p>
         </div>
       </div>
-      
-      <div className="p-4 mb-8 border border-gray-300 rounded">
-        <div className="flex flex-wrap items-start justify-start gap-10 lg:justify-evenly md:justify-evenly ">
-          <div>
-            <h2 className="mb-4 text-xl font-bold">Billing</h2>
-            <p className="pb-1.5">
-              <strong>Name:</strong> {checkout.user?.firstName}{" "}
-              {checkout.user?.lastName || ""}
-            </p>
-            <p className="pb-1.5">
-              <strong>Address: </strong> {checkout.billingAddress?.addressLine}
-            </p>
-            <p className="pb-1.5">
-              <strong>Country:</strong> {checkout.billingAddress?.country}
-            </p>
-            <p className="pb-1.5">
-              <strong>State:</strong> {checkout.billingAddress?.state}
-            </p>
-            <p className="pb-1.5">
-              <strong>City:</strong> {checkout.billingAddress?.city}
-            </p>
-            <p className="pb-1.5">
-              <strong>Postal Code:</strong>{" "}
-              {checkout.billingAddress?.postalCode}
-            </p>
-            {/* <p className=" flex items-center gap-1.5">
-              <strong>Email:</strong>{" "}
-              <span className="font-medium text-blue-500 underline cursor-pointer">
-                {checkout.user?.email}
-              </span>
-            </p>
-            <p className="flex mt-1.5 items-center gap-1.5">
-              <strong>Phone:</strong>{" "}
-              <p className="font-semibold text-gray-600">
-                {checkout.user?.phone}
-              </p>
-            </p> */}
-            <p className="pb-1.5">
-              <strong>Company: </strong>{" "}
-              {checkout.billingAddress?.companyName || "No Name"}
-            </p>
-          </div>
 
-          <div>
-            <h2 className="mb-4 text-xl font-bold">Shipping</h2>
-            <p className="pb-1.5">
-              <strong>Name:</strong> {checkout.shippingAddress?.firstName}{" "}
-              {checkout.shippingAddress?.lastName || ""}
-            </p>
-            <p className="pb-1.5">
-              <strong>Country:</strong> {checkout.shippingAddress?.country}
-            </p>
-            <p className="pb-1.5">
-              <strong>State:</strong> {checkout.shippingAddress?.state}
-            </p>
-            <p className="pb-1.5">
-              <strong>City:</strong> {checkout.shippingAddress?.city}
-            </p>
-            <p className="pb-1.5">
-              <strong>Postal Code:</strong>{" "}
-              {checkout.shippingAddress?.postalCode}
-            </p>
-            <p className="pb-1.5">
-              <strong>Address: </strong> {checkout.shippingAddress?.addressLine}
-            </p>
-            <p className="pb-1.5">
-              <strong>Company: </strong>{" "}
-              {checkout.shippingAddress?.companyName || "No Name"}
-            </p>
-            <p className=" flex items-center gap-1.5">
-              <strong>Email:</strong>{" "}
-              <p className="font-medium text-blue-500 underline cursor-pointer">
-                {checkout.shippingAddress?.email}
-              </p>
-            </p>
-            <p className="flex mt-1.5 items-center gap-1.5">
-              <strong>Phone:</strong>{" "}
-              <p className="font-semibold text-gray-600">
-                {checkout.shippingAddress?.phone}
-              </p>
-            </p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Billing + Shipping + Table */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Addresses */}
+          <div className="p-4 border border-gray-200 rounded bg-white">
+            <div className="flex flex-col md:flex-row md:justify-between gap-6">
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Billing</h2>
+                <p className="text-sm text-gray-700">
+                  <strong>{checkout.user?.firstName} {checkout.user?.lastName}</strong>
+                </p>
+                <p className="text-sm text-gray-600">{checkout.billingAddress?.addressLine}</p>
+                <p className="text-sm text-gray-600">
+                  {checkout.billingAddress?.city}, {checkout.billingAddress?.state} {checkout.billingAddress?.postalCode}
+                </p>
+                <p className="text-sm text-gray-600">{checkout.billingAddress?.country}</p>
+                <p className="text-sm text-gray-600">Company: {checkout.billingAddress?.companyName || "—"}</p>
+              </div>
 
-        <h2 className="mt-6 mb-4 text-xl font-bold">Products</h2>
-        {checkout.products?.map((product, productIndex) => (
-          <div
-            key={productIndex}
-            className="flex flex-wrap items-center justify-between p-4 mb-4 border border-gray-300 rounded shadow ga-12"
-          >
-            <div className="">
-              <div className="flex items-center gap-4">
-                <strong>Image:</strong>{" "}
-                <img src={product.image} alt="" className="w-14" />
-              </div>
-              <div className="flex flex-wrap items-center gap-2 ">
-                <strong>Name:</strong>
-                <p className=" text-sm font-medium text-gray-600">
-                  {" "}
-                  {product.name}
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Shipping</h2>
+                <p className="text-sm text-gray-700">
+                  <strong>{checkout.shippingAddress?.firstName} {checkout.shippingAddress?.lastName}</strong>
                 </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 ">
-                <strong>Color:</strong>
-                <p className=" text-sm font-medium text-gray-600">
-                  {" "}
-                  {product.color}
+                <p className="text-sm text-gray-600">{checkout.shippingAddress?.addressLine}</p>
+                <p className="text-sm text-gray-600">
+                  {checkout.shippingAddress?.city}, {checkout.shippingAddress?.state} {checkout.shippingAddress?.postalCode}
                 </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 ">
-                <strong>Print:</strong>
-                <p className=" text-sm font-medium text-gray-600">
-                  {" "}
-                  {product.print}
-                </p>
-              </div>
-              {product.size !=="None" && <div className="flex flex-wrap items-center gap-2 ">
-                <strong>Size:</strong>
-                <p className=" text-sm font-medium text-gray-600">
-                  {" "}
-                  {product.size}
-                </p>
-              </div>}
-              <div className="flex flex-wrap items-center gap-2 ">
-                <strong>Logo Color:</strong>
-                <p className=" text-sm font-medium text-gray-600">
-                  {" "}
-                  {product?.logoColor}
-                </p>
-              </div>
-              <div className="flex items-start gap-4 mt-2">
-                <strong>Logo:</strong>{" "}
-                {product.logo ? (
-                  <img src={product.logo} alt="" className="w-14" />
-                ) : (
-                  <p>No Logo Image Uploaded</p>
-                )}
-              </div>
-            </div>
-            <div className="">
-              <div className="flex justify-center gap-4">
-                <p className="text-gray-500">Cost</p>
-                <p className="text-gray-500">Qty</p>
-                <p className="text-gray-500">Total</p>
-              </div>
-              <div className="flex items-center gap-6 mt-4">
-                <p>${product.price.toFixed(2)}</p>
-                <p>{product.quantity || 0}</p>
-                <p>${product.subTotal.toFixed(2)}</p>
+                <p className="text-sm text-gray-600">{checkout.shippingAddress?.country}</p>
+                <p className="text-sm text-gray-600">Company: {checkout.shippingAddress?.companyName || "—"}</p>
+                <p className="text-sm text-blue-600 underline mt-2">{checkout.shippingAddress?.email}</p>
+                <p className="text-sm text-gray-600">{checkout.shippingAddress?.phone}</p>
               </div>
             </div>
           </div>
-        ))}
-        <div className="mt-10">
-          <p className="pb-1.5 flex items-center gap-4 justify-end">
-            <strong>Shipping: </strong> <p>${checkout.shipping}</p>
-          </p>
-          <p className="pb-1.5 flex items-center gap-4 justify-end">
-            <strong>Discont: </strong> <p>{checkout.discount}%</p>
-          </p>
-          <p className="pb-1.5 flex items-center gap-4 justify-end">
-            <strong>GST(10%): </strong> <p>${checkout.gst.toFixed(2)}</p>
-          </p>
-          <p className="pb-1.5 flex items-center gap-2 justify-end">
-            <strong>Order Total: </strong>${checkout.total.toFixed(2)}
-          </p>
+
+          {/* Products Table */}
+          <div className="p-4 border border-gray-200 rounded bg-white">
+            <h3 className="text-lg font-semibold mb-4">Products</h3>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Image</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Product</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Colour</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Print</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Size</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Price</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Supplier</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Product Code</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Qty</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {checkout.products?.map((product, idx) => (
+                    <tr key={product._id || idx}>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="w-16 h-12 rounded overflow-hidden border">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=No+Image"; }}
+                          />
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">
+                        <div className="font-medium">{product.name}</div>
+                      </td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">{product.color || "—"}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">{product.print || "—"}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">{product.size && product.size !== "None" ? product.size : "—"}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700 text-right">{formatCurrency(product.price)}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">{product.supplierName || "—"}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700">{product.id || "—"}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700 text-right">{product.quantity || 0}</td>
+
+                      <td className="px-3 py-3 text-sm text-gray-700 text-right">{formatCurrency(product.subTotal)}</td>
+                    </tr>
+                  ))}
+
+                  {/* If you want a subtotal row per table, keep it here (optional) */}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals (mobile-friendly place) */}
+          <div className="p-4 border border-gray-200 rounded bg-white">
+            <div className="flex flex-col md:flex-row md:justify-end gap-2">
+              <div className="w-full md:w-1/2">
+                <div className="flex justify-between py-1">
+                  <div className="text-sm text-gray-600">Shipping</div>
+                  <div className="text-sm font-medium">{formatCurrency(checkout.shipping)}</div>
+                </div>
+                <div className="flex justify-between py-1">
+                  <div className="text-sm text-gray-600">Discount</div>
+                  <div className="text-sm font-medium">{checkout.discount ? `${checkout.discount}%` : "0%"}</div>
+                </div>
+                <div className="flex justify-between py-1">
+                  <div className="text-sm text-gray-600">GST (10%)</div>
+                  <div className="text-sm font-medium">{formatCurrency(checkout.gst)}</div>
+                </div>
+                <div className="flex justify-between py-2 border-t mt-2">
+                  <div className="text-base font-semibold">Order Total</div>
+                  <div className="text-base font-semibold">{formatCurrency(checkout.total)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Right: Order summary (sticky-ish) */}
+        <aside className="space-y-4">
+          <div className="p-4 border border-gray-200 rounded bg-white shadow-sm">
+            <h4 className="text-lg font-semibold mb-2">Order Summary</h4>
+            <div className="text-sm text-gray-600 space-y-2">
+              <div className="flex justify-between">
+                <span>Items</span>
+                <span>{checkout.products?.length || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>{formatCurrency(checkout.shipping)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>GST</span>
+                <span>{formatCurrency(checkout.gst)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Discount</span>
+                <span>{checkout.discount ? `${checkout.discount}%` : "0%"}</span>
+              </div>
+              <div className="flex justify-between font-semibold pt-2 border-t mt-2">
+                <span>Total</span>
+                <span>{formatCurrency(checkout.total)}</span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-gray-500">Payment Status:</p>
+              <p className="font-medium">{checkout.paymentStatus}</p>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-gray-500">Order Reference:</p>
+              <p className="font-medium">{checkout.orderId || checkout._id}</p>
+            </div>
+          </div>
+
+          {/* Quick contact / shipping info */}
+          <div className="p-4 border border-gray-200 rounded bg-white">
+            <h4 className="text-md font-semibold mb-2">Customer</h4>
+            <p className="text-sm text-gray-700">{checkout.user?.firstName} {checkout.user?.lastName}</p>
+            <p className="text-sm text-blue-600 underline">{checkout.user?.email}</p>
+            <p className="text-sm text-gray-700">{checkout.user?.phone}</p>
+          </div>
+        </aside>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Modal (unchanged logic & fields) */}
       {showEditModal && editData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -387,7 +386,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.user.firstName}
-                        onChange={(e) => handleInputChange('user', 'firstName', e.target.value)}
+                        onChange={(e) => handleInputChange("user", "firstName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -396,7 +395,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.user.lastName}
-                        onChange={(e) => handleInputChange('user', 'lastName', e.target.value)}
+                        onChange={(e) => handleInputChange("user", "lastName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -405,7 +404,7 @@ const Products = () => {
                       <input
                         type="email"
                         value={editData.user.email}
-                        onChange={(e) => handleInputChange('user', 'email', e.target.value)}
+                        onChange={(e) => handleInputChange("user", "email", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -414,7 +413,7 @@ const Products = () => {
                       <input
                         type="number"
                         value={editData.user.phone}
-                        onChange={(e) => handleInputChange('user', 'phone', e.target.value)}
+                        onChange={(e) => handleInputChange("user", "phone", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -430,7 +429,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.addressLine}
-                        onChange={(e) => handleInputChange('billingAddress', 'addressLine', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "addressLine", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -439,7 +438,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.companyName}
-                        onChange={(e) => handleInputChange('billingAddress', 'companyName', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "companyName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -448,7 +447,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.country}
-                        onChange={(e) => handleInputChange('billingAddress', 'country', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "country", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -457,7 +456,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.state}
-                        onChange={(e) => handleInputChange('billingAddress', 'state', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "state", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -466,7 +465,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.city}
-                        onChange={(e) => handleInputChange('billingAddress', 'city', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "city", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -475,7 +474,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.billingAddress.postalCode}
-                        onChange={(e) => handleInputChange('billingAddress', 'postalCode', e.target.value)}
+                        onChange={(e) => handleInputChange("billingAddress", "postalCode", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -491,7 +490,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.firstName}
-                        onChange={(e) => handleInputChange('shippingAddress', 'firstName', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "firstName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -500,7 +499,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.lastName}
-                        onChange={(e) => handleInputChange('shippingAddress', 'lastName', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "lastName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -509,7 +508,7 @@ const Products = () => {
                       <input
                         type="email"
                         value={editData.shippingAddress.email}
-                        onChange={(e) => handleInputChange('shippingAddress', 'email', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "email", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -518,7 +517,7 @@ const Products = () => {
                       <input
                         type="number"
                         value={editData.shippingAddress.phone}
-                        onChange={(e) => handleInputChange('shippingAddress', 'phone', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "phone", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -527,7 +526,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.addressLine}
-                        onChange={(e) => handleInputChange('shippingAddress', 'addressLine', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "addressLine", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -536,7 +535,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.companyName}
-                        onChange={(e) => handleInputChange('shippingAddress', 'companyName', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "companyName", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -545,7 +544,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.country}
-                        onChange={(e) => handleInputChange('shippingAddress', 'country', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "country", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -554,7 +553,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.state}
-                        onChange={(e) => handleInputChange('shippingAddress', 'state', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "state", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -563,7 +562,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.city}
-                        onChange={(e) => handleInputChange('shippingAddress', 'city', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "city", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -572,7 +571,7 @@ const Products = () => {
                       <input
                         type="text"
                         value={editData.shippingAddress.postalCode}
-                        onChange={(e) => handleInputChange('shippingAddress', 'postalCode', e.target.value)}
+                        onChange={(e) => handleInputChange("shippingAddress", "postalCode", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
@@ -591,7 +590,7 @@ const Products = () => {
                           <input
                             type="text"
                             value={product.name}
-                            onChange={(e) => handleInputChange('products', 'name', e.target.value, index)}
+                            onChange={(e) => handleInputChange("products", "name", e.target.value, index)}
                             className="w-full p-2 border border-gray-300 rounded"
                           />
                         </div>
@@ -600,7 +599,7 @@ const Products = () => {
                           <input
                             type="number"
                             value={product.quantity}
-                            onChange={(e) => handleInputChange('products', 'quantity', e.target.value, index)}
+                            onChange={(e) => handleInputChange("products", "quantity", e.target.value, index)}
                             className="w-full p-2 border border-gray-300 rounded"
                           />
                         </div>
@@ -610,7 +609,7 @@ const Products = () => {
                             type="number"
                             step="0.01"
                             value={product.price}
-                            onChange={(e) => handleInputChange('products', 'price', e.target.value, index)}
+                            onChange={(e) => handleInputChange("products", "price", e.target.value, index)}
                             className="w-full p-2 border border-gray-300 rounded"
                           />
                         </div>
@@ -647,7 +646,7 @@ const Products = () => {
                   {updating && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   )}
-                  {updating ? 'Updating...' : 'Update Order'}
+                  {updating ? "Updating..." : "Update Order"}
                 </button>
               </div>
             </div>

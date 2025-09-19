@@ -30,6 +30,7 @@ import QuoteDetail from "./components/maincomponent/QuoteDetail";
 import Categories from "./components/maincomponent/Categories";
 import CategoryDetails from "./components/maincomponent/CategoryDetails";
 import EditBlog from "./components/maincomponent/EditBlog";
+import GlobalMargin from "./components/maincomponent/GlobalMargin";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -86,6 +87,7 @@ const App = () => {
                 <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
                 <Route path="/quote-detail" element={<PrivateRoute element={<QuoteDetail />} />} /> 
+                <Route path="/global-margin" element={<PrivateRoute element={<GlobalMargin />} />} /> 
                 <Route path="/categories" element={<PrivateRoute element={<Categories />} />} /> 
                 <Route path="/edit-blog/:id" element={<EditBlog />} />
                 <Route path="/category-detail" element={<PrivateRoute element={<CategoryDetails />} />} /> 

@@ -366,8 +366,10 @@ const AdminContextProvider = (props) => {
       });
 
       setOrders(response.data.data);
+      
       setPagination(response.data.pagination || null);
       setLoading(false);
+      return response.data;
     } catch (error) {
       console.error("Error fetching orders:", error);
       toast.error("Failed to fetch orders");
