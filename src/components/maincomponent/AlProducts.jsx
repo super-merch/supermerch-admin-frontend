@@ -34,7 +34,14 @@ const AlProducts = () => {
     bestSellerProducts,
     fetchNewArrivalProduct,
     arrivalProducts,
+    fetchCategories,
+    fetchParamProducts,
+    totalApiPages,
+    paramLoading,
   } = useContext(AdminContext);
+  const prevCategoryRef = useRef(null);
+  const [categoryProducts, setCategoryProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -59,13 +66,49 @@ const AlProducts = () => {
   // Store best sellers product IDs from API
   const [bestSellerIds, setBestSellerIds] = useState(new Set());
   const [bestSellerLoading, setBestSellerLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [productionIds, setProductionIds] = useState(new Set());
   const [productionLoading, setProductionLoading] = useState(false);
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchCategories();
+      setCategories(data.data);
+    };
+    loadData();
+  }, []);
+  useEffect(() => {
+    const loadData = async () => {
+      // If no category or "all" selected -> clear categoryProducts and reset page
+      if (!selectedCategory || selectedCategory === "all") {
+        setCategoryProducts([]);
+        setCurrentPage(1);
+        return;
+      }
 
+      // Fetch server-paginated products for the selected category
+      setPageLoading(true);
+      try {
+        const data = await fetchParamProducts(
+          selectedCategory,
+          currentPage,
+          selectedSupplier || null
+        );
+        setCategoryProducts(data?.data || []);
+        console.log(data);
+      } catch (err) {
+        console.error("Error fetching category products:", err);
+        setCategoryProducts([]);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    loadData();
+  }, [selectedCategory, selectedSupplier]);
   const getAll24HourProduction = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/24hour/get`, {
@@ -78,7 +121,6 @@ const AlProducts = () => {
         const data = await response.json();
         const productIds = data.map((item) => String(item.id));
         setProductionIds(new Set(productIds));
-        console.log("Fetched 24 Hour Production products:", data);
       } else {
         console.error(
           "Failed to fetch 24 Hour Production products:",
@@ -90,7 +132,7 @@ const AlProducts = () => {
     }
   };
 
-  const itemsPerPage = 25;
+  const itemsPerPage = searchTerm ? 50 : 25;
   const processedProductsRef = useRef(new Set());
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -124,7 +166,6 @@ const AlProducts = () => {
         switch (sortOption) {
           case "trending":
             productData = await fetchTrendingProduct();
-            console.log(productData);
             break;
           case "bestSellers":
             productData = await fetchBestSellerProduct();
@@ -132,11 +173,11 @@ const AlProducts = () => {
           case "newArrivals":
             productData = await fetchNewArrivalProduct();
             break;
-          case "all":
-            productData = await fetchProducts();
-            break;
+          // case "all":
+          //   productData = await fetchProducts();
+          //   break;
           default:
-            await fetchProducts();
+            // await fetchProducts();
             productData = products;
             break;
         }
@@ -156,7 +197,6 @@ const AlProducts = () => {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
       if (response.ok) {
         const data = await response.json();
-        console.log(data.data, "data");
         data.data.map((item) => {
           setLocalIgnoredIds((prev) => {
             const newSet = new Set(prev);
@@ -188,7 +228,7 @@ const AlProducts = () => {
           return;
         }
         await Promise.all([
-          fetchProducts(),
+          // fetchProducts(),
           fetchCustomNames(),
           fetchTrendingProducts(),
           fetchNewArrivalProducts(),
@@ -207,7 +247,6 @@ const AlProducts = () => {
   useEffect(() => {
     if (ignoredProductIds) {
       setLocalIgnoredIds(new Set(ignoredProductIds));
-      console.log("Local ignored IDs:", localIgnoredIds);
     }
   }, []);
   const [australiaIds, setAustraliaIds] = useState(new Set());
@@ -225,7 +264,6 @@ const AlProducts = () => {
         // Ensure consistent data types (convert to strings)
         const productIds = data.map((item) => String(item.id));
         setAustraliaIds(new Set(productIds));
-        console.log("Fetched Australia products:", data);
       } else {
         console.error("Failed to fetch Australia products:", response.status);
       }
@@ -235,7 +273,6 @@ const AlProducts = () => {
   };
 
   const addToAustralia = async (product) => {
-    console.log(product);
     setAustraliaLoading(true);
     try {
       const response = await fetch(`${backednUrl}/api/australia/add`, {
@@ -309,7 +346,6 @@ const AlProducts = () => {
     }
   };
   const addTo24HourProduction = async (product) => {
-    console.log(product);
     setProductionLoading(true);
     try {
       const response = await fetch(`${backednUrl}/api/24hour/add`, {
@@ -392,6 +428,7 @@ const AlProducts = () => {
     try {
       setIsSearching(true);
       setCurrentPage(1);
+      setSelectedCategory("all");
       await fetchSearchedProduct(searchTerm.trim());
     } catch (error) {
       console.error("Search error:", error);
@@ -420,7 +457,6 @@ const AlProducts = () => {
         // Ensure consistent data types (convert to strings)
         const productIds = data.map((item) => String(item.productId));
         setTrendingIds(new Set(productIds));
-        console.log("Fetched trending products:", productIds);
       } else {
         console.error("Failed to fetch trending products:", response.status);
         toast.error("Failed to load trending products");
@@ -440,7 +476,6 @@ const AlProducts = () => {
         // Ensure consistent data types (convert to strings)
         const productIds = data.map((item) => String(item.productId));
         setNewArrivalIds(new Set(productIds));
-        console.log("Fetched new arrival products:", productIds);
       } else {
         console.error("Failed to fetch new arrival products:", response.status);
         toast.error("Failed to load new arrival products");
@@ -462,7 +497,6 @@ const AlProducts = () => {
         // Ensure consistent data types (convert to strings)
         const productIds = data.map((item) => String(item.productId));
         setBestSellerIds(new Set(productIds));
-        console.log("Fetched best seller products:", productIds);
       } else {
         console.error("Failed to fetch best seller products:", response.status);
         toast.error("Failed to load best seller products");
@@ -765,8 +799,6 @@ const AlProducts = () => {
     setEditingProductId(null);
     setEditingName("");
   };
-
-  // Get display name (custom name or original name)
   const getDisplayName = (product) => {
     const productId = product.meta.id;
     return customNames[productId] || product.overview.name || "No Name";
@@ -821,15 +853,51 @@ const AlProducts = () => {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentProducts = filteredProducts.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  // Replace currentProducts creation with this
+  const currentProducts =
+    selectedCategory && selectedCategory !== "all"
+      ? categoryProducts // server-paginated results (no client-side slicing)
+      : filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
-  const handlePageChange = (newPage) => {
+  const isCategoryMode = selectedCategory && selectedCategory !== "all";
+
+  // total pages: use backend total when in category mode, otherwise compute locally
+  const paginationTotal = isCategoryMode
+    ? totalApiPages || 1
+    : sortOption === "all"
+    ? Math.ceil(prodLength / itemsPerPage)
+    : Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // simple prev/next disabled flags
+  const prevDisabled = currentPage === 1;
+  const nextDisabled = currentPage >= paginationTotal;
+
+  const handlePageChange = async (newPage) => {
+    if (newPage < 1) return;
+    if (selectedCategory && selectedCategory !== "all") {
+      if (totalApiPages && newPage > totalApiPages) return;
+
+      setCurrentPage(newPage);
+      try {
+        setPageLoading(true);
+        const data = await fetchParamProducts(
+          selectedCategory,
+          newPage,
+          selectedSupplier || null
+        );
+        setCategoryProducts(data?.data || []);
+      } catch (err) {
+        console.error("Error changing category page:", err);
+      } finally {
+        setPageLoading(false);
+      }
+      return;
+    }
+
+    // existing behaviour for "all" / normal mode
     setCurrentPage(newPage);
 
-    // Only trigger backend fetch for "all" products when reaching last page
+    // Only trigger backend fetch for "all" products when reaching last page (unchanged)
     if (
       sortOption === "all" &&
       newPage === Math.ceil(filteredProducts.length / itemsPerPage)
@@ -848,7 +916,6 @@ const AlProducts = () => {
   };
 
   const handleActivateProduct = async (product) => {
-    console.log("Activate product:", product.meta.id);
     const response = await fetch(`${backednUrl}/api/unignore-product`, {
       method: "POST",
       headers: {
@@ -867,7 +934,6 @@ const AlProducts = () => {
   };
 
   const handleDeactivateProduct = async (product) => {
-    console.log("Deactivate product:", product.meta.id);
     const response = await fetch(`${backednUrl}/api/ignore-product`, {
       method: "POST",
       headers: {
@@ -940,17 +1006,40 @@ const AlProducts = () => {
           </Button>
         </form>
         {/* dropdown to show sort by trendings, new arrivals, best sellers and all products(default) */}
-        <div className="flex justify-end mb-4">
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            className="px-4 py-2 border rounded"
-          >
-            <option value="all">All Products</option>
-            <option value="trending">Trending</option>
-            <option value="newArrivals">New Arrivals</option>
-            <option value="bestSellers">Best Sellers</option>
-          </select>
+        <div className="flex justify-between">
+          <div className="flex justify-end mb-4">
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                const val = e.target.value;
+                clearSearch(); // clears search state and sets current page to 1
+                setSelectedCategory(val);
+                setCurrentPage(1); // defensive: ensures page is 1
+              }}
+              disabled={searchLoading}
+              className="px-4 py-2 border rounded"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end mb-4">
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="px-4 py-2 border rounded"
+              disabled={searchLoading}
+            >
+              <option value="all">All Products</option>
+              <option value="trending">Trending</option>
+              <option value="newArrivals">New Arrivals</option>
+              <option value="bestSellers">Best Sellers</option>
+            </select>
+          </div>
         </div>
 
         {isSearching &&
@@ -1003,7 +1092,8 @@ const AlProducts = () => {
             <TableHead>New Arrival</TableHead>
             <TableHead>Best Seller</TableHead>
             <TableHead>Australia</TableHead>
-            <TableHead>24Hr Production</TableHead>
+            <TableHead>24Hr Prod</TableHead>
+            <TableHead>Last Update</TableHead>
             <TableHead>Code</TableHead>
             <TableHead className="">Price</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -1180,6 +1270,9 @@ const AlProducts = () => {
                       {productionLoading ? "..." : "Add"}
                     </button>
                   )}
+                </TableCell>
+                <TableCell>
+                  {product.meta.last_changed_at.slice(0, 10) || "No Code"}
                 </TableCell>
                 <TableCell>{product.overview.code || "No Code"}</TableCell>
                 <TableCell>${realPrice}</TableCell>
@@ -1462,82 +1555,33 @@ const AlProducts = () => {
         </div>
       )}
 
-      {!searchTerm ? <div className="flex items-center justify-end gap-4 mt-12">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-            currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          Previous
-        </button>
-        <span className="text-lg font-medium">
-          Page {currentPage} of{" "}
-          {sortOption === "all"
-            ? Math.ceil(prodLength / 25)
-            : Math.ceil(filteredProducts.length / itemsPerPage)}
-        </span>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={
-            sortOption === "all"
-              ? currentPage === Math.ceil(prodLength / 25)
-              : currentPage ===
-                Math.ceil(filteredProducts.length / itemsPerPage)
-          }
-          className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-            (
-              sortOption === "all"
-                ? currentPage === Math.ceil(prodLength / 10)
-                : currentPage ===
-                  Math.ceil(filteredProducts.length / itemsPerPage)
-            )
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          Next
-        </button>
-      </div>:<div className="flex items-center justify-end gap-4 mt-12">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-            currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          Previous
-        </button>
-        <span className="text-lg font-medium">
-          Page {currentPage} of{" "}
-          {sortOption === "all"
-            ? Math.ceil(currentProductList.length / 25)
-            : Math.ceil(currentProductList.length / itemsPerPage)}
-        </span>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={
-            sortOption === "all"
-              ? currentPage === Math.ceil(currentProductList.length / 25)
-              : currentPage ===
-                Math.ceil(currentProductList.length / itemsPerPage)
-          }
-          className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-            (
-              sortOption === "all"
-                ? currentPage === Math.ceil(prodLength / 10)
-                : currentPage ===
-                  Math.ceil(filteredProducts.length / itemsPerPage)
-            )
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          Next
-        </button>
-      </div>}
+      {!searchTerm && (
+        <div className="flex items-center justify-end gap-4 mt-12">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={prevDisabled}
+            className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
+              prevDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            Previous
+          </button>
 
+          <span className="text-lg font-medium">
+            Page {currentPage} of {paginationTotal}
+          </span>
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={nextDisabled}
+            className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
+              nextDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

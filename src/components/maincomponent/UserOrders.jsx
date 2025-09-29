@@ -6,7 +6,8 @@ export default function UserOrders() {
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const { state: userName } = useLocation();
-  const { userOrders, fetchUserOrders, updateOrderStatus } =
+  const [user, setUser] = useState(null);
+  const { userOrders, fetchUserOrders, updateOrderStatus, getSingleUser } =
     useContext(AdminContext);
   const handleStatusChange = async (orderId, newStatus) => {
     await updateOrderStatus(orderId, newStatus);
@@ -18,6 +19,9 @@ export default function UserOrders() {
 
       await fetchUserOrders(id);
       setLoading(false);
+      const data = await getSingleUser(id);
+      setUser(data.user)
+      console.log(data.user)
     };
     getOrders();
   }, []);
@@ -29,14 +33,44 @@ export default function UserOrders() {
         <button
           onClick={() => navigate(-1)}
           className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
-        > 
+        >
           Back
         </button>
       </div>
-      <h1 className="mb-8 text-2xl font-bold text-center">
+      <h1 className="mb-4 text-2xl font-bold text-center">
         {" "}
         {userName} Orders
       </h1>
+
+      {/* show users details from the usersOrders first element inside userOrders[0].user */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+          User Details
+        </h2>
+        <div className="grid grid-cols-2 gap-2 text-base max-w-xl">
+          <div>
+            <span className="font-medium text-gray-600">Name: </span>
+            <span className="text-gray-800">
+              {user?.name}
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Email: </span>
+            <span className="text-gray-800">{user?.email}</span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Joined: </span>
+            <span className="text-gray-800">{user?.createdAt.slice(0,10)}</span>
+          </div>
+          {userOrders[0]?.user.phone &&
+            <div>
+            <span className="font-medium text-gray-600">Phone: </span>
+            <span className="text-gray-800">{userOrders[0]?.user.phone}</span>
+          </div>
+          }
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         {loading && (
           <div className="flex items-center justify-center">

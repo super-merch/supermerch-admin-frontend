@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 
 const User = () => {
@@ -92,6 +93,10 @@ const User = () => {
   const confirmDelete = (userId) => {
     setUserToDelete(userId);
     setShowDeletePopup(true);
+  };
+  const navigate = useNavigate();
+  const handleViewDetails = (user) => {
+    navigate(`/user-orders/${user._id}`);
   };
 
   const handleDelete = async () => {
@@ -190,10 +195,10 @@ const User = () => {
             <th className="px-2 text-left border-r">Username</th>
             <th className="pl-2 text-left border-r">Email</th>
             <th className="pl-2 text-left border-r">Joined</th>
-            <th className="pl-2 text-left border-r">Phone</th>
+            {/* <th className="pl-2 text-left border-r">Phone</th>
             <th className="pl-2 text-left border-r">Country</th>
             <th className="pl-2 text-left border-r">Address</th>
-            <th className="pl-2 text-left border-r">Postal Code</th>
+            <th className="pl-2 text-left border-r">Postal Code</th> */}
             <th className="pl-2 text-left">Action</th>
           </tr>
         </thead>
@@ -206,10 +211,10 @@ const User = () => {
               <td className="p-2 border">{user.name}</td>
               <td className="p-2 border">{user.email}</td>
               <td className="p-2 border">{new Date(user.createdAt).toLocaleString()}</td>
-              <td className="p-2 border">{user?.defaultAddress?.phone || "No Phone"}</td>
+              {/* <td className="p-2 border">{user?.defaultAddress?.phone || "No Phone"}</td>
               <td className="p-2 border">{user?.defaultAddress?.country || "No Country"}</td>
               <td className="p-2 border">{user?.defaultAddress?.addressLine || "No Address"}</td>
-              <td className="p-2 border">{user?.defaultAddress?.postalCode || "No Code"}</td>
+              <td className="p-2 border">{user?.defaultAddress?.postalCode || "No Code"}</td> */}
               <td className="flex items-center px-2">
                 <FaEdit
                   className="text-xl cursor-pointer hover:text-blue-600"
@@ -219,6 +224,12 @@ const User = () => {
                   className="ml-4 text-2xl cursor-pointer hover:text-red-600"
                   onClick={() => confirmDelete(user._id)}
                 />
+                {/* view details button */}
+                <button
+                  className="ml-4 py-1 my-1 px-3 border border-gray-300 rounded-lg text-base cursor-pointer hover:text-blue-600"
+                  onClick={() => handleViewDetails(user)}
+                > View Details
+                </button>
               </td>
             </tr>
           ))}

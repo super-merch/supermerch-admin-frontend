@@ -428,7 +428,7 @@ const AlSuppliers = () => {
             <TableHead>Country</TableHead>
             <TableHead>Active</TableHead>
             <TableHead>Created At</TableHead>
-            <TableHead>Manage Margin</TableHead>
+            <TableHead>Manage Margin%s</TableHead>
             <TableHead className="text-right">Actions</TableHead>
             <TableHead className="text-right">View Categories</TableHead>
           </TableRow>

@@ -369,7 +369,7 @@ export default function SupplierCategories() {
             <TableHead>Category ID</TableHead>
             <TableHead>Category Name</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Manage Margin</TableHead>
+            <TableHead>Manage Margin%</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>

@@ -95,7 +95,7 @@ const GlobalMargin = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-600 font-medium">
-                  ✅ Global margin is active: ${globalMargin.margin.toFixed(2)}
+                  ✅ Global margin is active: {globalMargin.margin.toFixed(2)}%
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
                   This margin is added to all product prices and overrides individual product margins.
@@ -121,10 +121,10 @@ const GlobalMargin = () => {
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Margin Amount (USD)
+                Margin Percentage
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-gray-500">$</span>
+                <span className="absolute left-3 top-2 text-gray-500">%</span>
                 <input
                   type="number"
                   min="0"

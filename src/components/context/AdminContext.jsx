@@ -219,7 +219,7 @@ const AdminContextProvider = (props) => {
     setSearchLoading(true);
     try {
       // Set limit to 100 to get maximum products for admin, no pagination needed
-      const limit = 100;
+      const limit = 50;
       const response = await fetch(
         `${backednUrl}/api/client-products/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false`
       );
@@ -249,11 +249,12 @@ const AdminContextProvider = (props) => {
 
   const [suppliersPagination, setSuppliersPagination] = useState(null);
 
-  const fetchSuppliers = async (page = 1) => {
+  const fetchSuppliers = async (page = 1,limit) => {
     setSupplierLoading(true);
+
     try {
       const response = await fetch(
-        `${backednUrl}/api/supplier-products?page=${page}&limit=15`
+        `${backednUrl}/api/supplier-products?page=${page}&limit=${limit||15}`
       );
       if (!response.ok) throw new Error("Failed to fetch Suppliers");
 
@@ -318,6 +319,15 @@ const AdminContextProvider = (props) => {
       }
     }
   };
+  const getSingleUser = async (id) => {
+    try {
+      const response = await axios.get(`${backednUrl}/api/auth/single-user/${id}`);
+      return response.data
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      toast.error("Failed to fetch user");
+    }
+  }
   const [pagination, setPagination] = useState(null);
   const fetchUserOrders = async (id) => {
     try {
@@ -352,7 +362,7 @@ const AdminContextProvider = (props) => {
         ? {}
         : {
             page,
-            limit: 15,
+            limit: limit || 15,
             search: filters.searchTerm || "",
             status: filters.filterStatus || "All",
             date: filters.filterDate || "",
@@ -518,12 +528,12 @@ const AdminContextProvider = (props) => {
   const fetchBlogs = async () => {
     try {
       const { data } = await axios.get(`${backednUrl}/api/blogs/get-blogs`);
-      setBlogs(data);
+      setBlogs(data.blogs); // Note: updated to access data.blogs
     } catch (error) {
       toast.error(error.message);
       console.error(error);
     }
-  };
+};
   const [quotesPagination, setQuotesPagination] = useState(null);
   const listQuotes = async (page = 1, filters = {}) => {
     setQuoteLoading(true);
@@ -557,6 +567,27 @@ const AdminContextProvider = (props) => {
       setQuoteLoading(false);
     }
   };
+  const sendNote = async(note,email,user, billingAddress, shippingAddress, products)=>{
+    try {
+      if(!note || note.length <= 10){
+        toast.error("Note must be at least 10 characters long");
+        return;
+
+      }
+      const response = await axios.post(
+        `${backednUrl}/api/checkout/send-note`,
+        {note,email,user, billingAddress, shippingAddress, products}
+      )
+      const data = response.data;
+      if(data.success){
+        toast.success(data.message);
+        return true
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+
+  }
 
   const orderPending = orders.filter((order) => order.status === "Pending");
   const orderCompleted = orders.filter((order) => order.status === "Complete");
@@ -579,6 +610,7 @@ const AdminContextProvider = (props) => {
     setLoading,
     suppliersPagination,
     fetchSupplierProductNumber,
+    sendNote,
     orders,
     supplierLoading,
     fetchOrders,
@@ -596,6 +628,7 @@ const AdminContextProvider = (props) => {
     suppliers,
     deleteOrder,
     setSuppliers,
+    getSingleUser,
     setProducts,
     deleteLoading,
     backednUrl,

@@ -23,7 +23,7 @@ const Orders = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 15;
+  const [ordersPerPage, setOrdersPerPage] = useState(20);
   const [deleteModel, setDeleteModel] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
@@ -38,7 +38,7 @@ const Orders = () => {
   const [emailLoading, setEmailLoading] = useState(false);
 
   const handleStatusChange = async (orderId, newStatus) => {
-    if (newStatus == "Delivered") {
+    if (newStatus !== "Pending") {
       try {
         setEmailLoading(true);
         const response = await fetch(
@@ -48,7 +48,7 @@ const Orders = () => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ orderId: orderId }),
+            body: JSON.stringify({ orderId: orderId, status: newStatus }),
           }
         );
         if (response.ok) {
@@ -72,14 +72,14 @@ const Orders = () => {
 
   useEffect(() => {
     const loadData = async()=>{
-      const response = await fetchOrders();
+      const response = await fetchOrders("", 1,{},ordersPerPage);
       setTotalOrders(response.pagination.totalOrders);
       setPendingOrders(response.pendingOrders);
       setDeliveredOrders(response.deliveredOrders);
       setCancelledOrders(response.cancelledOrders);
     }
     loadData();
-  }, []);
+  }, [ordersPerPage]);
   const handlePaymentStatusChange = async (orderId, newPaymentStatus) => {
     try {
       const response = await fetch(
@@ -107,7 +107,7 @@ const Orders = () => {
         filterDate,
         sortBy,
         sortOrder,
-      });
+      },ordersPerPage);
 
       // Option 2: Update local state directly (if you have setOrders in AdminContext)
       // setOrders(prevOrders =>
@@ -132,7 +132,7 @@ const Orders = () => {
       sortBy,
       sortOrder,
     };
-    fetchOrders("", currentPage, filters);
+    fetchOrders("", currentPage, filters,ordersPerPage);
   }, [currentPage, searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
 
   // Update goToPage, goToPreviousPage, goToNextPage functions
@@ -207,7 +207,7 @@ const Orders = () => {
           </button>
           <button
             className="bg-blue-700 hover:bg-blue-800 text-white mb-3 py-2 px-4 rounded"
-            onClick={() => fetchOrders()}
+            onClick={() => fetchOrders("", 1,{},ordersPerPage)}
           >
             {"Refresh Orders"}
           </button>
@@ -518,6 +518,30 @@ const Orders = () => {
               <span className="ml-4 text-sm text-gray-600">
                 Page {pagination.currentPage} of {pagination.totalPages}
               </span>
+              {/* change order numbers per page */}
+              {/* Orders per page selector */}
+<div className="flex items-center gap-2 ml-4">
+  <label htmlFor="ordersPerPage" className="text-sm text-gray-600">
+    Orders per page:
+  </label>
+  <select
+    id="ordersPerPage"
+    value={ordersPerPage}
+    onChange={(e) => {
+      setOrdersPerPage(Number(e.target.value)); // make sure it's a number
+      setCurrentPage(1); // reset to first page
+    }}
+    className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-800"
+  >
+    <option value={5}>5</option>
+    <option value={10}>10</option>
+    <option value={15}>15</option>
+    <option value={20}>20</option>
+    <option value={30}>30</option>
+    <option value={40}>40</option>
+  </select>
+</div>
+
             </div>
           )}
         </div>
