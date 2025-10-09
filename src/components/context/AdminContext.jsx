@@ -248,6 +248,7 @@ const AdminContextProvider = (props) => {
   const [supplierLoading, setSupplierLoading] = useState(false);
 
   const [suppliersPagination, setSuppliersPagination] = useState(null);
+  const [supplierCount, setSupplierCount] = useState(0);
 
   const fetchSuppliers = async (page = 1,limit) => {
     setSupplierLoading(true);
@@ -265,6 +266,8 @@ const AdminContextProvider = (props) => {
       }
 
       setSuppliers(data.data);
+      setSupplierCount(data.item_count);
+      console.log(data.data)
 
       // Set pagination info from API response
       setSuppliersPagination({
@@ -281,6 +284,26 @@ const AdminContextProvider = (props) => {
       setSupplierLoading(false);
     }
   };
+  const [deactiveSuppliers, setDeactiveSuppliers] = useState(0);
+  const deactivateSuppliers = async()=>{
+    try {
+      const response = await fetch(
+        `${backednUrl}/api/ignored-suppliers`
+      );
+      if (!response.ok) throw new Error("Failed to fetch Suppliers");
+
+      const data = await response.json();
+
+      if (!data || !data.data) {
+        throw new Error("Unexpected API response structure");
+      }
+
+      setDeactiveSuppliers(data.item_count);
+
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   const [usersPagination, setUsersPagination] = useState(null);
   const navigate = useNavigate();
@@ -597,7 +620,8 @@ const AdminContextProvider = (props) => {
       fetchUsers();
       fetchOrders();
       fetchProducts();
-      // fetchSuppliers();
+      fetchSuppliers();
+      deactivateSuppliers();
       fetchBlogs();
       listQuotes();
     }
@@ -625,6 +649,8 @@ const AdminContextProvider = (props) => {
     fetchProducts,
     products,
     fetchSuppliers,
+    supplierCount,
+    deactiveSuppliers,
     suppliers,
     deleteOrder,
     setSuppliers,

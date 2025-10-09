@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from "react";
+import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { addDiscount, getDiscount } from "../apis/UserApi";
 import { addMargin as addMarginApi } from "../apis/UserApi";
@@ -9,6 +9,22 @@ import "react-toastify/dist/ReactToastify.css";
 
 const AlProductDetail = () => {
   const { state: product } = useLocation();
+  const { aToken, backednUrl } = useContext(AdminContext);
+  const [productDesc, setProductDesc] = useState("");
+  const [prodName, setProdName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const getProductDesc = async () => {
+    setLoading(true);
+    const res = await axios.get(
+      `${backednUrl}/api/single-product/${product.meta.id}`
+    );
+    setProductDesc(res.data.data.product.description);
+    setProdName(res.data.data.overview.name);
+    setLoading(false);
+  };
+  useEffect(() => {
+    getProductDesc();
+  }, []);
 
   // track initial page loading only
   const [initialLoading, setInitialLoading] = useState(true);
@@ -27,7 +43,158 @@ const AlProductDetail = () => {
   const [trueBasePrice, setTrueBasePrice] = useState(null);
   const [marginPrice, setMarginPrice] = useState(null);
 
-  const { aToken, backednUrl } = useContext(AdminContext);
+  // Local product copy so we can update description in-place without changing other logic
+  const [localProduct, setLocalProduct] = useState(product);
+  useEffect(() => setLocalProduct(product), [product]);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState(
+    localProduct?.overview?.name || ""
+  );
+  const [updatingName, setUpdatingName] = useState(false);
+  const nameInputRef = useRef(null);
+
+  // start editing name (populate input)
+  const startEditName = () => {
+    setEditingName(localProduct?.overview?.name || "");
+    setIsEditingName(true);
+    // focus after render
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  };
+
+  // cancel name editing (revert local text)
+  const cancelEditName = () => {
+    setEditingName(localProduct?.overview?.name || "");
+    setIsEditingName(false);
+  };
+
+  // save updated name
+  const saveName = async () => {
+    const newName = (editingName || "").trim();
+    if (!newName) {
+      toast.error("Product name cannot be empty");
+      return;
+    }
+    // if unchanged just cancel
+    if (newName === (localProduct?.overview?.name || "").trim()) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setUpdatingName(true);
+    try {
+      const res = await fetch(`${backednUrl}/api/update-product-name`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(aToken ? { Authorization: `Bearer ${aToken}` } : {}),
+        },
+        body: JSON.stringify({
+          productId: String(localProduct?.meta?.id),
+          customName: newName,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Name updated successfully!");
+        // update local copy so UI reflects new name immediately
+        setLocalProduct((prev) => ({
+          ...prev,
+          overview: {
+            ...(prev?.overview || {}),
+            name: newName,
+          },
+        }));
+        setIsEditingName(false);
+      } else {
+        const err = await res.text().catch(() => null);
+        console.error("Failed to update name", err);
+        toast.error("Failed to update name");
+      }
+    } catch (error) {
+      console.error("Error updating name:", error);
+      toast.error("Error updating name");
+    } finally {
+      setUpdatingName(false);
+    }
+  };
+
+  // keyboard handler for name input: Enter = save, Escape = cancel
+  const onNameKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!updatingName) saveName();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEditName();
+    }
+  };
+
+  // Description editing state
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(
+    localProduct?.product?.description || ""
+  );
+  const [updatingDesc, setUpdatingDesc] = useState(false);
+
+  // Start editing (populate textarea with current desc)
+  const startEditDesc = () => {
+    setEditingDesc(productDesc || "");
+    setIsEditingDesc(true);
+  };
+
+  // Cancel editing (revert local text)
+  const cancelEditDesc = () => {
+    setEditingDesc(localProduct?.product?.description || "");
+    setIsEditingDesc(false);
+  };
+
+  // Save updated description by calling your existing endpoint
+  const saveDesc = async () => {
+    if (!editingDesc || !editingDesc.trim()) {
+      toast.error("Description cannot be empty");
+      return;
+    }
+
+    setUpdatingDesc(true);
+    try {
+      const res = await fetch(`${backednUrl}/api/update-product-name`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // include auth header if available (safe fallback)
+          ...(aToken ? { Authorization: `Bearer ${aToken}` } : {}),
+        },
+        body: JSON.stringify({
+          productId: String(localProduct.meta.id),
+          customDesc: editingDesc.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        // Optionally read response: const data = await res.json();
+        toast.success("Description updated successfully!");
+        // Update local copy so UI reflects new description immediately
+        setLocalProduct((prev) => ({
+          ...prev,
+          product: {
+            ...prev.product,
+            description: editingDesc.trim(),
+          },
+        }));
+        setProductDesc(editingDesc.trim());
+        setIsEditingDesc(false);
+      } else {
+        const err = await res.text().catch(() => null);
+        console.error("Failed to update description", err);
+        toast.error("Failed to update description");
+      }
+    } catch (error) {
+      console.error("Error updating description:", error);
+      toast.error("Error updating description");
+    } finally {
+      setUpdatingDesc(false);
+    }
+  };
 
   // derive base price once
   const price = useMemo(() => {
@@ -39,16 +206,18 @@ const AlProductDetail = () => {
   const [newBasePrice, setNewBasePrice] = useState(null);
   const getBasePrice = async () => {
     try {
-      const response = await fetch(`${backednUrl}/api/client-products/single/getPrice?productId=${product?.meta?.id}`)
+      const response = await fetch(
+        `${backednUrl}/api/client-products/single/getPrice?productId=${product?.meta?.id}`
+      );
       const data = await response.json();
       setNewBasePrice(data);
     } catch (error) {
       console.log(error);
     }
-  }
-  useEffect(()=>{
+  };
+  useEffect(() => {
     getBasePrice();
-  },[])
+  }, []);
 
   const batchPromises = async (promises, batchSize = 10) => {
     const results = [];
@@ -80,15 +249,16 @@ const AlProductDetail = () => {
         let calculatedDiscountPrice = newBasePrice;
         if (discountData && discountData.discount > 0) {
           calculatedDiscountPrice =
-            newBasePrice -
-            (newBasePrice * discountData.discount) / 100;
+            newBasePrice - (newBasePrice * discountData.discount) / 100;
         }
         setDiscountPrice(calculatedDiscountPrice);
 
         // Calculate and set margined price
         let calculatedMarginPrice = calculatedDiscountPrice;
         if (marginData && marginData.margin > 0) {
-          calculatedMarginPrice = calculatedDiscountPrice + (marginData.margin * calculatedDiscountPrice) / 100;
+          calculatedMarginPrice =
+            calculatedDiscountPrice +
+            (marginData.margin * calculatedDiscountPrice) / 100;
         }
         setMarginPrice(calculatedMarginPrice);
       } catch (error) {
@@ -104,8 +274,7 @@ const AlProductDetail = () => {
   };
 
   useEffect(() => {
-    if(product?.meta?.id && newBasePrice){
-
+    if (product?.meta?.id && newBasePrice) {
       fetchInitialData();
     }
   }, [product?.meta?.id, newBasePrice]);
@@ -327,7 +496,9 @@ const AlProductDetail = () => {
 
       // Update margin price if margin exists
       if (marginPercent && parseFloat(marginPercent) > 0) {
-        const newMarginPrice = newDiscountPrice + (parseFloat(marginPercent)*newDiscountPrice)/100;
+        const newMarginPrice =
+          newDiscountPrice +
+          (parseFloat(marginPercent) * newDiscountPrice) / 100;
         setMarginPrice(newMarginPrice);
       } else {
         setMarginPrice(newDiscountPrice);
@@ -378,7 +549,8 @@ const AlProductDetail = () => {
       toast.success(res.data.message || "Margin applied successfully!");
 
       // Update margin price
-      const newMarginPrice = currentDiscountedPrice + (m*currentDiscountedPrice)/100;
+      const newMarginPrice =
+        currentDiscountedPrice + (m * currentDiscountedPrice) / 100;
       setMarginPrice(newMarginPrice);
 
       // Refresh margin data
@@ -635,12 +807,54 @@ const AlProductDetail = () => {
         </div>
 
         <div className="p-8 space-y-4">
-          {/* Name */}
-          <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
-            <span className="text-sm font-medium text-gray-600">Name</span>
-            <span className="font-semibold text-gray-800 text-right">
-              {product?.overview?.name || "N/A"}
-            </span>
+          {/* Name (editable) */}
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <div className="flex justify-between items-start">
+              <h3 className="text-sm font-medium text-gray-600 mb-1">Name</h3>
+              {!isEditingName && (
+                <button
+                  onClick={startEditName}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {isEditingName ? (
+              <div className="mt-2">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={onNameKeyDown}
+                  className="w-full p-3 border rounded text-sm"
+                  placeholder="Enter product name..."
+                  disabled={updatingName}
+                />
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    onClick={saveName}
+                    disabled={updatingName || !(editingName || "").trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                  >
+                    {updatingName ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={cancelEditName}
+                    disabled={updatingName}
+                    className="px-4 py-2 border rounded"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-800 text-sm leading-relaxed mt-2">
+                {prodName || localProduct?.overview?.name || "N/A"}
+              </p>
+            )}
           </div>
 
           {/* Price */}
@@ -652,15 +866,56 @@ const AlProductDetail = () => {
             </span>
           </div>
 
-          {/* Description */}
-          {product?.product?.description && (
+          {/* Description (editable) */}
+          {localProduct?.product?.description !== undefined && (
             <div className="p-4 bg-gray-50 rounded-xl">
-              <h3 className="text-sm font-medium text-gray-600 mb-1">
-                Description
-              </h3>
-              <p className="text-gray-800 text-sm leading-relaxed">
-                {product.product.description}
-              </p>
+              <div className="flex justify-between items-start">
+                <h3 className="text-sm font-medium text-gray-600 mb-1">
+                  Description
+                </h3>
+                {!isEditingDesc && (
+                  <button
+                    onClick={startEditDesc}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              {isEditingDesc ? (
+                <div className="mt-2">
+                  <textarea
+                    value={editingDesc}
+                    onChange={(e) => setEditingDesc(e.target.value)}
+                    rows={6}
+                    className="w-full p-3 border rounded resize-y"
+                    placeholder="Enter custom description..."
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button
+                      onClick={saveDesc}
+                      disabled={updatingDesc}
+                      className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                    >
+                      {updatingDesc ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={cancelEditDesc}
+                      disabled={updatingDesc}
+                      className="px-4 py-2 border rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-800 text-sm leading-relaxed mt-2">
+                  {productDesc ||
+                    localProduct.product.description ||
+                    "No description available."}
+                </p>
+              )}
             </div>
           )}
 

@@ -736,17 +736,37 @@ const AlProducts = () => {
   };
 
   // Fetch custom names from backend
-  const fetchCustomNames = async () => {
-    try {
-      const response = await fetch(`${backednUrl}/api/custom-names`);
-      if (response.ok) {
-        const data = await response.json();
-        setCustomNames(data.customNames || {});
-      }
-    } catch (error) {
-      console.error("Error fetching custom names:", error);
+  // Fetch custom names and normalize to { "<id>": "<string>" }
+const fetchCustomNames = async () => {
+  try {
+    const response = await fetch(`${backednUrl}/api/custom-names`);
+    if (!response.ok) {
+      console.error("Failed to fetch custom names:", response.status);
+      return;
     }
-  };
+    const data = await response.json();
+    const raw = data.customNames ?? data ?? {};
+
+    const normalized = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => {
+        // if v is object like { customName: 'Foo' } pick the likely field
+        let name =
+          typeof v === "string"
+            ? v
+            : v && typeof v === "object"
+            ? v.customName ?? v.custom_name ?? v.name ?? ""
+            : "";
+        return [String(k), name];
+      })
+    );
+
+    setCustomNames(normalized);
+    console.log("customNames normalized:", normalized);
+  } catch (error) {
+    console.error("Error fetching custom names:", error);
+  }
+};
+
 
   // Update product name
   const updateProductName = async (productId, newName) => {

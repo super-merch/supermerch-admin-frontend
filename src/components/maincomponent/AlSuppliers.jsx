@@ -89,7 +89,7 @@ const AlSuppliers = () => {
   };
 
   useEffect(() => {
-    fetchSuppliers(1);
+    // fetchSuppliers(1);
     fetchSupplierMargins();
   }, []);
 
