@@ -370,7 +370,7 @@ const AdminContextProvider = (props) => {
       setUserOrders(filtered);
     } catch (error) {
       console.error("Error fetching user's orders:", error);
-      toast.error("Failed to fetch user's orders");
+      toast.error("Not a registered user");
     }
   };
 
@@ -409,6 +409,114 @@ const AdminContextProvider = (props) => {
       setLoading(false);
     }
   };
+  // Add these to your AdminContext or API service
+const addOrderComment = async (orderId, comment) => {
+  try {
+    const response = await fetch(`${backednUrl}/api/comments/add-comment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+         // your auth token
+      },
+      body: JSON.stringify({
+        OrderId: orderId,
+        comments: comment,
+      }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      toast.success("Comment added successfully");
+      return { success: true, data };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    toast.error("Failed to add comment");
+    return { success: false };
+  }
+};
+const deleteOrderComment = async (orderId, commentIndex) => {
+  try {
+    const response = await fetch(`${backednUrl}/api/comments/get-comment/${orderId}`);
+    
+    if (!response.ok) return { success: false };
+    
+    const data = await response.json();
+    const updatedComments = data.comments.filter((_, index) => index !== commentIndex);
+    
+    if (updatedComments.length === 0) {
+      // Delete the entire document if no comments left
+      const deleteResponse = await fetch(`${backednUrl}/api/comments/delete-comment/${orderId}`, {
+        method: "DELETE",
+      });
+      
+      if (deleteResponse.ok) {
+        toast.success("Comment deleted successfully");
+        return { success: true, data: null };
+      }
+    } else {
+      // Update with remaining comments
+      const updateResponse = await fetch(`${backednUrl}/api/comments/update-comment/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ comments: updatedComments }),
+      });
+      
+      if (updateResponse.ok) {
+        toast.success("Comment deleted successfully");
+        return { success: true, data: { ...data, comments: updatedComments } };
+      }
+    }
+    
+    return { success: false };
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    toast.error("Failed to delete comment");
+    return { success: false };
+  }
+};
+
+const updateOrderComment = async (orderId, comments) => {
+  try {
+    const response = await fetch(`${backednUrl}/api/comments/update-comment/${orderId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        
+      },
+      body: JSON.stringify({ comments }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      toast.success("Comment updated successfully");
+      return { success: true, data };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error("Error updating comment:", error);
+    toast.error("Failed to update comment");
+    return { success: false };
+  }
+};
+
+const getOrderComments = async (orderId) => {
+  try {
+    const response = await fetch(`${backednUrl}/api/comments/get-comment/${orderId}`);
+    if (response.status === 404) {
+      return { success: true, data: null };
+    }
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    return { success: false };
+  }
+};
 
   const updateOrder = async (orderId, orderData) => {
     try {
@@ -638,6 +746,7 @@ const AdminContextProvider = (props) => {
     orders,
     supplierLoading,
     fetchOrders,
+    deleteOrderComment,
     updateOrderStatus,
     aToken,
     setAToken,
@@ -654,6 +763,9 @@ const AdminContextProvider = (props) => {
     suppliers,
     deleteOrder,
     setSuppliers,
+    addOrderComment,
+    updateOrderComment,
+    getOrderComments,
     getSingleUser,
     setProducts,
     deleteLoading,

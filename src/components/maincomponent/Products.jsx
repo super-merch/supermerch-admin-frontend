@@ -6,11 +6,18 @@ import { toast } from "react-toastify";
 import AddressAutocomplete from "../AddressAutoComplete";
 import { LuSquareArrowOutUpRight } from "react-icons/lu";
 
-
 const Products = () => {
   const { id } = useParams();
-  const { orders, updateOrder, fetchOrders, sendNote } =
-    useContext(AdminContext);
+  const {
+    orders,
+    updateOrder,
+    fetchOrders,
+    sendNote,
+    getOrderComments,
+    updateOrderComment,
+    addOrderComment,
+    deleteOrderComment,
+  } = useContext(AdminContext);
 
   const [checkout, setCheckout] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +26,77 @@ const Products = () => {
   const [updating, setUpdating] = useState(false);
   const [note, setNote] = useState("");
   const navigate = useNavigate();
+  const [orderComments, setOrderComments] = useState(null);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [addingComment, setAddingComment] = useState(false);
+
+  // Add this useEffect to fetch comments when checkout data loads
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!checkout?._id) return;
+
+      setLoadingComments(true);
+      const result = await getOrderComments(checkout._id);
+      if (result.success) {
+        setOrderComments(result.data);
+      }
+      setLoadingComments(false);
+    };
+
+    fetchComments();
+  }, [checkout?._id]);
+
+  const handleAddOrUpdateComment = async () => {
+    if (!newComment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+
+    setAddingComment(true);
+
+    try {
+      let result;
+      if (orderComments) {
+        // Update existing comments
+        const updatedComments = [...orderComments.comments, newComment];
+        result = await updateOrderComment(checkout._id, updatedComments);
+        if (result.success) {
+          setOrderComments({
+            ...orderComments,
+            comments: updatedComments,
+          });
+        }
+      } else {
+        // Add first comment
+        result = await addOrderComment(checkout._id, newComment);
+        if (result.success) {
+          setOrderComments(result.data);
+        }
+      }
+
+      if (result.success) {
+        setNewComment("");
+      }
+    } catch (error) {
+      console.error("Error handling comment:", error);
+    } finally {
+      setAddingComment(false);
+    }
+  };
+  const handleDeleteComment = async (commentIndex) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    setLoadingComments(true);
+    const result = await deleteOrderComment(checkout._id, commentIndex);
+
+    if (result.success) {
+      setOrderComments(result.data);
+    }
+    setLoadingComments(false);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -40,6 +118,7 @@ const Products = () => {
     if (mounted) {
       setCheckout(found);
       setLoading(false);
+      console.log(found)
     }
 
     return () => {
@@ -52,7 +131,6 @@ const Products = () => {
       toast.error("Order not found");
       return;
     }
-
 
     setEditData({
       user: {
@@ -125,9 +203,14 @@ const Products = () => {
 
   const handleUpdateOrder = async () => {
     if (!editData) return;
-    if(!checkout.user || !checkout.billingAddress || !checkout.shippingAddress || !checkout.products){
+    if (
+      !checkout.user ||
+      !checkout.billingAddress ||
+      !checkout.shippingAddress ||
+      !checkout.products
+    ) {
       toast.error("Please fill all input fields");
-      return
+      return;
     }
 
     setUpdating(true);
@@ -244,12 +327,16 @@ const Products = () => {
           </p>
         </div>
       </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">User:</span>
-            <span onClick={()=>navigate(`/user-orders/${checkout.userId} `)} className="font-medium cursor-pointer text-blue-800 underline">
-              {checkout.user?.firstName} {checkout.user?.lastName} <LuSquareArrowOutUpRight className=" inline pl-1 pb-[6px]" />
-            </span>
-          </div>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold">User:</span>
+        <span
+          onClick={() => navigate(`/user-orders/${checkout.userId} `)}
+          className="font-medium cursor-pointer text-blue-800 underline"
+        >
+          {checkout.user?.firstName} {checkout.user?.lastName}{" "}
+          <LuSquareArrowOutUpRight className=" inline pl-1 pb-[6px]" />
+        </span>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Billing + Shipping + Table */}
@@ -267,6 +354,9 @@ const Products = () => {
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                       Product
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                      Logo
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                       Colour
@@ -311,8 +401,12 @@ const Products = () => {
                         </div>
                       </td>
 
+
                       <td className="px-3 py-3 text-sm text-gray-700">
                         <div className="font-medium">{product.name}</div>
+                      </td>
+                      <td className="text-sm text-gray-700">
+                        <img src={product?.logo ? product.logo : ""} className="min-w-20" alt="" />
                       </td>
 
                       <td className="px-3 py-3 text-sm text-gray-700">
@@ -521,7 +615,91 @@ const Products = () => {
             <p className="text-sm text-blue-600 underline">
               {checkout.user?.email}
             </p>
-            <p className="text-sm text-gray-700">{checkout.user?.phone}</p>
+            {/* <p className="text-sm text-gray-700">{checkout.user?.phone}</p> */}
+          </div>
+          {/* Comments Section - Add this after the Customer card in the aside */}
+          <div className="p-4 border border-gray-200 rounded bg-white">
+            <h4 className="text-md font-semibold mb-3">Order Comments</h4>
+
+            {loadingComments ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-6 h-6 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Display existing comments */}
+                {/* Display existing comments */}
+                {orderComments?.comments &&
+                orderComments.comments.length > 0 ? (
+                  <div className="mb-4">
+                    <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                      {orderComments.comments.map((comment, index) => (
+                        <li
+                          key={index}
+                          className="text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-2 border-blue-500 flex justify-between items-start gap-2"
+                        >
+                          <div>
+                            <span className="font-medium text-blue-600">
+                              Comment {index + 1}:
+                            </span>{" "}
+                            {comment}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteComment(index)}
+                            className="text-red-500 hover:text-red-700 flex-shrink-0"
+                            title="Delete comment"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 mb-4">
+                    No comments yet. Add the first comment below.
+                  </p>
+                )}
+
+                {/* Add new comment */}
+                <div className="space-y-2">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a new comment..."
+                    className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                    rows="3"
+                  />
+                  <button
+                    onClick={handleAddOrUpdateComment}
+                    disabled={addingComment || !newComment.trim()}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                  >
+                    {addingComment && (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {addingComment
+                      ? "Adding..."
+                      : orderComments
+                      ? "Add Comment"
+                      : "Add First Comment"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </aside>
       </div>

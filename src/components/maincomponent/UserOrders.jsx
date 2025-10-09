@@ -21,7 +21,6 @@ export default function UserOrders() {
       setLoading(false);
       const data = await getSingleUser(id);
       setUser(data.user)
-      console.log(data.user)
     };
     getOrders();
   }, []);
@@ -62,12 +61,12 @@ export default function UserOrders() {
             <span className="font-medium text-gray-600">Joined: </span>
             <span className="text-gray-800">{user?.createdAt.slice(0,10)}</span>
           </div>
-          {userOrders[0]?.user.phone &&
+          {/* {userOrders[0]?.user.phone &&
             <div>
             <span className="font-medium text-gray-600">Phone: </span>
             <span className="text-gray-800">{userOrders[0]?.user.phone}</span>
           </div>
-          }
+          } */}
         </div>
       </div>
 

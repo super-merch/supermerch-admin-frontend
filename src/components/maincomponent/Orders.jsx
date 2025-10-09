@@ -71,13 +71,13 @@ const Orders = () => {
   const [cancelledOrders, setCancelledOrders] = useState(0);
 
   useEffect(() => {
-    const loadData = async()=>{
-      const response = await fetchOrders("", 1,{},ordersPerPage);
+    const loadData = async () => {
+      const response = await fetchOrders("", 1, {}, ordersPerPage);
       setTotalOrders(response.pagination.totalOrders);
       setPendingOrders(response.pendingOrders);
       setDeliveredOrders(response.deliveredOrders);
       setCancelledOrders(response.cancelledOrders);
-    }
+    };
     loadData();
   }, [ordersPerPage]);
   const handlePaymentStatusChange = async (orderId, newPaymentStatus) => {
@@ -101,13 +101,18 @@ const Orders = () => {
       }
 
       // Option 1: Refetch orders (current approach)
-      fetchOrders("", currentPage, {
-        searchTerm,
-        filterStatus,
-        filterDate,
-        sortBy,
-        sortOrder,
-      },ordersPerPage);
+      fetchOrders(
+        "",
+        currentPage,
+        {
+          searchTerm,
+          filterStatus,
+          filterDate,
+          sortBy,
+          sortOrder,
+        },
+        ordersPerPage
+      );
 
       // Option 2: Update local state directly (if you have setOrders in AdminContext)
       // setOrders(prevOrders =>
@@ -132,7 +137,7 @@ const Orders = () => {
       sortBy,
       sortOrder,
     };
-    fetchOrders("", currentPage, filters,ordersPerPage);
+    fetchOrders("", currentPage, filters, ordersPerPage);
   }, [currentPage, searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
 
   // Update goToPage, goToPreviousPage, goToNextPage functions
@@ -174,7 +179,8 @@ const Orders = () => {
               <button
                 onClick={() => {
                   setDeleteId("");
-                  setDeleteModel(false)}}
+                  setDeleteModel(false);
+                }}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded mr-2"
               >
                 Cancel
@@ -207,7 +213,7 @@ const Orders = () => {
           </button>
           <button
             className="bg-blue-700 hover:bg-blue-800 text-white mb-3 py-2 px-4 rounded"
-            onClick={() => fetchOrders("", 1,{},ordersPerPage)}
+            onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
           >
             {"Refresh Orders"}
           </button>
@@ -520,28 +526,30 @@ const Orders = () => {
               </span>
               {/* change order numbers per page */}
               {/* Orders per page selector */}
-<div className="flex items-center gap-2 ml-4">
-  <label htmlFor="ordersPerPage" className="text-sm text-gray-600">
-    Orders per page:
-  </label>
-  <select
-    id="ordersPerPage"
-    value={ordersPerPage}
-    onChange={(e) => {
-      setOrdersPerPage(Number(e.target.value)); // make sure it's a number
-      setCurrentPage(1); // reset to first page
-    }}
-    className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-800"
-  >
-    <option value={5}>5</option>
-    <option value={10}>10</option>
-    <option value={15}>15</option>
-    <option value={20}>20</option>
-    <option value={30}>30</option>
-    <option value={40}>40</option>
-  </select>
-</div>
-
+              <div className="flex items-center gap-2 ml-4">
+                <label
+                  htmlFor="ordersPerPage"
+                  className="text-sm text-gray-600"
+                >
+                  Orders per page:
+                </label>
+                <select
+                  id="ordersPerPage"
+                  value={ordersPerPage}
+                  onChange={(e) => {
+                    setOrdersPerPage(Number(e.target.value)); // make sure it's a number
+                    setCurrentPage(1); // reset to first page
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-800"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={40}>40</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
