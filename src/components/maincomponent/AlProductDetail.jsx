@@ -288,7 +288,6 @@ const AlProductDetail = () => {
           `${backednUrl}/api/add-discount/discounts/${id}`,
           { headers: { Authorization: `Bearer ${aToken}` } }
         );
-
         // Check if discount data exists in response
         if (res.data.data) {
           const { discount, discountPrice } = res.data.data;
@@ -358,7 +357,6 @@ const AlProductDetail = () => {
           `${backednUrl}/api/product-margin/margin/${id}`,
           { headers: { Authorization: `Bearer ${aToken}` } }
         );
-
         // Check if margin data exists in response
         if (res.data.data) {
           const { margin, marginPrice } = res.data.data;

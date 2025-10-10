@@ -144,7 +144,6 @@ export default function SupplierCategories() {
       setActionLoading(null);
     }
   }
-
   // Activate category - removes it from the modal/database
   async function activateCategory(cat) {
     setActionLoading(cat.groupId);

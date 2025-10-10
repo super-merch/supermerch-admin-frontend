@@ -34,7 +34,6 @@ const Products = () => {
   // Add this useEffect to fetch comments when checkout data loads
   useEffect(() => {
     const fetchComments = async () => {
-      if (!checkout?._id) return;
 
       setLoadingComments(true);
       const result = await getOrderComments(checkout._id);
@@ -125,6 +124,7 @@ const Products = () => {
       mounted = false;
     };
   }, [id, orders]);
+
 
   const handleEditClick = () => {
     if (!checkout) {
@@ -220,7 +220,6 @@ const Products = () => {
       if (result.success) {
         toast.success("Order updated successfully!");
         setShowEditModal(false);
-
         // Refresh the orders to get updated data
         await fetchOrders(id);
       } else {
