@@ -35,6 +35,7 @@ const User = () => {
 
   useEffect(() => {
     fetchUsers();
+    console.log(users)
   }, []);
 
   // Updated useEffect for pagination and search

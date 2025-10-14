@@ -329,7 +329,7 @@ const AdminContextProvider = (props) => {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error("Failed to fetch users");
+      toast.error("User not found");
       setLoading(false);
       if (error.response.data.message == "Not Authorized Login Again") {
         const handleLogout = () => {

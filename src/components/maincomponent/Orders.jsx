@@ -4,6 +4,7 @@ import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { Search } from "lucide-react";
 import { toast } from "react-toastify";
+import EmailTemplatesManager from "./EmailTemplatesManager";
 
 const Orders = () => {
   const {
@@ -26,7 +27,7 @@ const Orders = () => {
   const [ordersPerPage, setOrdersPerPage] = useState(20);
   const [deleteModel, setDeleteModel] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
+  const [showTemplates, setShowTemplates] = useState(false);
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -216,6 +217,12 @@ const Orders = () => {
             onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
           >
             {"Refresh Orders"}
+          </button>
+          <button
+            className="bg-blue-700 hover:bg-blue-800 text-white mb-3 py-2 px-4 rounded"
+            onClick={() => setShowTemplates(true)}
+          >
+            Email Templates
           </button>
         </div>
       </div>
@@ -554,6 +561,10 @@ const Orders = () => {
           )}
         </div>
       )}
+      <EmailTemplatesManager
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+      />
     </div>
   );
 };

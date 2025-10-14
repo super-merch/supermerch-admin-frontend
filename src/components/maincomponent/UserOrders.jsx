@@ -20,7 +20,8 @@ export default function UserOrders() {
       await fetchUserOrders(id);
       setLoading(false);
       const data = await getSingleUser(id);
-      setUser(data.user)
+      setUser(data.user);
+      console.log(data.user);
     };
     getOrders();
   }, []);
@@ -46,12 +47,10 @@ export default function UserOrders() {
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
           User Details
         </h2>
-        <div className="grid grid-cols-2 gap-2 text-base max-w-xl">
+        <div className="grid grid-cols-3 gap-2 text-base">
           <div>
             <span className="font-medium text-gray-600">Name: </span>
-            <span className="text-gray-800">
-              {user?.name}
-            </span>
+            <span className="text-gray-800">{user?.name}</span>
           </div>
           <div>
             <span className="font-medium text-gray-600">Email: </span>
@@ -59,14 +58,32 @@ export default function UserOrders() {
           </div>
           <div>
             <span className="font-medium text-gray-600">Joined: </span>
-            <span className="text-gray-800">{user?.createdAt.slice(0,10)}</span>
+            <span className="text-gray-800">
+              {user?.createdAt.slice(0, 10)}
+            </span>
           </div>
-          {/* {userOrders[0]?.user.phone &&
-            <div>
-            <span className="font-medium text-gray-600">Phone: </span>
-            <span className="text-gray-800">{userOrders[0]?.user.phone}</span>
-          </div>
-          } */}
+          {user?.defaultShippingAddress && (
+            <>
+              <div>
+                <span className="font-medium text-gray-600">Address: </span>
+                <span className="text-gray-800">
+                  {user?.defaultShippingAddress?.addressLine}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">City: </span>
+                <span className="text-gray-800">
+                  {user?.defaultShippingAddress?.city}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Phone: </span>
+                <span className="text-gray-800">
+                  {user?.defaultShippingAddress?.phone}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
