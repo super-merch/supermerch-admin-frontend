@@ -304,6 +304,23 @@ const AdminContextProvider = (props) => {
       setError(err.message);
     }
   }
+  const getLogo = async(id)=>{
+    try {
+      const response = await fetch(
+        `${backednUrl}/api/checkout/get-logo/${id}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch Suppliers");
+
+      const data = await response.json();
+
+      if (!data || !data.data) {
+        throw new Error("Unexpected API response structure");
+      }
+      return data.data
+    } catch (err) {
+      console.log(err.message);
+    }
+  }
 
   const [usersPagination, setUsersPagination] = useState(null);
   const navigate = useNavigate();
@@ -749,6 +766,7 @@ const getOrderComments = async (orderId) => {
     deleteOrderComment,
     updateOrderStatus,
     aToken,
+    getLogo,
     setAToken,
     fetchUserOrders,
     userOrders,
