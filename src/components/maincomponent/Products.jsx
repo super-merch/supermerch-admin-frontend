@@ -507,10 +507,14 @@ const Products = () => {
         Order Summary
       </h2>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Shipping</span>
           <span className="font-medium">{formatCurrency(checkout.shipping)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Setup Fee</span>
+          <span className="font-medium">{formatCurrency(checkout.setupFee)}</span>
         </div>
 
         <div className="flex justify-between text-sm">
@@ -632,6 +636,10 @@ const Products = () => {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>{formatCurrency(checkout.shipping)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Setup Fee</span>
+                <span>{formatCurrency(checkout.setupFee)}</span>
               </div>
               <div className="flex justify-between">
                 <span>GST</span>
