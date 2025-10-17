@@ -65,9 +65,23 @@ export default function UserOrders() {
           {user?.defaultShippingAddress && (
             <>
               <div>
-                <span className="font-medium text-gray-600">Address: </span>
+                <span className="font-medium text-gray-600">
+                  Company Name:{" "}
+                </span>
                 <span className="text-gray-800">
-                  {user?.defaultShippingAddress?.addressLine}
+                  {user?.defaultShippingAddress?.companyName}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">State: </span>
+                <span className="text-gray-800">
+                  {user?.defaultShippingAddress?.state}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Postal Code: </span>
+                <span className="text-gray-800">
+                  {user?.defaultShippingAddress?.postalCode}
                 </span>
               </div>
               <div>
@@ -85,6 +99,12 @@ export default function UserOrders() {
             </>
           )}
         </div>
+        {user?.defaultShippingAddress &&<div className="mt-3 max-w-2xl" >
+          <span className="font-medium  text-gray-600">Address: </span>
+          <span className="text-gray-800">
+            {user?.defaultShippingAddress?.addressLine}
+          </span>
+        </div>}
       </div>
 
       <div className="overflow-x-auto">
@@ -93,8 +113,7 @@ export default function UserOrders() {
             <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
             <p className="ml-4 text-lg font-semibold">Loading orders...</p>
           </div>
-        ):
-        user ? (
+        ) : user ? (
           <div>
             <div className="flex items-center justify-start gap-5 mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Total Orders</h2>
@@ -154,8 +173,7 @@ export default function UserOrders() {
               </tbody>
             </table>
           </div>
-        ):
-        (
+        ) : (
           <div className="flex items-center justify-center">
             <p className="text-lg font-semibold">User not found.</p>
           </div>

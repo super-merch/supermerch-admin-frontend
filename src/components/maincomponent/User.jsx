@@ -195,9 +195,10 @@ const User = () => {
             <th className="px-2 text-left border-r">Sr. No</th>
             <th className="px-2 text-left border-r">Username</th>
             <th className="pl-2 text-left border-r">Email</th>
+            <th className="pl-2 text-left border-r">Phone</th>
+            <th className="pl-2 text-left border-r">City</th>
             <th className="pl-2 text-left border-r">Joined</th>
-            {/* <th className="pl-2 text-left border-r">Phone</th>
-            <th className="pl-2 text-left border-r">Country</th>
+            {/* <th className="pl-2 text-left border-r">Country</th>
             <th className="pl-2 text-left border-r">Address</th>
             <th className="pl-2 text-left border-r">Postal Code</th> */}
             <th className="pl-2 text-left">Action</th>
@@ -211,6 +212,8 @@ const User = () => {
               </td>
               <td className="p-2 border">{user.name}</td>
               <td className="p-2 border">{user.email}</td>
+              <td className="p-2 border">{user?.defaultShippingAddress?.phone || "-"}</td>
+              <td className="p-2 border">{user?.defaultShippingAddress?.city || "-"}</td>
               <td className="p-2 border">{new Date(user.createdAt).toLocaleString()}</td>
               {/* <td className="p-2 border">{user?.defaultAddress?.phone || "No Phone"}</td>
               <td className="p-2 border">{user?.defaultAddress?.country || "No Country"}</td>
