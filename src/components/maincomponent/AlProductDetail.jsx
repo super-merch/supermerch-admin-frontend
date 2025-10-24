@@ -478,9 +478,6 @@ const AlProductDetail = () => {
       const basePrice = trueBasePrice || price;
 
       const res = await addDiscount(product.meta.id, p, basePrice);
-      if (res.status == "global") {
-        return toast.error(res.message);
-      }
       setDiscountMessage(res.data.message);
 
       toast.success(res.data.message || "Discount applied successfully!");
@@ -662,7 +659,7 @@ const AlProductDetail = () => {
                   Base Price
                 </span>
                 <span className="text-xl font-bold text-blue-800">
-                  ${newBasePrice.toFixed(2)}
+                  ${newBasePrice?.toFixed(2)}
                 </span>
               </div>
 
@@ -683,7 +680,7 @@ const AlProductDetail = () => {
                     Discounted Price
                   </span>
                   <span className="text-xl font-bold text-green-800">
-                    ${discountPrice.toFixed(2)}
+                    ${discountPrice?.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -754,7 +751,7 @@ const AlProductDetail = () => {
                   Price with Margin
                 </span>
                 <span className="text-xl font-bold text-emerald-800">
-                  ${marginPrice.toFixed(2)}
+                  ${marginPrice?.toFixed(2)}
                 </span>
               </div>
             )}
