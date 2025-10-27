@@ -67,6 +67,130 @@ const AlProducts = () => {
   const [bestSellerIds, setBestSellerIds] = useState(new Set());
   const [bestSellerLoading, setBestSellerLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  // Add these state variables after your existing useState declarations
+  const [bulkMode, setBulkMode] = useState(null); // 'australia-add', 'australia-remove', '24hour-add', '24hour-remove', or null
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Add these handler functions
+  const handleBulkSelect = (productId) => {
+    setSelectedProducts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const eligibleProducts = currentProducts.filter((product) => {
+      const productId = String(product.meta.id);
+      if (bulkMode === "australia-add") {
+        return !australiaIds.has(productId);
+      } else if (bulkMode === "australia-remove") {
+        return australiaIds.has(productId);
+      } else if (bulkMode === "24hour-add") {
+        return !productionIds.has(productId);
+      } else if (bulkMode === "24hour-remove") {
+        return productionIds.has(productId);
+      }
+      return false;
+    });
+
+    setSelectedProducts(
+      new Set(eligibleProducts.map((p) => String(p.meta.id)))
+    );
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedProducts(new Set());
+  };
+
+  const handleBulkAction = async () => {
+    if (selectedProducts.size === 0) {
+      toast.warning("Please select at least one product");
+      return;
+    }
+
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(selectedProducts);
+      let endpoint = "";
+      let actionName = "";
+
+      if (bulkMode === "australia-add") {
+        endpoint = `${backednUrl}/api/australia/bulk-add`;
+        actionName = "Australia";
+      } else if (bulkMode === "australia-remove") {
+        endpoint = `${backednUrl}/api/australia/bulk-remove`;
+        actionName = "Australia";
+      } else if (bulkMode === "24hour-add") {
+        endpoint = `${backednUrl}/api/24hour/bulk-add`;
+        actionName = "24 Hour Production";
+      } else if (bulkMode === "24hour-remove") {
+        endpoint = `${backednUrl}/api/24hour/bulk-remove`;
+        actionName = "24 Hour Production";
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const action = bulkMode.includes("add") ? "added to" : "removed from";
+        toast.success(
+          `${data.added || data.removed} products ${action} ${actionName}!`
+        );
+
+        // Refresh data
+        if (bulkMode.includes("australia")) {
+          await getAllAustralia();
+        } else {
+          await getAll24HourProduction();
+        }
+
+        // Reset selection
+        setSelectedProducts(new Set());
+        setBulkMode(null);
+      } else {
+        toast.error(`Failed to perform bulk action`);
+      }
+    } catch (error) {
+      console.error("Bulk action error:", error);
+      toast.error("Error performing bulk action");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const cancelBulkMode = () => {
+    setBulkMode(null);
+    setSelectedProducts(new Set());
+  };
+
+  const isProductSelectable = (product) => {
+    if (!bulkMode) return false;
+
+    const productId = String(product.meta.id);
+    if (bulkMode === "australia-add") {
+      return !australiaIds.has(productId);
+    } else if (bulkMode === "australia-remove") {
+      return australiaIds.has(productId);
+    } else if (bulkMode === "24hour-add") {
+      return !productionIds.has(productId);
+    } else if (bulkMode === "24hour-remove") {
+      return productionIds.has(productId);
+    }
+    return false;
+  };
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -737,36 +861,35 @@ const AlProducts = () => {
 
   // Fetch custom names from backend
   // Fetch custom names and normalize to { "<id>": "<string>" }
-const fetchCustomNames = async () => {
-  try {
-    const response = await fetch(`${backednUrl}/api/custom-names`);
-    if (!response.ok) {
-      console.error("Failed to fetch custom names:", response.status);
-      return;
+  const fetchCustomNames = async () => {
+    try {
+      const response = await fetch(`${backednUrl}/api/custom-names`);
+      if (!response.ok) {
+        console.error("Failed to fetch custom names:", response.status);
+        return;
+      }
+      const data = await response.json();
+      const raw = data.customNames ?? data ?? {};
+
+      const normalized = Object.fromEntries(
+        Object.entries(raw).map(([k, v]) => {
+          // if v is object like { customName: 'Foo' } pick the likely field
+          let name =
+            typeof v === "string"
+              ? v
+              : v && typeof v === "object"
+              ? v.customName ?? v.custom_name ?? v.name ?? ""
+              : "";
+          return [String(k), name];
+        })
+      );
+
+      setCustomNames(normalized);
+      console.log("customNames normalized:", normalized);
+    } catch (error) {
+      console.error("Error fetching custom names:", error);
     }
-    const data = await response.json();
-    const raw = data.customNames ?? data ?? {};
-
-    const normalized = Object.fromEntries(
-      Object.entries(raw).map(([k, v]) => {
-        // if v is object like { customName: 'Foo' } pick the likely field
-        let name =
-          typeof v === "string"
-            ? v
-            : v && typeof v === "object"
-            ? v.customName ?? v.custom_name ?? v.name ?? ""
-            : "";
-        return [String(k), name];
-      })
-    );
-
-    setCustomNames(normalized);
-    console.log("customNames normalized:", normalized);
-  } catch (error) {
-    console.error("Error fetching custom names:", error);
-  }
-};
-
+  };
 
   // Update product name
   const updateProductName = async (productId, newName) => {
@@ -1025,6 +1148,103 @@ const fetchCustomNames = async () => {
             )}
           </Button>
         </form>
+        {/* Bulk Actions Bar */}
+        {!bulkMode ? (
+          <div className="mb-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              Bulk Actions
+            </h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                onClick={() => setBulkMode("australia-add")}
+                className="bg-green-600 hover:bg-green-700 text-sm"
+              >
+                Bulk Add to Australia
+              </Button>
+              <Button
+                onClick={() => setBulkMode("australia-remove")}
+                className="bg-red-600 hover:bg-red-700 text-sm"
+              >
+                Bulk Remove from Australia
+              </Button>
+              <Button
+                onClick={() => setBulkMode("24hour-add")}
+                className="bg-blue-600 hover:bg-blue-700 text-sm"
+              >
+                Bulk Add to 24Hr Production
+              </Button>
+              <Button
+                onClick={() => setBulkMode("24hour-remove")}
+                className="bg-orange-600 hover:bg-orange-700 text-sm"
+              >
+                Bulk Remove from 24Hr Production
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-300">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-blue-900">
+                {bulkMode === "australia-add" && "Bulk Add to Australia"}
+                {bulkMode === "australia-remove" &&
+                  "Bulk Remove from Australia"}
+                {bulkMode === "24hour-add" && "Bulk Add to 24 Hour Production"}
+                {bulkMode === "24hour-remove" &&
+                  "Bulk Remove from 24 Hour Production"}
+              </h3>
+              <button
+                onClick={cancelBulkMode}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-gray-700 mb-3">
+              {selectedProducts.size} product
+              {selectedProducts.size !== 1 ? "s" : ""} selected
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                className="text-sm"
+              >
+                Select All Eligible
+              </Button>
+              <Button
+                onClick={handleDeselectAll}
+                variant="outline"
+                className="text-sm"
+              >
+                Deselect All
+              </Button>
+              <Button
+                onClick={handleBulkAction}
+                disabled={selectedProducts.size === 0 || bulkLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-sm"
+              >
+                {bulkLoading
+                  ? "Processing..."
+                  : bulkMode.includes("add")
+                  ? "Add Selected"
+                  : "Remove Selected"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* dropdown to show sort by trendings, new arrivals, best sellers and all products(default) */}
         <div className="flex justify-between">
           <div className="flex justify-end mb-4">
@@ -1047,6 +1267,7 @@ const fetchCustomNames = async () => {
               ))}
             </select>
           </div>
+
           <div className="flex justify-end mb-4">
             <select
               value={sortOption}
@@ -1080,21 +1301,6 @@ const fetchCustomNames = async () => {
           ))}
       </div>
 
-      {/* <div className="flex justify-end mb-4">
-        <select
-          value={selectedSupplier}
-          onChange={handleSupplierChange}
-          className="px-4 py-2 border rounded"
-        >
-          <option value="">All Suppliers</option>
-          {uniqueSuppliers.map((supplier, index) => (
-            <option key={index} value={supplier}>
-              {supplier}
-            </option>
-          ))}
-        </select>
-      </div> */}
-
       <Table>
         <TableCaption>
           {isSearching
@@ -1105,12 +1311,13 @@ const fetchCustomNames = async () => {
         </TableCaption>
         <TableHeader>
           <TableRow>
+            {bulkMode && <TableHead className="w-[50px]">Select</TableHead>}
             <TableHead className="w-[100px]">Image</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Trending</TableHead>
-            <TableHead>New Arrival</TableHead>
-            <TableHead>Best Seller</TableHead>
+            {/* <TableHead>New Arrival</TableHead>
+            <TableHead>Best Seller</TableHead> */}
             <TableHead>Australia</TableHead>
             <TableHead>24Hr Prod</TableHead>
             <TableHead>Last Update</TableHead>
@@ -1134,17 +1341,39 @@ const fetchCustomNames = async () => {
             const productId = product.meta.id;
             const displayName = getDisplayName(product);
             const isEditing = editingProductId === productId;
-            // Check if this product is in trending by comparing product.meta.id with trending productIds
             const isTrending = trendingIds.has(String(productId));
-            // Check if this product is in new arrivals by comparing product.meta.id with new arrival productIds
-            const isNewArrival = newArrivalIds.has(String(productId));
-            // Check if this product is in best sellers by comparing product.meta.id with best seller productIds
-            const isBestSeller = bestSellerIds.has(String(productId));
+            // const isNewArrival = newArrivalIds.has(String(productId));
+            // const isBestSeller = bestSellerIds.has(String(productId));
             const isAustralia = australiaIds.has(String(productId));
             const is24HourProduction = productionIds.has(String(productId));
+            const isSelectable = isProductSelectable(product);
+            const isSelected = selectedProducts.has(String(product.meta.id));
 
             return (
-              <TableRow key={index}>
+              <TableRow
+                key={index}
+                className={
+                  !bulkMode
+                    ? ""
+                    : isSelectable
+                    ? "hover:bg-blue-50 cursor-pointer"
+                    : "opacity-50"
+                }
+              >
+                {bulkMode && (
+                  <TableCell>
+                    {isSelectable && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() =>
+                          handleBulkSelect(String(product.meta.id))
+                        }
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">
                   <img
                     src={
@@ -1229,7 +1458,7 @@ const fetchCustomNames = async () => {
                     {isTrending ? "Yes" : "No"}
                   </span>
                 </TableCell>
-                <TableCell>
+                {/* <TableCell>
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       isNewArrival
@@ -1250,7 +1479,7 @@ const fetchCustomNames = async () => {
                   >
                     {isBestSeller ? "Yes" : "No"}
                   </span>
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   {isAustralia ? (
                     <button
@@ -1449,7 +1678,7 @@ const fetchCustomNames = async () => {
                             </button>
                           )}
 
-                          {isNewArrival ? (
+                          {/* {isNewArrival ? (
                             <button
                               className="w-full text-left px-4 py-3 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium transition-colors flex items-center gap-3"
                               onClick={() => {
@@ -1501,9 +1730,9 @@ const fetchCustomNames = async () => {
                                 ? "Adding..."
                                 : "Add to New Arrival"}
                             </button>
-                          )}
+                          )} */}
 
-                          {isBestSeller ? (
+                          {/* {isBestSeller ? (
                             <button
                               className="w-full text-left px-4 py-3 text-sm bg-pink-50 hover:bg-pink-100 text-pink-700 font-medium transition-colors flex items-center gap-3"
                               onClick={() => {
@@ -1555,7 +1784,7 @@ const fetchCustomNames = async () => {
                                 ? "Adding..."
                                 : "Add to Best Seller"}
                             </button>
-                          )}
+                          )} */}
                         </div>
                       </div>
                     )}
