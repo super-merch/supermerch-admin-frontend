@@ -26,6 +26,8 @@ const AlSuppliers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [ignoredSuppliers, setIgnoredSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState({});
+  const [discounts, setDiscounts] = useState({}); // input values
+  const [supplierDiscounts, setSupplierDiscounts] = useState({}); // existing discounts from DB
   const [loading, setLoading] = useState(false);
   const [ignored, setIgnored] = useState(false);
   const [margins, setMargins] = useState({}); // Track margin input per supplier
@@ -36,6 +38,24 @@ const AlSuppliers = () => {
   const [mySearch, setMySearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const fetchSupplierDiscounts = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/add-discount/list-supplier-discounts`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const discountsObj = {};
+        (data.data || []).forEach((item) => {
+          discountsObj[item.supplierId] = item.discount;
+        });
+        setSupplierDiscounts(discountsObj);
+        setDiscounts(discountsObj); // initialize input fields with existing discounts
+      }
+    } catch (err) {
+      console.error("Error fetching supplier discounts:", err);
+    }
+  };
   useEffect(() => {
     if (!searchTerm) {
       // If search is cleared, fetch regular suppliers
@@ -91,7 +111,106 @@ const AlSuppliers = () => {
   useEffect(() => {
     // fetchSuppliers(1);
     fetchSupplierMargins();
+    fetchSupplierDiscounts();
   }, []);
+  const handleDiscountChange = (supplierId, value) => {
+    setDiscounts((prev) => ({ ...prev, [supplierId]: value }));
+  };
+  const handleAddDiscount = async (supplier) => {
+    setAddLoading(true);
+    const discountValue = parseFloat(discounts[supplier.id]);
+    if (isNaN(discountValue)) {
+      toast.error("Please enter a valid discount");
+      setAddLoading(false);
+      return;
+    }
+
+    setLoadingSuppliers((prev) => ({ ...prev, [supplier.id]: "adding" }));
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/add-discount/add-supplier-discounts`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supplierId: supplier.id,
+            discount: discountValue,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Discount added/updated successfully");
+        setSupplierDiscounts((prev) => ({
+          ...prev,
+          [supplier.id]: discountValue,
+        }));
+        window.dispatchEvent(
+          new CustomEvent("supplierDiscountChanged", {
+            detail: { supplierId: supplier.id },
+          })
+        );
+        fetchSupplierDiscounts();
+      } else {
+        const err = await response.json();
+        toast.error(err.message || "Failed to add/update discount");
+      }
+    } catch (err) {
+      console.error("Error adding/updating discount:", err);
+      toast.error("Error adding/updating discount");
+    } finally {
+      setAddLoading(false);
+      setLoadingSuppliers((prev) => {
+        const n = { ...prev };
+        delete n[supplier.id];
+        return n;
+      });
+    }
+  };
+  const handleDeleteDiscount = async (supplier) => {
+    setLoadingSuppliers((prev) => ({ ...prev, [supplier.id]: "deleting" }));
+    setAddLoading(true);
+
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/add-discount/delete-supplier-discounts?supplierId=${supplier.id}`,
+        { method: "DELETE" }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Discount deleted successfully");
+        setSupplierDiscounts((prev) => {
+          const n = { ...prev };
+          delete n[supplier.id];
+          return n;
+        });
+        setDiscounts((prev) => {
+          const n = { ...prev };
+          delete n[supplier.id];
+          return n;
+        });
+        fetchSupplierDiscounts();
+      } else {
+        const err = await response.json();
+        toast.error(err.message || "Failed to delete discount");
+      }
+    } catch (err) {
+      console.error("Error deleting discount:", err);
+      toast.error("Error deleting discount");
+    } finally {
+      setLoadingSuppliers((prev) => {
+        const n = { ...prev };
+        delete n[supplier.id];
+        return n;
+      });
+      setAddLoading(false);
+    }
+  };
 
   // Fetch supplier margins from API
   const fetchSupplierMargins = async () => {
@@ -197,9 +316,8 @@ const AlSuppliers = () => {
       toast.error(errorData.message);
     }
   };
-  const handleViewCategories = (supplier,margin) => {
+  const handleViewCategories = (supplier, margin) => {
     navigate("/supplier-categories", { state: { supplier, margin } });
-
   };
 
   // Handle margin input change
@@ -428,7 +546,8 @@ const AlSuppliers = () => {
             <TableHead>Country</TableHead>
             <TableHead>Active</TableHead>
             <TableHead>Created At</TableHead>
-            <TableHead>Manage Margin%s</TableHead>
+            <TableHead className="text-center">Manage Margin%</TableHead>
+            <TableHead className="text-center">Manage Discount%</TableHead>
             <TableHead className="text-right">Actions</TableHead>
             <TableHead className="text-right">View Categories</TableHead>
           </TableRow>
@@ -446,7 +565,7 @@ const AlSuppliers = () => {
                 <TableCell>{createdAt}</TableCell>
                 {/* Margin Management Cell */}
                 <TableCell>
-                  <div className="flex items-center gap-2">
+                  <div className="flex  items-center gap-2">
                     <input
                       type="number"
                       className="w-24 p-1 border rounded"
@@ -496,6 +615,57 @@ const AlSuppliers = () => {
                   )}
                 </TableCell>
                 <TableCell>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      className="w-24 p-1 border rounded"
+                      placeholder="Discount"
+                      value={discounts[sup.id] || ""}
+                      onChange={(e) =>
+                        handleDiscountChange(sup.id, e.target.value)
+                      }
+                    />
+                    <Button
+                      onClick={() => handleAddDiscount(sup)}
+                      disabled={loadingSuppliers[sup.id]}
+                      className={`${
+                        loadingSuppliers[sup.id]
+                          ? "cursor-not-allowed bg-blue-400 hover:bg-blue-400"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      }`}
+                    >
+                      {loadingSuppliers[sup.id] === "adding"
+                        ? supplierDiscounts[sup.id] !== undefined
+                          ? "Updating..."
+                          : "Adding..."
+                        : supplierDiscounts[sup.id] !== undefined
+                        ? "Update"
+                        : "Add"}
+                    </Button>
+                    {supplierDiscounts[sup.id] !== undefined && (
+                      <Button
+                        onClick={() => handleDeleteDiscount(sup)}
+                        disabled={loadingSuppliers[sup.id]}
+                        className={`${
+                          loadingSuppliers[sup.id]
+                            ? "cursor-not-allowed bg-red-400 hover:bg-red-400"
+                            : "bg-red-600 hover:bg-red-700"
+                        }`}
+                      >
+                        {loadingSuppliers[sup.id] === "deleting"
+                          ? "Deleting..."
+                          : "Delete"}
+                      </Button>
+                    )}
+                  </div>
+                  {supplierDiscounts[sup.id] !== undefined && (
+                    <div className="text-sm text-gray-600 mt-1">
+                      Current: {supplierDiscounts[sup.id]}
+                    </div>
+                  )}
+                </TableCell>
+
+                <TableCell>
                   {!ignored ? (
                     <Button
                       className="bg-red-700 hover:bg-red-600 mr-1 my-1"
@@ -515,7 +685,9 @@ const AlSuppliers = () => {
                 <TableCell>
                   <Button
                     className="bg-blue-700 hover:bg-blue-600 mr-1 my-1"
-                    onClick={() => handleViewCategories(sup,supplierMargins[sup.id])}
+                    onClick={() =>
+                      handleViewCategories(sup, supplierMargins[sup.id])
+                    }
                   >
                     Categories
                   </Button>

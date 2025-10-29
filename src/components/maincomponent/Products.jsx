@@ -16,6 +16,7 @@ const Products = () => {
     getOrderComments,
     updateOrderComment,
     addOrderComment,
+    getLogo,
     deleteOrderComment,
   } = useContext(AdminContext);
 
@@ -34,7 +35,6 @@ const Products = () => {
   // Add this useEffect to fetch comments when checkout data loads
   useEffect(() => {
     const fetchComments = async () => {
-
       setLoadingComments(true);
       const result = await getOrderComments(checkout._id);
       if (result.success) {
@@ -96,35 +96,41 @@ const Products = () => {
     }
     setLoadingComments(false);
   };
-
+  const [logo, setLogo] = useState("");
   useEffect(() => {
-    let mounted = true;
+    const mountData = async () => {
+      let mounted = true;
 
-    // Reset UI immediately when id changes so previous data doesn't flash
-    setCheckout(null);
-    setLoading(true);
+      // Reset UI immediately when id changes so previous data doesn't flash
+      setCheckout(null);
+      setLoading(true);
 
-    // If orders are not loaded yet, keep showing loader until they arrive
-    if (!orders || orders.length === 0) {
+      // If orders are not loaded yet, keep showing loader until they arrive
+      if (!orders || orders.length === 0) {
+        return () => {
+          mounted = false;
+        };
+      }
+
+      // Find the order (one pass)
+      const found = orders.find((o) => o._id === id) || null;
+
+      if (mounted) {
+        setCheckout(found);
+        setLoading(false);
+        if (found.artworkOption == "upload") {
+          const logo = await getLogo(found.logoId);
+          setLogo(logo);
+        }
+      }
+
       return () => {
         mounted = false;
       };
-    }
-
-    // Find the order (one pass)
-    const found = orders.find((o) => o._id === id) || null;
-
-    if (mounted) {
-      setCheckout(found);
-      setLoading(false);
-      console.log(found)
-    }
-
-    return () => {
-      mounted = false;
     };
-  }, [id, orders]);
 
+    mountData();
+  }, [id, orders]);
 
   const handleEditClick = () => {
     if (!checkout) {
@@ -140,6 +146,8 @@ const Products = () => {
         phone: checkout.user?.phone || "",
       },
       billingAddress: {
+        firstName: checkout.billingAddress?.firstName || "",
+        lastName: checkout.billingAddress?.lastName || "",
         addressLine: checkout.billingAddress?.addressLine || "",
         country: checkout.billingAddress?.country || "",
         state: checkout.billingAddress?.state || "",
@@ -354,9 +362,9 @@ const Products = () => {
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                       Product
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                    {/* <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                       Logo
-                    </th>
+                    </th> */}
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                       Colour
                     </th>
@@ -400,45 +408,48 @@ const Products = () => {
                         </div>
                       </td>
 
-
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         <div className="font-medium">{product.name}</div>
                       </td>
-                      <td className="text-sm text-gray-700">
-                        <img src={product?.logo ? product.logo : ""} className="min-w-20" alt="" />
-                      </td>
+                      {/* <td className="text-sm text-gray-700">
+                        <img
+                          src={product?.logo ? product.logo : ""}
+                          className="min-w-20"
+                          alt=""
+                        />
+                      </td> */}
 
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         {product.color || "—"}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         {product.print || "—"}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         {product.size && product.size !== "None"
                           ? product.size
                           : "—"}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700 text-right">
+                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
                         {formatCurrency(product.price)}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         {product.supplierName || "—"}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700">
+                      <td className="px-2 py-3 text-sm text-gray-700">
                         {product.id || "—"}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700 text-right">
+                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
                         {product.quantity || 0}
                       </td>
 
-                      <td className="px-3 py-3 text-sm text-gray-700 text-right">
+                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
                         {formatCurrency(product.subTotal)}
                       </td>
                     </tr>
@@ -451,36 +462,82 @@ const Products = () => {
           </div>
 
           {/* Totals (mobile-friendly place) */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <div className="flex flex-col md:flex-row md:justify-end gap-2">
-              <div className="w-full md:w-1/2">
-                <div className="flex justify-between py-1">
-                  <div className="text-sm text-gray-600">Shipping</div>
-                  <div className="text-sm font-medium">
-                    {formatCurrency(checkout.shipping)}
-                  </div>
-                </div>
-                <div className="flex justify-between py-1">
-                  <div className="text-sm text-gray-600">Discount</div>
-                  <div className="text-sm font-medium">
-                    {checkout.discount ? `${checkout.discount}%` : "0%"}
-                  </div>
-                </div>
-                <div className="flex justify-between py-1">
-                  <div className="text-sm text-gray-600">GST (10%)</div>
-                  <div className="text-sm font-medium">
-                    {formatCurrency(checkout.gst)}
-                  </div>
-                </div>
-                <div className="flex justify-between py-2 border-t mt-2">
-                  <div className="text-base font-semibold">Order Total</div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(checkout.total)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="p-5 border border-gray-200 rounded-lg bg-white shadow-sm">
+  <div className="flex flex-col md:flex-row md:justify-between gap-6">
+    {/* LEFT SECTION - ARTWORK INFO */}
+    <div className="w-full md:w-1/2">
+      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">
+        Artwork Details
+      </h2>
+
+      {checkout.artworkOption === "upload" && logo && (
+        <div className="mb-4 flex items-center justify-center">
+          <img
+            src={logo.logo}
+            alt="Uploaded Logo"
+            className="w-36 h-36 object-contain rounded-lg border border-gray-300 bg-gray-50 p-2 shadow-sm"
+          />
+        </div>
+      )}
+
+      {checkout.artworkOption !== "upload" && (
+        <div className="mb-3">
+          <p className="text-sm font-semibold text-gray-700">
+            Artwork Option:
+          </p>
+          <p className="text-sm capitalize text-gray-600">
+            {checkout.artworkOption === "on_file" ? "Already On File": checkout.artworkOption === "no_artwork" ? "No Artwork" : checkout.artworkOption || "N/A"}
+          </p>
+        </div>
+      )}
+
+      <div>
+        <p className="text-sm font-semibold text-gray-700">
+          {checkout.artworkOption === "text" ? "Text to be printed:" : " Artwork Instruction:"}
+        </p>
+        <p className="text-sm text-gray-600 whitespace-pre-wrap">
+          {checkout.artworkMessage || "No instructions provided"}
+        </p>
+      </div>
+    </div>
+
+    {/* RIGHT SECTION - ORDER SUMMARY */}
+    <div className="w-full md:w-1/2">
+      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">
+        Order Summary
+      </h2>
+
+      <div className="space-y-1">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Shipping</span>
+          <span className="font-medium">{formatCurrency(checkout.shipping)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Setup Fee</span>
+          <span className="font-medium">{formatCurrency(checkout.setupFee)}</span>
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Discount</span>
+          <span className="font-medium">
+            {checkout.discount ? `${checkout.discount}%` : "0%"}
+          </span>
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">GST (10%)</span>
+          <span className="font-medium">{formatCurrency(checkout.gst)}</span>
+        </div>
+
+        <div className="border-t pt-3 flex justify-between text-base font-semibold">
+          <span>Order Total</span>
+          <span>{formatCurrency(checkout.total)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
           {/* Addresses */}
           <div className="p-4 border border-gray-200 rounded bg-white">
             <div className="flex flex-col md:flex-row md:justify-between gap-6">
@@ -488,7 +545,7 @@ const Products = () => {
                 <h2 className="text-lg font-semibold mb-2">Billing</h2>
                 <p className="text-sm text-gray-700">
                   <strong>
-                    {checkout.user?.firstName} {checkout.user?.lastName}
+                    {checkout.billingAddress?.firstName || checkout.user?.firstName} {checkout.billingAddress?.lastName}
                   </strong>
                 </p>
                 <p className="text-sm text-gray-600">
@@ -579,6 +636,10 @@ const Products = () => {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>{formatCurrency(checkout.shipping)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Setup Fee</span>
+                <span>{formatCurrency(checkout.setupFee)}</span>
               </div>
               <div className="flex justify-between">
                 <span>GST</span>
