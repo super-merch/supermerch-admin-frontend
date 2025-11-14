@@ -151,6 +151,19 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </span>
         </Link>
         <Link
+          to="/admin-quotes"
+          className={`flex ${location.pathname == "/admin-quotes" && "bg-blue-700" || location.pathname == "/add-admin-quote" && "bg-blue-700" || location.pathname.slice(0, 19) == "/admin-quote-detail" && "bg-blue-700"  } items-center px-4 py-2 hover:bg-blue-600 group`}
+        >
+          <BsChatLeftQuoteFill size={20} className="mr-3 text-white" />
+          <span
+            className={`text-white group-hover:text-white transition-all duration-300 ${
+              !isOpen && "hidden"
+            }`}
+          >
+            Admin Quotes
+          </span>
+        </Link>
+        <Link
           to="/user-queries"
           className={`flex ${location.pathname == "/user-queries" && "bg-blue-700" || location.pathname.slice(0, 11) == "/user-query" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
         >

@@ -31,6 +31,9 @@ import Categories from "./components/maincomponent/Categories";
 import CategoryDetails from "./components/maincomponent/CategoryDetails";
 import EditBlog from "./components/maincomponent/EditBlog";
 import GlobalMargin from "./components/maincomponent/GlobalMargin";
+import AdminQuotes from "./components/maincomponent/AdminQuotes";
+import AdminQuoteDetails from "./components/maincomponent/AdminQuoteDetails";
+import AddAdminQuote from "./components/maincomponent/AddAdminQuote";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -74,6 +77,9 @@ const App = () => {
                 <Route path="/products" element={<PrivateRoute element={<AlProducts />} />} />
                 <Route path="/suppliers" element={<PrivateRoute element={<AlSuppliers />} />} />
                 <Route path="/supplier-categories" element={<PrivateRoute element={<SupplierCategories />} />} />
+                <Route path="/admin-quotes" element={<PrivateRoute element={<AdminQuotes />} />} />
+                <Route path="/admin-quote-detail/:id" element={<PrivateRoute element={<AdminQuoteDetails />} />} />
+                <Route path="/add-admin-quote" element={<PrivateRoute element={<AddAdminQuote />} />} />
                 <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
                 <Route path="/shipping" element={<PrivateRoute element={<ShippingCharges />} />} />
                 <Route path="/add-coupen" element={<PrivateRoute element={<AddCoupen />} />} />
