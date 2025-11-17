@@ -1,308 +1,216 @@
-import React, { useState, useContext, useEffect } from "react";
-import {
-  FaHome,
-  FaShoppingCart,
-  FaUser,
-  FaChartBar,
-  FaSignOutAlt,
-  FaBars,
-} from "react-icons/fa";
-import { BiCategory } from "react-icons/bi";
-import { FaLock } from "react-icons/fa";
-import { MdBorderColor } from "react-icons/md";
-import { BsChatLeftQuoteFill } from "react-icons/bs";
-import { MdDiscount } from "react-icons/md";
-import { TbLogs } from "react-icons/tb";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { FaBloggerB } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import React, { useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
-import { motion } from "framer-motion";
-import { RiCoupon2Fill } from "react-icons/ri";
-import { MdLocalShipping } from "react-icons/md";
-import { BsFillBoxFill } from "react-icons/bs";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Quote,
+  Package,
+  Truck,
+  FolderTree,
+  Users,
+  FileText,
+  MessageSquare,
+  BarChart3,
+  Percent,
+  Ticket,
+  Ship,
+  Lock,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { setAToken, showPopup, setShowPopup } = useContext(AdminContext);
-  const navigate = useNavigate(); // State to control popup visibility
-  //get params from url
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem("aToken");
     setAToken("");
     navigate("/login");
-    setShowPopup(false); // Close the popup after logout
+    setShowPopup(false);
   };
-  const location = useLocation();
 
+  const menuItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/", exact: true },
+    {
+      icon: ShoppingBag,
+      label: "Orders",
+      path: "/orders",
+      matches: ["/orders", "/all-users", "/user-orders", "/order-details"],
+    },
+    {
+      icon: Quote,
+      label: "Quote",
+      path: "/quote",
+      matches: ["/quote", "/quote-detail"],
+    },
+    {
+      icon: Package,
+      label: "Products",
+      path: "/products",
+      matches: ["/products", "/product"],
+    },
+    {
+      icon: Truck,
+      label: "Suppliers",
+      path: "/suppliers",
+      matches: ["/suppliers", "/supplier-categories"],
+    },
+    {
+      icon: FolderTree,
+      label: "Categories",
+      path: "/categories",
+      matches: ["/categories", "/category-detail"],
+    },
+    { icon: Users, label: "Users", path: "/users", exact: true },
+    {
+      icon: FileText,
+      label: "Admin Quotes",
+      path: "/admin-quotes",
+      matches: ["/admin-quotes", "/add-admin-quote", "/admin-quote-detail"],
+    },
+    {
+      icon: MessageSquare,
+      label: "Users Queries",
+      path: "/user-queries",
+      matches: ["/user-queries", "/user-query"],
+    },
+    {
+      icon: FileText,
+      label: "Blogs",
+      path: "/blogs",
+      matches: ["/blogs", "/add-blog"],
+    },
+    { icon: BarChart3, label: "Reports", path: "/reports", exact: true },
+    {
+      icon: Percent,
+      label: "Global Discount",
+      path: "/global-discount",
+      exact: true,
+    },
+    {
+      icon: Percent,
+      label: "Global Margin",
+      path: "/global-margin",
+      exact: true,
+    },
+    { icon: Ticket, label: "Coupon", path: "/add-coupen", exact: true },
+    { icon: Ship, label: "Shipping", path: "/shipping", exact: true },
+    { icon: Lock, label: "Change Password", path: "/change-pass", exact: true },
+  ];
+
+  const isActive = (item) => {
+    if (item.exact) {
+      return location.pathname === item.path;
+    }
+    if (item.matches) {
+      return item.matches.some((match) => location.pathname.startsWith(match));
+    }
+    return location.pathname.startsWith(item.path);
+  };
 
   return (
-    <div
-      className={`${
-        isOpen ? "w-64" : "w-20"
-      } transition-width duration-300 border-r   h-screen fixed flex flex-col text-white bg-[#080a54] z-50`}
-    >
-      {/* Sidebar Header */}
-      <div className="px-4 pt-4 flex items-center  justify-between">
-        <h1
-          className={` font-bold transition-all duration-300 ${
-            !isOpen && "hidden"
-          }`}
-        >
-          <img src="/LOGO.png" className="w-32 " alt="" />
-        </h1>
-        <button className="text-white" onClick={toggleSidebar}>
-          <FaBars size={24} />
-        </button>
+    <>
+      <div
+        className={`${
+          isOpen ? "w-64" : "w-20"
+        } transition-all duration-300 h-screen fixed flex flex-col bg-secondary border-r border-teal-500/20 shadow-2xl z-50`}
+      >
+        {/* Header */}
+        <div className="p-4 flex items-center justify-between border-b border-teal-500/20">
+          {isOpen && (
+            <div className="flex items-center gap-2">
+              <div className=" rounded-lg flex items-center justify-center">
+                <img src="/LOGO.png" className=" object-contain" alt="Logo" />
+              </div>
+            </div>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-2 text-teal-300 hover:bg-teal-500/20 rounded-lg transition-colors"
+          >
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            const active = isActive(item);
+            return (
+              <Link
+                key={index}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                  active
+                    ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-teal-500/30"
+                    : "text-gray-300 hover:bg-teal-500/10 hover:text-teal-300"
+                } ${!isOpen && "justify-center"}`}
+              >
+                <Icon
+                  className={`w-5 h-5 flex-shrink-0 ${
+                    active
+                      ? "text-white"
+                      : "text-gray-400 group-hover:text-teal-400"
+                  }`}
+                />
+                {isOpen && (
+                  <span
+                    className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                      active ? "text-white" : "text-gray-300"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+
+          {/* Logout Button */}
+          <button
+            onClick={() => setShowPopup(true)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-300 hover:bg-red-500/20 hover:text-red-300 w-full mt-4 ${
+              !isOpen && "justify-center"
+            }`}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-red-400" />
+            {isOpen && (
+              <span className="text-sm font-medium whitespace-nowrap">
+                Logout
+              </span>
+            )}
+          </button>
+        </nav>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="mt-4 overflow-y-auto pb-10 space-y-2">
-        <Link
-          to="/"
-          className={`flex ${location.pathname == "/" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaHome size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Dashboard
-          </span>
-        </Link>
-        <Link
-          to="/orders"
-          className={`flex ${location.pathname == "/orders" && "bg-blue-700" || location.pathname == "/all-users" && "bg-blue-700" || location.pathname.slice(0, 12) == "/user-orders" && "bg-blue-700" || location.pathname.slice(0, 14) == "/order-details" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <MdBorderColor size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Orders
-          </span>
-        </Link>
-
-        <Link
-          to="/quote"
-          className={`flex ${location.pathname == "/quote" && "bg-blue-700" || location.pathname == "/quote-detail" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <BsChatLeftQuoteFill size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Quote
-          </span>
-        </Link>
-        <Link
-          to="/products"
-          className={`flex ${location.pathname == "/products" && "bg-blue-700" || location.pathname.slice(0, 8) == "/product" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <BsFillBoxFill size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Products
-          </span>
-        </Link>
-        <Link
-          to="/suppliers"
-          className={`flex ${location.pathname == "/suppliers" && "bg-blue-700" || location.pathname == "/supplier-categories" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <img src="/supplier.png" className="mr-2 w-6 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Suppliers
-          </span>
-        </Link>
-        <Link
-          to="/categories"
-          className={`flex ${location.pathname == "/categories" && "bg-blue-700" || location.pathname == "/category-detail" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <BiCategory size={20} className="mr-3 text-white"  />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Categories
-          </span>
-        </Link>
-        <Link
-          to="/users"
-          className={`flex ${location.pathname == "/users" && "bg-blue-700"  } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaUser size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Users
-          </span>
-        </Link>
-        <Link
-          to="/admin-quotes"
-          className={`flex ${location.pathname == "/admin-quotes" && "bg-blue-700" || location.pathname == "/add-admin-quote" && "bg-blue-700" || location.pathname.slice(0, 19) == "/admin-quote-detail" && "bg-blue-700"  } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <BsChatLeftQuoteFill size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Admin Quotes
-          </span>
-        </Link>
-        <Link
-          to="/user-queries"
-          className={`flex ${location.pathname == "/user-queries" && "bg-blue-700" || location.pathname.slice(0, 11) == "/user-query" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaUser size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Users Queries
-          </span>
-        </Link>
-        <Link
-          to="/blogs"
-          className={`flex ${location.pathname == "/blogs" && "bg-blue-700" || location.pathname == "/add-blog" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaBloggerB size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Blogs
-          </span>
-        </Link>
-        <Link
-          to="/reports"
-          className={`flex ${location.pathname == "/reports" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaChartBar size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Reports
-          </span>
-        </Link>
-        <Link
-          to="/global-discount"
-          className={`flex ${location.pathname == "/global-discount" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <MdDiscount size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Global Discount
-          </span>
-        </Link>
-        <Link
-          to="/global-margin"
-          className={`flex ${location.pathname == "/global-margin" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <MdDiscount size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Global Margin
-          </span>
-        </Link>
-        <Link
-          to="/add-Coupen"
-          className={`flex ${location.pathname == "/add-coupen" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <RiCoupon2Fill size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Coupon
-          </span>
-        </Link>
-        <Link
-          to="/shipping"
-          className={`flex ${location.pathname == "/shipping" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <MdLocalShipping size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Shipping Charges
-          </span>
-        </Link>
-        <Link
-          to="/change-pass"
-          className={`flex ${location.pathname == "/change-pass" && "bg-blue-700" } items-center px-4 py-2 hover:bg-blue-600 group`}
-        >
-          <FaLock size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Change Password
-          </span>
-        </Link>
-        <button
-          onClick={() => setShowPopup(true)} // Open the popup on click
-          className="flex items-center px-4 py-2  hover:bg-blue-600 group w-full"
-        >
-          <FaSignOutAlt size={20} className="mr-3 text-white" />
-          <span
-            className={`text-white group-hover:text-white transition-all duration-300 ${
-              !isOpen && "hidden"
-            }`}
-          >
-            Logout
-          </span>
-        </button>
-      </nav>
-
-      {/* Logout Confirmation Popup */}
+      {/* Logout Modal */}
       {showPopup && (
-        <motion.div className="fixed top-0 bottom-0 right-0 left-0 inset-0 bg-black backdrop-blur-sm bg-opacity-50 z-50 flex justify-center items-center p-2">
-          <motion.div
-            initial={{ opacity: 0.2, z: 50 }}
-            transition={{ duration: 0.3 }}
-            whileInView={{ opacity: 1, z: 0 }}
-            viewport={{ once: true }}
-            className="flex flex-col w-[100%] sm:max-w-[40%] sm:w-full text-gray-800 justify-center bg-white p-5 rounded-md"
-          >
-            <p className="text-sm font-semibold">
-              Are you sure you want to logout?
-            </p>
-            <p className="text-sm text-gray-500">
-              You can login back at any time. All the changes you've been made
-              will not be lost.
-            </p>
-            <div className="flex gap-2 justify-end mt-2">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                Confirm Logout
+              </h3>
               <button
-                className="px-3 py-1 text-white transition duration-300 border rounded hover:bg-gray-100"
                 onClick={() => setShowPopup(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to logout? You can login back at any time.
+              All your changes will be saved.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowPopup(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -311,15 +219,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   handleLogout();
                   setShowPopup(false);
                 }}
-                className="px-3 py-1 bg-red-600 text-white hover:bg-red-500 rounded transition-all"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
               >
                 Logout
               </button>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 };
 
