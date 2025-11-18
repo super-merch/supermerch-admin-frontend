@@ -286,7 +286,7 @@ export default function AdminQuoteDetails() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4 mb-3">
+                      <div className="grid grid-cols-5 gap-4 mb-3">
                         {item.color && (
                           <div>
                             <p className="text-xs text-gray-500 uppercase">Color</p>
@@ -302,6 +302,10 @@ export default function AdminQuoteDetails() {
                         <div>
                           <p className="text-xs text-gray-500 uppercase">Quantity</p>
                           <p className="font-semibold text-gray-900">{item.quantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase">Setup</p>
+                          <p className="font-semibold text-gray-900">{item.setup}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 uppercase">Unit Price</p>

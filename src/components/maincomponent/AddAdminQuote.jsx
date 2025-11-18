@@ -91,6 +91,7 @@ export default function AddQuotePage() {
     },
     quantity: 50,
     unitPrice: 0,
+    setup: 0,
     subtotal: 0,
     customDescription: "",
     groupId: "",
@@ -249,13 +250,15 @@ export default function AddQuotePage() {
     if (currentItem.unitPrice >= 0 && currentItem.quantity > 0) {
       const decorationPrice = currentItem.decoration?.price || 0;
       const itemSubtotal =
-        (currentItem.unitPrice + decorationPrice) * currentItem.quantity;
+        (currentItem.unitPrice + decorationPrice) * currentItem.quantity +
+        currentItem.setup;
       setCurrentItem((prev) => ({ ...prev, subtotal: itemSubtotal }));
     }
   }, [
     currentItem.quantity,
     currentItem.unitPrice,
     currentItem.decoration?.price,
+    currentItem.setup,
   ]);
 
   // Search customers
@@ -359,6 +362,58 @@ export default function AddQuotePage() {
     }
   };
 
+  const getClothingAdditionalCost = (decorationMethod) => {
+    const method = decorationMethod?.toLowerCase() || "";
+
+    if (
+      method.includes("pocket") &&
+      method.includes("front") &&
+      method.includes("print")
+    ) {
+      return 8; // Pocket size Front print
+    }
+    if (method.includes("pocket") && method.includes("embroidery")) {
+      return 8; // Pocket size Front embroidery
+    }
+    if (method.includes("big") && method.includes("back")) {
+      return 10; // Big Print in Back
+    }
+    if (method.includes("pocket") && method.includes("big")) {
+      return 15; // Pocket size front + Big print back
+    }
+    if (method.includes("unbranded")) {
+      return 0; // Unbranded
+    }
+
+    return 0;
+  };
+
+  // Helper function to get clothing-specific setup fees
+  const getClothingSetupFee = (decorationMethod) => {
+    const method = decorationMethod?.toLowerCase() || "";
+
+    if (
+      method.includes("pocket") &&
+      method.includes("front") &&
+      method.includes("print")
+    ) {
+      return 29;
+    }
+    if (method.includes("pocket") && method.includes("embroidery")) {
+      return 49;
+    }
+    if (method.includes("big") && method.includes("back")) {
+      return 29;
+    }
+    if (method.includes("pocket") && method.includes("big")) {
+      return 49;
+    }
+    if (method.includes("unbranded")) {
+      return 0;
+    }
+
+    return 0;
+  };
   // Select product and fetch full details
   const selectProduct = async (product) => {
     try {
@@ -373,55 +428,116 @@ export default function AddQuotePage() {
         setSelectedProduct(product);
         setProductSearch(product.name);
         setShowProductDropdown(false);
-        console.log(data);
 
         // Extract colors
         const colorsList =
           productData.product?.colours?.list?.flatMap((c) => c.colours) || [];
         const uniqueColors = [...new Set(colorsList)];
         setAvailableColors(uniqueColors);
-        console.log(uniqueColors);
 
         // Extract sizes
         const sizeDetail = productData.product?.details?.find(
           (d) =>
             d.name?.toLowerCase() === "sizing" ||
             d.name?.toLowerCase() === "sizes" ||
-            d.name?.toLowerCase() === "size"
+            d.name?.toLowerCase() === "size" ||
+            d.name?.toLowerCase() === "product sizes"
         );
-        const sizes = sizeDetail?.detail?.split(",").map((s) => s.trim()) || [];
-        setAvailableSizes(sizes);
+        let sizes = sizeDetail?.detail?.split(",").map((s) => s.trim()) || [];
+        if (!sizes.length > 1) {
+          sizes = sizeDetail?.detail?.split(" | ").map((s) => s.trim()) || [];
+        }
+        sizes = sizes.length > 1 ? sizes : ["XS", "S", "M", "L", "XL", "2XL"];
+
+        const isClothing =
+          productData.product?.categorisation?.product_type?.type_group_name?.toLowerCase() ===
+          "clothing";
+
+        if (isClothing) {
+          setAvailableSizes(sizes);
+        } else {
+          setAvailableSizes([]);
+        }
 
         // Extract print methods from price groups
         const priceGroups = productData.product?.prices?.price_groups || [];
-        const methods = [];
-
-        // Add base price as first option
+        const basePriceBreaks = priceGroups[0]?.base_price?.price_breaks || [];
+        let methods = [];
         const baseGroup = priceGroups.find((g) => g.base_price);
-        if (baseGroup?.base_price) {
-          methods.push({
-            key: baseGroup.base_price.key,
-            description: baseGroup.base_price.description || "Unbranded",
-            type: "base",
-            setup: baseGroup.base_price.setup || 0,
-            price_breaks: baseGroup.base_price.price_breaks || [],
-          });
-        }
+        const supplier = productData.overview?.supplier;
 
-        // Add all decoration methods
-        priceGroups.forEach((group) => {
-          if (group.additions && Array.isArray(group.additions)) {
-            group.additions.forEach((add) => {
-              methods.push({
-                key: add.key,
-                description: add.description,
-                type: "addition",
-                setup: add.setup || 0,
-                price_breaks: add.price_breaks || [],
-              });
+        if (isClothing) {
+          // Static clothing methods
+          const clothingMethods = [
+            {
+              key: "pocket-size-front-print",
+              description: "Pocket size Front print",
+              type: "base",
+              setup: 29,
+              price_breaks: basePriceBreaks,
+            },
+            {
+              key: "pocket-size-front-embroidery",
+              description: "Pocket size Front embroidery",
+              type: "base",
+              setup: 49,
+              price_breaks: basePriceBreaks,
+            },
+            {
+              key: "big-print-in-back",
+              description: "Big Print in Back",
+              type: "base",
+              setup: 29,
+              price_breaks: basePriceBreaks,
+            },
+            {
+              key: "pocket-front-big-back",
+              description: "Pocket size front + Big print back",
+              type: "base",
+              setup: 49,
+              price_breaks: basePriceBreaks,
+            },
+            {
+              key: "unbranded",
+              description: "Unbranded",
+              type: "base",
+              setup: 0,
+              price_breaks: basePriceBreaks,
+            },
+          ];
+
+          // Filter out "unbranded" for "AS Colour" supplier
+          methods =
+            supplier === "AS Colour"
+              ? clothingMethods.filter((method) => method.key !== "unbranded")
+              : clothingMethods;
+        } else {
+          // Dynamic methods for non-clothing
+          if (baseGroup?.base_price) {
+            methods.push({
+              key: baseGroup.base_price.key,
+              description: baseGroup.base_price.description || "Unbranded",
+              type: "base",
+              setup: baseGroup.base_price.setup || 0,
+              price_breaks: baseGroup.base_price.price_breaks || [],
             });
           }
-        });
+
+          // Add all decoration methods
+          priceGroups.forEach((group) => {
+            if (group.additions && Array.isArray(group.additions)) {
+              group.additions.forEach((add) => {
+                methods.push({
+                  key: add.key,
+                  description: add.description,
+                  type: "addition",
+                  setup: add.setup || 0,
+                  price_breaks: add.price_breaks || [],
+                });
+              });
+            }
+          });
+        }
 
         setAvailablePrintMethods(methods);
 
@@ -433,6 +549,16 @@ export default function AddQuotePage() {
             price: 0,
           };
 
+          // Calculate initial prices for clothing
+          let initialUnitPrice = firstBreak.price;
+          let initialDecorationPrice = 0;
+
+          if (isClothing) {
+            // For clothing, decoration price is built into the method
+            initialDecorationPrice = getClothingAdditionalCost(
+              methods[0]?.description
+            ); // Will be added via additional cost logic
+          }
           setCurrentItem({
             productId: product.id,
             productName: product.name,
@@ -443,15 +569,17 @@ export default function AddQuotePage() {
             size: sizes[0] || "",
             decoration: {
               method: firstMethod.description || "",
-              price: 0,
+              price: initialDecorationPrice,
               description: firstMethod.description || "",
             },
+            setup: firstMethod.setup || 0,
             quantity: firstBreak.qty,
-            unitPrice: firstBreak.price,
-            subtotal: firstBreak.price * firstBreak.qty,
+            unitPrice: initialUnitPrice,
+            subtotal: initialUnitPrice * firstBreak.qty + firstBreak.setup,
             customDescription: "",
             groupId: "",
             groupName: "",
+            isClothing: isClothing, // Store clothing flag
           });
 
           setSelectedPrintMethod(firstMethod);
@@ -461,8 +589,6 @@ export default function AddQuotePage() {
       console.error("Error fetching product details:", error);
     }
   };
-
-  // Handle print method change
   const handlePrintMethodChange = (methodKey) => {
     const method = availablePrintMethods.find((m) => m.key === methodKey);
     if (!method) return;
@@ -474,19 +600,30 @@ export default function AddQuotePage() {
     );
     const firstBreak = sortedBreaks[0] || { qty: 50, price: 0 };
 
-    // Find the base product price
-    const basePrice =
-      productDetails?.product?.prices?.price_groups?.[0]?.base_price
-        ?.price_breaks?.[0]?.price || 0;
+    // Check if this is a clothing product
+    const isClothing = currentItem.isClothing;
 
     let unitPrice = 0;
     let decorationPrice = 0;
+    
 
-    if (method.type === "base") {
+    if (isClothing) {
+      // For clothing: use base price, decoration cost is separate and editable
       unitPrice = firstBreak.price;
+      decorationPrice = getClothingAdditionalCost(method.description);
     } else {
-      unitPrice = basePrice;
-      decorationPrice = firstBreak.price;
+      // For non-clothing: original logic
+      const basePrice =
+        productDetails?.product?.prices?.price_groups?.[0]?.base_price
+          ?.price_breaks?.[0]?.price || 0;
+
+      if (method.type === "base") {
+        unitPrice = firstBreak.price;
+        decorationPrice = 0;
+      } else {
+        unitPrice = basePrice;
+        decorationPrice = firstBreak.price;
+      }
     }
 
     setCurrentItem((prev) => ({
@@ -496,11 +633,11 @@ export default function AddQuotePage() {
         price: decorationPrice,
         description: method.description,
       },
+      setup: method.setup || 0,
       quantity: firstBreak.qty,
       unitPrice: unitPrice,
     }));
   };
-
   // Handle quantity change
   const handleQuantityChange = (qty) => {
     const quantity = parseInt(qty) || 0;
@@ -519,18 +656,32 @@ export default function AddQuotePage() {
       }
     }
 
-    const basePrice =
-      productDetails?.product?.prices?.price_groups?.[0]?.base_price
-        ?.price_breaks?.[0]?.price || 0;
+    // Check if this is a clothing product
+    const isClothing = currentItem.isClothing;
 
     let unitPrice = 0;
     let decorationPrice = 0;
 
-    if (selectedPrintMethod.type === "base") {
+    if (isClothing) {
+      // For clothing: use price break for unit, keep existing decoration price or calculate new
       unitPrice = selectedBreak?.price || 0;
+      // Keep the current decoration price if it's been manually edited, otherwise recalculate
+      decorationPrice =
+        currentItem.decoration.price ||
+        getClothingAdditionalCost(selectedPrintMethod.description);
     } else {
-      unitPrice = basePrice;
-      decorationPrice = selectedBreak?.price || 0;
+      // For non-clothing: original logic
+      const basePrice =
+        productDetails?.product?.prices?.price_groups?.[0]?.base_price
+          ?.price_breaks?.[0]?.price || 0;
+
+      if (selectedPrintMethod.type === "base") {
+        unitPrice = selectedBreak?.price || 0;
+        decorationPrice = 0;
+      } else {
+        unitPrice = basePrice;
+        decorationPrice = selectedBreak?.price || 0;
+      }
     }
 
     setCurrentItem((prev) => ({
@@ -594,6 +745,7 @@ export default function AddQuotePage() {
       } else {
         // It's a product from API
         setIsCustomProduct(false);
+        setCurrentItem(item);
         selectProduct({ id: item.productId, name: item.productName });
       }
     }
@@ -614,6 +766,7 @@ export default function AddQuotePage() {
         price: 0,
         description: "",
       },
+      setup: 0,
       quantity: 50,
       unitPrice: 0,
       subtotal: 0,
@@ -673,6 +826,7 @@ export default function AddQuotePage() {
           color: item.color,
           size: item.size,
           decoration: item.decoration,
+          setup: item.setup,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           subtotal: item.subtotal,
@@ -1469,30 +1623,50 @@ export default function AddQuotePage() {
                       </div>
 
                       {/* Decoration Price */}
-                      {currentItem.decoration.method &&
-                        selectedPrintMethod?.type === "addition" && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Decoration Price ($)
-                            </label>
-                            <input
-                              type="number"
-                              value={currentItem.decoration.price}
-                              onChange={(e) =>
-                                setCurrentItem({
-                                  ...currentItem,
-                                  decoration: {
-                                    ...currentItem.decoration,
-                                    price: parseFloat(e.target.value) || 0,
-                                  },
-                                })
-                              }
-                              step="0.01"
-                              min="0"
-                              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        )}
+                      {((currentItem.decoration.method &&
+                        selectedPrintMethod?.type === "addition") ||
+                        currentItem.isClothing) && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Decoration Price ($)
+                          </label>
+                          <input
+                            type="number"
+                            value={currentItem.decoration.price}
+                            onChange={(e) =>
+                              setCurrentItem({
+                                ...currentItem,
+                                decoration: {
+                                  ...currentItem.decoration,
+                                  price: parseFloat(e.target.value) || 0,
+                                },
+                              })
+                            }
+                            step="0.01"
+                            min="0"
+                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Setup Price ($)
+                        </label>
+                        <input
+                          type="number"
+                          value={currentItem.setup}
+                          onChange={(e) =>
+                            setCurrentItem({
+                              ...currentItem,
+                              setup: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          step="0.01"
+                          min="0"
+                          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
 
                       {/* Custom Description */}
                       <div>
@@ -1524,7 +1698,14 @@ export default function AddQuotePage() {
                         <p className="text-xs text-gray-500 mt-2">
                           ({currentItem.quantity} × $
                           {currentItem.unitPrice.toFixed(2)}
-                          {currentItem.decoration.price > 0 &&
+                          {currentItem.isClothing && selectedPrintMethod && (
+                            <span className="text-blue-600">
+                              {" "}
+                              (incl. decoration cost)
+                            </span>
+                          )}
+                          {!currentItem.isClothing &&
+                            currentItem.decoration.price > 0 &&
                             ` + ${currentItem.decoration.price.toFixed(
                               2
                             )} decoration`}
@@ -1865,137 +2046,6 @@ export default function AddQuotePage() {
                 </>
               )}
             </div>
-
-            {/* Quote Items List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Calculator size={20} className="text-blue-600" />
-                Quote Items ({quoteItems.length})
-              </h2>
-
-              {quoteItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package size={48} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500">
-                    No items added yet. Search and add products above.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-600 border-b-2">
-                        <th className="py-3 px-2">Item</th>
-                        <th className="py-3 px-2">Details</th>
-                        <th className="py-3 px-2 text-right">Qty</th>
-                        <th className="py-3 px-2 text-right">Unit Price</th>
-                        <th className="py-3 px-2 text-right">Decoration</th>
-                        <th className="py-3 px-2 text-right">Subtotal</th>
-                        <th className="py-3 px-2 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {quoteItems.map((item) => (
-                        <tr key={item._id} className="hover:bg-gray-50">
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-3">
-                              {item.productImage && (
-                                <img
-                                  src={item.productImage}
-                                  alt={item.productName}
-                                  className="w-12 h-12 object-cover rounded border"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium text-gray-900">
-                                  {item.productName}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  SKU: {item.productSKU}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="text-xs space-y-1">
-                              {item.color && (
-                                <div className="text-gray-600">
-                                  Color: {item.color}
-                                </div>
-                              )}
-                              {item.size && (
-                                <div className="text-gray-600">
-                                  Size: {item.size}
-                                </div>
-                              )}
-                              {item.customDescription && (
-                                <div className="text-gray-400 italic">
-                                  {item.customDescription}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-right font-medium">
-                            {item.quantity}
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            ${Number(item.unitPrice).toFixed(2)}
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            {item.decoration?.method ? (
-                              <div>
-                                <div className="text-xs text-gray-600">
-                                  {item.decoration.method}
-                                </div>
-                                <div className="font-medium">
-                                  $
-                                  {Number(item.decoration.price || 0).toFixed(
-                                    2
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">—</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-right font-bold text-blue-600">
-                            ${Number(item.subtotal).toFixed(2)}
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => editItem(item._id)}
-                                className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-blue-200 transition"
-                                title="Edit item"
-                              >
-                                <Edit size={14} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setIsCustomProduct(true);
-                                  setCurrentItem(item);
-                                }}
-                                className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-blue-200 transition"
-                                title="Remove item"
-                              >
-                                <Copy size={14} />
-                              </button>
-                              <button
-                                onClick={() => removeItem(item._id)}
-                                className="text-red-600 hover:bg-red-50 px-2 py-1 rounded border border-red-200 transition"
-                                title="Remove item"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Sidebar / Summary */}
@@ -2197,6 +2247,136 @@ export default function AddQuotePage() {
               </label>
             </div>
           </div>
+        </div>
+        <div className="bg-white rounded-lg mt-5 shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Calculator size={20} className="text-blue-600" />
+            Quote Items ({quoteItems.length})
+          </h2>
+
+          {quoteItems.length === 0 ? (
+            <div className="text-center py-8">
+              <Package size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500">
+                No items added yet. Search and add products above.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600 border-b-2">
+                    <th className="py-3 px-2">Item</th>
+                    <th className="py-3 px-2">Details</th>
+                    <th className="py-3 px-2 text-right">Qty</th>
+                    <th className="py-3 px-2 text-right">Unit Price</th>
+                    <th className="py-3 px-2 text-right">Decoration</th>
+                    <th className="py-3 px-2 text-right">Setup</th>
+                    <th className="py-3 px-2 text-right">Subtotal</th>
+                    <th className="py-3 px-2 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {quoteItems.map((item) => (
+                    <tr key={item._id} className="hover:bg-gray-50">
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-3">
+                          {item.productImage && (
+                            <img
+                              src={item.productImage}
+                              alt={item.productName}
+                              className="w-12 h-12 object-cover rounded border"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {item.productName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              SKU: {item.productSKU}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="text-xs space-y-1">
+                          {item.color && (
+                            <div className="text-gray-600">
+                              Color: {item.color}
+                            </div>
+                          )}
+                          {item.size && (
+                            <div className="text-gray-600">
+                              Size: {item.size}
+                            </div>
+                          )}
+                          {item.customDescription && (
+                            <div className="text-gray-400 italic">
+                              {item.customDescription}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-right font-medium">
+                        {item.quantity}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        ${Number(item.unitPrice).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {item.decoration?.method ? (
+                          <div>
+                            <div className="text-xs text-gray-600">
+                              {item.decoration.method}
+                            </div>
+                            <div className="font-medium">
+                              ${Number(item.decoration.price || 0).toFixed(2)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-right  text-gray-600">
+                        ${Number(item.setup).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-2 text-right font-bold text-blue-600">
+                        ${Number(item.subtotal).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => editItem(item._id)}
+                            className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-blue-200 transition"
+                            title="Edit item"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsCustomProduct(true);
+                              setCurrentItem(item);
+                            }}
+                            className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-blue-200 transition"
+                            title="Remove item"
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button
+                            onClick={() => removeItem(item._id)}
+                            className="text-red-600 hover:bg-red-50 px-2 py-1 rounded border border-red-200 transition"
+                            title="Remove item"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
