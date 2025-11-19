@@ -1,18 +1,27 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "../ui/button";
 import { toast } from "react-toastify";
-import { addDiscount, addMargin } from "../apis/UserApi";
+import {
+  Package,
+  Search,
+  RefreshCw,
+  Edit,
+  Save,
+  X,
+  Eye,
+  MoreVertical,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Clock,
+} from "lucide-react";
+import FiltersSection from "../ui/FiltersSection";
+import ActionButton from "../ui/ActionButton";
+import ToggleSwitch from "../ui/ToggleSwitch";
 
 const backednUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -67,12 +76,12 @@ const AlProducts = () => {
   const [bestSellerIds, setBestSellerIds] = useState(new Set());
   const [bestSellerLoading, setBestSellerLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  // Add these state variables after your existing useState declarations
-  const [bulkMode, setBulkMode] = useState(null); // 'australia-add', 'australia-remove', '24hour-add', '24hour-remove', or null
+  // Bulk selection state
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkMode, setBulkMode] = useState(null); // 'australia', '24hour', or null
 
-  // Add these handler functions
+  // Bulk selection handlers
   const handleBulkSelect = (productId) => {
     setSelectedProducts((prev) => {
       const newSet = new Set(prev);
@@ -86,52 +95,47 @@ const AlProducts = () => {
   };
 
   const handleSelectAll = () => {
-    const eligibleProducts = currentProducts.filter((product) => {
-      const productId = String(product.meta.id);
-      if (bulkMode === "australia-add") {
-        return !australiaIds.has(productId);
-      } else if (bulkMode === "australia-remove") {
-        return australiaIds.has(productId);
-      } else if (bulkMode === "24hour-add") {
-        return !productionIds.has(productId);
-      } else if (bulkMode === "24hour-remove") {
-        return productionIds.has(productId);
-      }
-      return false;
-    });
-
-    setSelectedProducts(
-      new Set(eligibleProducts.map((p) => String(p.meta.id)))
-    );
+    setSelectedProducts(new Set(currentProducts.map((p) => String(p.meta.id))));
   };
 
   const handleDeselectAll = () => {
     setSelectedProducts(new Set());
+    setBulkMode(null);
   };
 
-  const handleBulkAction = async () => {
+  const handleBulkAction = async (mode) => {
     if (selectedProducts.size === 0) {
       toast.warning("Please select at least one product");
       return;
     }
 
     setBulkLoading(true);
+    setBulkMode(mode);
     try {
       const ids = Array.from(selectedProducts);
       let endpoint = "";
       let actionName = "";
 
-      if (bulkMode === "australia-add") {
-        endpoint = `${backednUrl}/api/australia/bulk-add`;
+      if (mode === "australia") {
+        // Determine if adding or removing based on first selected product
+        const firstProduct = currentProducts.find((p) =>
+          selectedProducts.has(String(p.meta.id))
+        );
+        if (firstProduct && australiaIds.has(String(firstProduct.meta.id))) {
+          endpoint = `${backednUrl}/api/australia/bulk-remove`;
+        } else {
+          endpoint = `${backednUrl}/api/australia/bulk-add`;
+        }
         actionName = "Australia";
-      } else if (bulkMode === "australia-remove") {
-        endpoint = `${backednUrl}/api/australia/bulk-remove`;
-        actionName = "Australia";
-      } else if (bulkMode === "24hour-add") {
-        endpoint = `${backednUrl}/api/24hour/bulk-add`;
-        actionName = "24 Hour Production";
-      } else if (bulkMode === "24hour-remove") {
-        endpoint = `${backednUrl}/api/24hour/bulk-remove`;
+      } else if (mode === "24hour") {
+        const firstProduct = currentProducts.find((p) =>
+          selectedProducts.has(String(p.meta.id))
+        );
+        if (firstProduct && productionIds.has(String(firstProduct.meta.id))) {
+          endpoint = `${backednUrl}/api/24hour/bulk-remove`;
+        } else {
+          endpoint = `${backednUrl}/api/24hour/bulk-add`;
+        }
         actionName = "24 Hour Production";
       }
 
@@ -145,13 +149,13 @@ const AlProducts = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const action = bulkMode.includes("add") ? "added to" : "removed from";
+        const action = endpoint.includes("add") ? "added to" : "removed from";
         toast.success(
           `${data.added || data.removed} products ${action} ${actionName}!`
         );
 
         // Refresh data
-        if (bulkMode.includes("australia")) {
+        if (mode === "australia") {
           await getAllAustralia();
         } else {
           await getAll24HourProduction();
@@ -168,28 +172,8 @@ const AlProducts = () => {
       toast.error("Error performing bulk action");
     } finally {
       setBulkLoading(false);
+      setBulkMode(null);
     }
-  };
-
-  const cancelBulkMode = () => {
-    setBulkMode(null);
-    setSelectedProducts(new Set());
-  };
-
-  const isProductSelectable = (product) => {
-    if (!bulkMode) return false;
-
-    const productId = String(product.meta.id);
-    if (bulkMode === "australia-add") {
-      return !australiaIds.has(productId);
-    } else if (bulkMode === "australia-remove") {
-      return australiaIds.has(productId);
-    } else if (bulkMode === "24hour-add") {
-      return !productionIds.has(productId);
-    } else if (bulkMode === "24hour-remove") {
-      return productionIds.has(productId);
-    }
-    return false;
   };
 
   // Search state
@@ -964,17 +948,25 @@ const AlProducts = () => {
 
   if (pageLoading || (allProductLoading && !isSearching) || loadingProducts)
     return (
-      <div className="flex items-center justify-center mt-20">
-        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <p className="ml-4 text-lg font-semibold">Loading Products..</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading Products...
+          </p>
+        </div>
       </div>
     );
 
   if (loading)
     return (
-      <div className="flex items-center justify-center mt-20">
-        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <p className="ml-4 text-lg font-semibold">Updating Prices...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Updating Prices...
+          </p>
+        </div>
       </div>
     );
 
@@ -1094,741 +1086,606 @@ const AlProducts = () => {
     }
   };
 
+  // Calculate stats
+  const totalProducts = currentProductList?.length || 0;
+  const activeProducts =
+    currentProductList?.filter((p) => !localIgnoredIds.has(p.meta.id)).length ||
+    0;
+  const trendingProductsCount =
+    currentProductList?.filter((p) => trendingIds.has(String(p.meta.id)))
+      .length || 0;
+  const australiaProducts =
+    currentProductList?.filter((p) => australiaIds.has(String(p.meta.id)))
+      .length || 0;
+
   return (
-    <div className="px-4 pb-6 lg:pb-10 md:pb-10 lg:px-10 md:px-10 sm:px-6">
-      <h1 className="pt-3 pb-3 text-2xl font-bold text-center text-gray-600">
-        All Products
-      </h1>
-
-      {/* Search Section */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
+      {/* Header */}
       <div className="mb-3">
-        <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search products..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
-          <Button
-            type="submit"
-            disabled={searchLoading}
-            className="px-6 bg-blue-600 hover:bg-blue-700"
-          >
-            {searchLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin"></div>
-                Searching...
-              </div>
-            ) : (
-              "Search"
-            )}
-          </Button>
-        </form>
-        {/* Bulk Actions Bar */}
-        {!bulkMode ? (
-          <div className="mb-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Bulk Actions
-            </h3>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button
-                onClick={() => setBulkMode("australia-add")}
-                className="bg-green-600 hover:bg-green-700 text-sm"
-              >
-                Bulk Add to Australia
-              </Button>
-              <Button
-                onClick={() => setBulkMode("australia-remove")}
-                className="bg-red-600 hover:bg-red-700 text-sm"
-              >
-                Bulk Remove from Australia
-              </Button>
-              <Button
-                onClick={() => setBulkMode("24hour-add")}
-                className="bg-blue-600 hover:bg-blue-700 text-sm"
-              >
-                Bulk Add to 24Hr Production
-              </Button>
-              <Button
-                onClick={() => setBulkMode("24hour-remove")}
-                className="bg-orange-600 hover:bg-orange-700 text-sm"
-              >
-                Bulk Remove from 24Hr Production
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-300">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-blue-900">
-                {bulkMode === "australia-add" && "Bulk Add to Australia"}
-                {bulkMode === "australia-remove" &&
-                  "Bulk Remove from Australia"}
-                {bulkMode === "24hour-add" && "Bulk Add to 24 Hour Production"}
-                {bulkMode === "24hour-remove" &&
-                  "Bulk Remove from 24 Hour Production"}
-              </h3>
-              <button
-                onClick={cancelBulkMode}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <p className="text-sm text-gray-700 mb-3">
-              {selectedProducts.size} product
-              {selectedProducts.size !== 1 ? "s" : ""} selected
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Products Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Manage and track all products
             </p>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSelectAll}
-                variant="outline"
-                className="text-sm"
-              >
-                Select All Eligible
-              </Button>
-              <Button
-                onClick={handleDeselectAll}
-                variant="outline"
-                className="text-sm"
-              >
-                Deselect All
-              </Button>
-              <Button
-                onClick={handleBulkAction}
-                disabled={selectedProducts.size === 0 || bulkLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-sm"
-              >
-                {bulkLoading
-                  ? "Processing..."
-                  : bulkMode.includes("add")
-                  ? "Add Selected"
-                  : "Remove Selected"}
-              </Button>
-            </div>
           </div>
-        )}
-
-        {/* dropdown to show sort by trendings, new arrivals, best sellers and all products(default) */}
-        <div className="flex justify-between">
-          <div className="flex justify-end mb-4">
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                const val = e.target.value;
-                clearSearch(); // clears search state and sets current page to 1
-                setSelectedCategory(val);
-                setCurrentPage(1); // defensive: ensures page is 1
-              }}
-              disabled={searchLoading}
-              className="px-4 py-2 border rounded"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex justify-end mb-4">
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="px-4 py-2 border rounded"
-              disabled={searchLoading}
-            >
-              <option value="all">All Products</option>
-              <option value="trending">Trending</option>
-              <option value="newArrivals">New Arrivals</option>
-              <option value="bestSellers">Best Sellers</option>
-            </select>
-          </div>
+          <ActionButton
+            icon={RefreshCw}
+            label="Refresh"
+            onClick={() => {
+              if (isSearching) {
+                clearSearch();
+              } else {
+                setCurrentPage(1);
+              }
+            }}
+            variant="secondary"
+          />
         </div>
 
-        {isSearching &&
-          (searchLoading ? (
-            <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-              <span>
-                Showing search results for: <strong>"{searchTerm}"</strong>
-              </span>
-              <button
-                onClick={clearSearch}
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Show all products
-              </button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Products</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {totalProducts}
+                </p>
+              </div>
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <Package className="w-5 h-5 text-teal-600" />
+              </div>
             </div>
-          ))}
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Active</p>
+                <p className="text-xl font-bold text-green-600">
+                  {activeProducts}
+                </p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Trending</p>
+                <p className="text-xl font-bold text-orange-600">
+                  {trendingProductsCount}
+                </p>
+              </div>
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-orange-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Australia</p>
+                <p className="text-xl font-bold text-purple-600">
+                  {australiaProducts}
+                </p>
+              </div>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Globe className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Table>
-        <TableCaption>
-          {isSearching
-            ? searchLoading
-              ? "Searching..."
-              : `Search results for "${searchTerm}" (${currentProductList.length} products found)`
-            : "A list of All Products."}
-        </TableCaption>
-        <TableHeader>
-          <TableRow>
-            {bulkMode && <TableHead className="w-[50px]">Select</TableHead>}
-            <TableHead className="w-[100px]">Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Trending</TableHead>
-            {/* <TableHead>New Arrival</TableHead>
-            <TableHead>Best Seller</TableHead> */}
-            <TableHead>Australia</TableHead>
-            <TableHead>24Hr Prod</TableHead>
-            <TableHead>Last Update</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead className="">Price</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentProducts.map((product, index) => {
-            const priceGroups = product.product?.prices?.price_groups || [];
-            const basePrice =
-              priceGroups.find((group) => group?.base_price) || {};
-            const priceBreaks = basePrice.base_price?.price_breaks || [];
-            const realPrice =
-              priceBreaks.length > 0 && priceBreaks[0]?.price !== undefined
-                ? priceBreaks[0].price.toFixed(2)
-                : "0";
-
-            const isIgnored = localIgnoredIds.has(product.meta.id);
-            const productId = product.meta.id;
-            const displayName = getDisplayName(product);
-            const isEditing = editingProductId === productId;
-            const isTrending = trendingIds.has(String(productId));
-            // const isNewArrival = newArrivalIds.has(String(productId));
-            // const isBestSeller = bestSellerIds.has(String(productId));
-            const isAustralia = australiaIds.has(String(productId));
-            const is24HourProduction = productionIds.has(String(productId));
-            const isSelectable = isProductSelectable(product);
-            const isSelected = selectedProducts.has(String(product.meta.id));
-
-            return (
-              <TableRow
-                key={index}
-                className={
-                  !bulkMode
-                    ? ""
-                    : isSelectable
-                    ? "hover:bg-blue-50 cursor-pointer"
-                    : "opacity-50"
-                }
-              >
-                {bulkMode && (
-                  <TableCell>
-                    {isSelectable && (
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() =>
-                          handleBulkSelect(String(product.meta.id))
-                        }
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                    )}
-                  </TableCell>
-                )}
-                <TableCell className="font-medium">
-                  <img
-                    src={
-                      product.overview.hero_image
-                        ? product.overview.hero_image
-                        : "cap.png"
-                    }
-                    alt=""
-                    className="w-8 rounded-full"
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {isEditing ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          className="px-2 py-1 border rounded text-sm"
-                          placeholder="Enter product name"
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              updateProductName(productId, editingName);
-                            }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-xs"
-                          onClick={() =>
-                            updateProductName(productId, editingName)
-                          }
-                          disabled={updatingName}
-                        >
-                          {updatingName ? "..." : "Save"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="px-2 py-1 text-xs"
-                          onClick={cancelEditing}
-                          disabled={updatingName}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1">{displayName}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="px-2 py-1 text-xs"
-                          onClick={() => startEditing(productId, displayName)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {isIgnored ? (
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                      InActive
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                      Active
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      isTrending
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {isTrending ? "Yes" : "No"}
-                  </span>
-                </TableCell>
-                {/* <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      isNewArrival
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {isNewArrival ? "Yes" : "No"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      isBestSeller
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {isBestSeller ? "Yes" : "No"}
-                  </span>
-                </TableCell> */}
-                <TableCell>
-                  {isAustralia ? (
-                    <button
-                      className="px-2 py-1 rounded text-xs font-medium bg-red-700 text-white hover:bg-red-800 transition-colors"
-                      onClick={() => removeFromAustralia(product)}
-                      disabled={australiaLoading}
-                    >
-                      {australiaLoading ? "..." : "Remove"}
-                    </button>
-                  ) : (
-                    <button
-                      className="px-2 py-1 rounded text-xs font-medium bg-green-700 text-white hover:bg-green-800 transition-colors"
-                      onClick={() => addToAustralia(product)}
-                      disabled={australiaLoading}
-                    >
-                      {australiaLoading ? "..." : "Add"}
-                    </button>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {" "}
-                  {/* Add this entire cell */}
-                  {is24HourProduction ? (
-                    <button
-                      className="px-2 py-1 rounded text-xs font-medium bg-red-700 text-white hover:bg-red-800 transition-colors"
-                      onClick={() => removeFrom24HourProduction(product)}
-                      disabled={productionLoading}
-                    >
-                      {productionLoading ? "..." : "Remove"}
-                    </button>
-                  ) : (
-                    <button
-                      className="px-2 py-1 rounded text-xs font-medium bg-green-700 text-white hover:bg-green-800 transition-colors"
-                      onClick={() => addTo24HourProduction(product)}
-                      disabled={productionLoading}
-                    >
-                      {productionLoading ? "..." : "Add"}
-                    </button>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {product.meta.last_changed_at.slice(0, 10) || "No Code"}
-                </TableCell>
-                <TableCell>{product.overview.code || "No Code"}</TableCell>
-                <TableCell>${realPrice}</TableCell>
-                <TableCell className="text-right">
-                  <div className="relative">
-                    <button
-                      onClick={() =>
-                        setOpenDropdown(
-                          openDropdown === productId ? null : productId
-                        )
-                      }
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-5 h-5 text-gray-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
-
-                    {openDropdown === productId && (
-                      <div className="absolute right-0 top-full  mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-10  overflow-auto">
-                        <div className="py-2">
-                          {isIgnored ? (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-red-50 hover:bg-red-100 text-green-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                handleActivateProduct(product);
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              Activate
-                            </button>
-                          ) : (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                handleDeactivateProduct(product);
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                              Deactivate
-                            </button>
-                          )}
-
-                          <button
-                            className="w-full text-left px-4 py-3 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition-colors flex items-center gap-3"
-                            onClick={() => {
-                              handleViewProduct(product);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            View More
-                          </button>
-
-                          {isTrending ? (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                removeFromTrending(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={trendingLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                                />
-                              </svg>
-                              {trendingLoading
-                                ? "Removing..."
-                                : "Remove from Trending"}
-                            </button>
-                          ) : (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                addToTrending(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={trendingLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                                />
-                              </svg>
-                              {trendingLoading
-                                ? "Adding..."
-                                : "Add to Trending"}
-                            </button>
-                          )}
-
-                          {/* {isNewArrival ? (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                removeFromNewArrival(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={newArrivalLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M20 12H4"
-                                />
-                              </svg>
-                              {newArrivalLoading
-                                ? "Removing..."
-                                : "Remove from New Arrival"}
-                            </button>
-                          ) : (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                addToNewArrival(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={newArrivalLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 4v16m8-8H4"
-                                />
-                              </svg>
-                              {newArrivalLoading
-                                ? "Adding..."
-                                : "Add to New Arrival"}
-                            </button>
-                          )} */}
-
-                          {/* {isBestSeller ? (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-pink-50 hover:bg-pink-100 text-pink-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                removeFromBestSeller(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={bestSellerLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
-                                />
-                              </svg>
-                              {bestSellerLoading
-                                ? "Removing..."
-                                : "Remove from Best Seller"}
-                            </button>
-                          ) : (
-                            <button
-                              className="w-full text-left px-4 py-3 text-sm bg-teal-50 hover:bg-teal-100 text-teal-700 font-medium transition-colors flex items-center gap-3"
-                              onClick={() => {
-                                addToBestSeller(product);
-                                setOpenDropdown(null);
-                              }}
-                              disabled={bestSellerLoading}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                />
-                              </svg>
-                              {bestSellerLoading
-                                ? "Adding..."
-                                : "Add to Best Seller"}
-                            </button>
-                          )} */}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-
-      {currentProducts.length === 0 && !allProductLoading && !searchLoading && (
-        <div className="text-center py-8 text-gray-500">
-          {isSearching
-            ? `No products found for "${searchTerm}"`
-            : "No products found"}
+      {/* Bulk Actions - Only show when products are selected */}
+      {selectedProducts.size > 0 && (
+        <div className="bg-teal-50 rounded-lg p-3 border-2 border-teal-300 mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold text-teal-900">
+                {selectedProducts.size} product
+                {selectedProducts.size !== 1 ? "s" : ""} selected
+              </h3>
+              <div className="flex gap-2">
+                <ActionButton
+                  label="Select All"
+                  onClick={handleSelectAll}
+                  variant="outline"
+                  size="sm"
+                />
+                <ActionButton
+                  label="Deselect All"
+                  onClick={handleDeselectAll}
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <ActionButton
+                icon={Globe}
+                label="Bulk Australia"
+                onClick={() => handleBulkAction("australia")}
+                disabled={bulkLoading}
+                loading={bulkLoading && bulkMode === "australia"}
+                variant="primary"
+                size="sm"
+              />
+              <ActionButton
+                icon={Clock}
+                label="Bulk 24Hr Production"
+                onClick={() => handleBulkAction("24hour")}
+                disabled={bulkLoading}
+                loading={bulkLoading && bulkMode === "24hour"}
+                variant="primary"
+                size="sm"
+              />
+            </div>
+          </div>
         </div>
       )}
 
-      {!searchTerm && (
-        <div className="flex items-center justify-end gap-4 mt-12">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={prevDisabled}
-            className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-              prevDisabled ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Previous
-          </button>
+      {/* Filters Section */}
+      <FiltersSection
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearchSubmit={handleSearch}
+        onClearSearch={clearSearch}
+        selectedCategory={selectedCategory || "all"}
+        onCategoryChange={(val) => {
+          clearSearch();
+          setSelectedCategory(val);
+          setCurrentPage(1);
+        }}
+        categories={categories}
+        sortOption={sortOption}
+        onSortChange={setSortOption}
+        isSearching={isSearching}
+        searchResultsCount={isSearching ? currentProductList?.length : null}
+      />
 
-          <span className="text-lg font-medium">
-            Page {currentPage} of {paginationTotal}
-          </span>
+      {searchLoading || pageLoading ? (
+        <div className="flex items-center justify-center py-12 bg-white rounded-lg">
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+            <p className="mt-3 text-sm font-medium text-gray-600">
+              Loading products...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {/* Products Table */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-3">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        checked={
+                          currentProducts.length > 0 &&
+                          currentProducts.every((p) =>
+                            selectedProducts.has(String(p.meta.id))
+                          )
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleSelectAll();
+                          } else {
+                            handleDeselectAll();
+                          }
+                        }}
+                        className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
+                      Image
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                      Product Name
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                      Status
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                      Trending
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                      Australia
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">
+                      24Hr Prod
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                      Last Update
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                      Code
+                    </th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                      Price
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {currentProducts.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="px-4 py-12 text-center text-sm text-gray-500"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Package className="w-12 h-12 text-gray-300" />
+                          <p className="font-medium">
+                            {isSearching
+                              ? `No products found for "${searchTerm}"`
+                              : "No products found"}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    currentProducts.map((product, index) => {
+                      const priceGroups =
+                        product.product?.prices?.price_groups || [];
+                      const basePrice =
+                        priceGroups.find((group) => group?.base_price) || {};
+                      const priceBreaks =
+                        basePrice.base_price?.price_breaks || [];
+                      const realPrice =
+                        priceBreaks.length > 0 &&
+                        priceBreaks[0]?.price !== undefined
+                          ? priceBreaks[0].price.toFixed(2)
+                          : "0";
 
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={nextDisabled}
-            className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-              nextDisabled ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Next
-          </button>
+                      const isIgnored = localIgnoredIds.has(product.meta.id);
+                      const productId = product.meta.id;
+                      const displayName = getDisplayName(product);
+                      const isEditing = editingProductId === productId;
+                      const isTrending = trendingIds.has(String(productId));
+                      const isAustralia = australiaIds.has(String(productId));
+                      const is24HourProduction = productionIds.has(
+                        String(productId)
+                      );
+                      const isSelected = selectedProducts.has(
+                        String(product.meta.id)
+                      );
+
+                      return (
+                        <tr
+                          key={index}
+                          className={`group hover:bg-teal-50/30 transition-colors border-b border-gray-100 ${
+                            isSelected ? "bg-teal-50/50" : ""
+                          }`}
+                        >
+                          {/* Bulk Selection Checkbox */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() =>
+                                handleBulkSelect(String(product.meta.id))
+                              }
+                              className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                            />
+                          </td>
+
+                          {/* Image */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-200 group-hover:border-teal-300 transition-colors shadow-sm">
+                              <img
+                                src={
+                                  product.overview.hero_image
+                                    ? product.overview.hero_image
+                                    : "cap.png"
+                                }
+                                alt={displayName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = "cap.png";
+                                }}
+                              />
+                            </div>
+                          </td>
+
+                          {/* Product Name */}
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-2 min-w-[200px]">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    type="text"
+                                    value={editingName}
+                                    onChange={(e) =>
+                                      setEditingName(e.target.value)
+                                    }
+                                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    placeholder="Enter product name"
+                                    onKeyPress={(e) => {
+                                      if (e.key === "Enter") {
+                                        updateProductName(
+                                          productId,
+                                          editingName
+                                        );
+                                      }
+                                    }}
+                                  />
+                                  <ActionButton
+                                    icon={Save}
+                                    label="Save"
+                                    onClick={() =>
+                                      updateProductName(productId, editingName)
+                                    }
+                                    disabled={updatingName}
+                                    loading={updatingName}
+                                    variant="success"
+                                    size="sm"
+                                  />
+                                  <ActionButton
+                                    icon={X}
+                                    label="Cancel"
+                                    onClick={cancelEditing}
+                                    disabled={updatingName}
+                                    variant="outline"
+                                    size="sm"
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">
+                                    {displayName}
+                                  </span>
+                                  <ActionButton
+                                    icon={Edit}
+                                    onClick={() =>
+                                      startEditing(productId, displayName)
+                                    }
+                                    variant="outline"
+                                    size="sm"
+                                  />
+                                </>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            {isIgnored ? (
+                              <span className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 border border-red-200">
+                                InActive
+                              </span>
+                            ) : (
+                              <span className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 border border-green-200">
+                                Active
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Trending Toggle */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <div className="flex justify-center">
+                              <ToggleSwitch
+                                checked={isTrending}
+                                onChange={() => {
+                                  if (isTrending) {
+                                    removeFromTrending(product);
+                                  } else {
+                                    addToTrending(product);
+                                  }
+                                }}
+                                disabled={trendingLoading}
+                                loading={trendingLoading}
+                                size="sm"
+                              />
+                            </div>
+                          </td>
+
+                          {/* Australia Toggle */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <div className="flex justify-center">
+                              <ToggleSwitch
+                                checked={isAustralia}
+                                onChange={() => {
+                                  if (isAustralia) {
+                                    removeFromAustralia(product);
+                                  } else {
+                                    addToAustralia(product);
+                                  }
+                                }}
+                                disabled={australiaLoading}
+                                loading={australiaLoading}
+                                size="sm"
+                              />
+                            </div>
+                          </td>
+
+                          {/* 24Hr Production Toggle */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <div className="flex justify-center">
+                              <ToggleSwitch
+                                checked={is24HourProduction}
+                                onChange={() => {
+                                  if (is24HourProduction) {
+                                    removeFrom24HourProduction(product);
+                                  } else {
+                                    addTo24HourProduction(product);
+                                  }
+                                }}
+                                disabled={productionLoading}
+                                loading={productionLoading}
+                                size="sm"
+                              />
+                            </div>
+                          </td>
+
+                          {/* Last Update */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <span className="text-xs text-gray-600">
+                              {product.meta.last_changed_at?.slice(0, 10) ||
+                                "N/A"}
+                            </span>
+                          </td>
+
+                          {/* Code */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <span className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                              {product.overview.code || "N/A"}
+                            </span>
+                          </td>
+
+                          {/* Price */}
+                          <td className="px-3 py-3 whitespace-nowrap text-right">
+                            <span className="text-sm font-bold text-gray-900">
+                              ${realPrice}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <div className="relative flex justify-center">
+                              <button
+                                onClick={() =>
+                                  setOpenDropdown(
+                                    openDropdown === productId
+                                      ? null
+                                      : productId
+                                  )
+                                }
+                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors group/btn"
+                              >
+                                <MoreVertical className="w-4 h-4 text-gray-500 group-hover/btn:text-teal-600" />
+                              </button>
+
+                              {openDropdown === productId && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setOpenDropdown(null)}
+                                  ></div>
+                                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden">
+                                    <div className="py-1">
+                                      {isIgnored ? (
+                                        <button
+                                          className="w-full text-left px-4 py-2.5 text-sm bg-green-50 hover:bg-green-100 text-green-700 font-medium transition-colors flex items-center gap-2"
+                                          onClick={() => {
+                                            handleActivateProduct(product);
+                                            setOpenDropdown(null);
+                                          }}
+                                        >
+                                          <CheckCircle2 className="w-4 h-4" />
+                                          Activate Product
+                                        </button>
+                                      ) : (
+                                        <button
+                                          className="w-full text-left px-4 py-2.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors flex items-center gap-2"
+                                          onClick={() => {
+                                            handleDeactivateProduct(product);
+                                            setOpenDropdown(null);
+                                          }}
+                                        >
+                                          <XCircle className="w-4 h-4" />
+                                          Deactivate Product
+                                        </button>
+                                      )}
+
+                                      <button
+                                        className="w-full text-left px-4 py-2.5 text-sm bg-teal-50 hover:bg-teal-100 text-teal-700 font-medium transition-colors flex items-center gap-2"
+                                        onClick={() => {
+                                          handleViewProduct(product);
+                                          setOpenDropdown(null);
+                                        }}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                        View Details
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {!isSearching && paginationTotal > 1 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={prevDisabled}
+                  className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from(
+                    { length: Math.min(5, paginationTotal) },
+                    (_, i) => {
+                      let pageNum;
+                      if (paginationTotal <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= paginationTotal - 2) {
+                        pageNum = paginationTotal - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? "bg-teal-600 text-white"
+                              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={nextDisabled}
+                  className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs text-gray-600">
+                <span>
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{paginationTotal}</span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

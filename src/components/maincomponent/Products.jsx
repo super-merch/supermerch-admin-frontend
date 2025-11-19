@@ -4,7 +4,29 @@ import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import AddressAutocomplete from "../AddressAutoComplete";
-import { LuSquareArrowOutUpRight } from "react-icons/lu";
+import {
+  ArrowLeft,
+  Edit,
+  Package,
+  Truck,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Image as ImageIcon,
+  FileText,
+  MessageSquare,
+  Send,
+  X,
+  Trash2,
+  Calendar,
+  DollarSign,
+  User,
+  ExternalLink,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 
 const Products = () => {
   const { id } = useParams();
@@ -275,127 +297,200 @@ const Products = () => {
       ? `$${v.toFixed(2)}`
       : `$${Number(v || 0).toFixed(2)}`;
 
+  const getStatusColor = (status) => {
+    const colors = {
+      Pending: "bg-yellow-100 text-yellow-800",
+      Delivered: "bg-green-100 text-green-800",
+      Cancelled: "bg-red-100 text-red-800",
+      "Artwork Pending": "bg-orange-100 text-orange-800",
+      "ArtWork Approved": "bg-blue-100 text-blue-800",
+      "Branding in progress": "bg-purple-100 text-purple-800",
+      "Production Complete": "bg-indigo-100 text-indigo-800",
+      "Shipped/In Transit": "bg-cyan-100 text-cyan-800",
+      Returned: "bg-pink-100 text-pink-800",
+      "On Hold": "bg-gray-100 text-gray-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const getPaymentStatusColor = (status) => {
+    return status === "Received"
+      ? "bg-green-100 text-green-800"
+      : "bg-yellow-100 text-yellow-800";
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="flex items-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-          <p className="ml-4 text-lg font-semibold">Loading checkout data...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading order details...
+          </p>
         </div>
       </div>
     );
   }
 
   if (!checkout) {
-    return <div className="p-8">No checkout data available.</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600">No order data available.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8">
-      {/* Header actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => window.history.back()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Back
-          </button>
-          <button
-            onClick={handleEditClick}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Edit Order
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Order Details</h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Order ID: {checkout.orderId || checkout._id}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+            <button
+              onClick={handleEditClick}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              Edit Order
+            </button>
+          </div>
         </div>
-        {/* show users name */}
 
-        <div className="text-right">
-          <h1 className="text-2xl font-bold">Order Details</h1>
-          <p className="text-sm text-gray-600">
-            Status:{" "}
-            <span className="font-semibold text-blue-600">
-              {checkout.status}
-            </span>
-          </p>
-          <p className="text-sm text-gray-600">
-            Order ID:{" "}
-            <span className="font-semibold">
-              {checkout.orderId || checkout._id}
-            </span>
-          </p>
-          <p className="text-sm text-gray-600">
-            Date:{" "}
-            <span className="font-semibold">
-              {checkout.orderDate
-                ? new Date(checkout.orderDate).toLocaleString()
-                : "-"}
-            </span>
-          </p>
+        {/* Order Status Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Status</p>
+                <span
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                    checkout.status
+                  )}`}
+                >
+                  {checkout.status || "N/A"}
+                </span>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Payment</p>
+                <span
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(
+                    checkout.paymentStatus
+                  )}`}
+                >
+                  {checkout.paymentStatus || "N/A"}
+                </span>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Date</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {checkout.orderDate
+                    ? new Date(checkout.orderDate).toLocaleDateString()
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Calendar className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Customer</p>
+                <button
+                  onClick={() => navigate(`/user-orders/${checkout.userId}`)}
+                  className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  {checkout.user?.firstName} {checkout.user?.lastName}
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="p-2 bg-cyan-100 rounded-lg">
+                <User className="w-5 h-5 text-cyan-600" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="font-semibold">User:</span>
-        <span
-          onClick={() => navigate(`/user-orders/${checkout.userId} `)}
-          className="font-medium cursor-pointer text-blue-800 underline"
-        >
-          {checkout.user?.firstName} {checkout.user?.lastName}{" "}
-          <LuSquareArrowOutUpRight className=" inline pl-1 pb-[6px]" />
-        </span>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Billing + Shipping + Table */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Left: Main Content */}
+        <div className="lg:col-span-2 space-y-3">
           {/* Products Table */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <h3 className="text-lg font-semibold mb-4">Products</h3>
-
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100/50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-blue-600" />
+                  Products ({checkout.products?.length || 0})
+                </h3>
+              </div>
+            </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Image
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Product
                     </th>
-                    {/* <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                      Logo
-                    </th> */}
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                      Colour
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Details
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                      Print
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                      Size
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Price
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Supplier
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                      Product Code
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Qty
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Total
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {checkout.products?.map((product, idx) => (
-                    <tr key={product._id || idx}>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <div className="w-16 h-12 rounded overflow-hidden border">
+                    <tr
+                      key={product._id || idx}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200">
                           <img
                             src={product.image}
                             alt={product.name}
@@ -407,203 +502,256 @@ const Products = () => {
                           />
                         </div>
                       </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        <div className="font-medium">{product.name}</div>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {product.name}
+                        </div>
+                        {product.id && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Code: {product.id}
+                          </div>
+                        )}
                       </td>
-                      {/* <td className="text-sm text-gray-700">
-                        <img
-                          src={product?.logo ? product.logo : ""}
-                          className="min-w-20"
-                          alt=""
-                        />
-                      </td> */}
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        {product.color || "—"}
+                      <td className="px-3 py-2">
+                        <div className="text-xs text-gray-600 space-y-0.5">
+                          {product.color && (
+                            <div>
+                              Color:{" "}
+                              <span className="font-medium">
+                                {product.color}
+                              </span>
+                            </div>
+                          )}
+                          {product.print && (
+                            <div>
+                              Print:{" "}
+                              <span className="font-medium">
+                                {product.print}
+                              </span>
+                            </div>
+                          )}
+                          {product.size && product.size !== "None" && (
+                            <div>
+                              Size:{" "}
+                              <span className="font-medium">
+                                {product.size}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        {product.print || "—"}
+                      <td className="px-3 py-2 whitespace-nowrap text-right">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {formatCurrency(product.price)}
+                        </span>
                       </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        {product.size && product.size !== "None"
-                          ? product.size
-                          : "—"}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-sm text-gray-700">
+                          {product.supplierName || "—"}
+                        </span>
                       </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
-                        {formatCurrency(product.price)}
+                      <td className="px-3 py-2 whitespace-nowrap text-right">
+                        <span className="text-sm font-medium text-gray-900">
+                          {product.quantity || 0}
+                        </span>
                       </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        {product.supplierName || "—"}
-                      </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700">
-                        {product.id || "—"}
-                      </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
-                        {product.quantity || 0}
-                      </td>
-
-                      <td className="px-2 py-3 text-sm text-gray-700 text-right">
-                        {formatCurrency(product.subTotal)}
+                      <td className="px-3 py-2 whitespace-nowrap text-right">
+                        <span className="text-sm font-bold text-gray-900">
+                          {formatCurrency(product.subTotal)}
+                        </span>
                       </td>
                     </tr>
                   ))}
-
-                  {/* If you want a subtotal row per table, keep it here (optional) */}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Totals (mobile-friendly place) */}
-          <div className="p-5 border border-gray-200 rounded-lg bg-white shadow-sm">
-  <div className="flex flex-col md:flex-row md:justify-between gap-6">
-    {/* LEFT SECTION - ARTWORK INFO */}
-    <div className="w-full md:w-1/2">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">
-        Artwork Details
-      </h2>
-
-      {checkout.artworkOption === "upload" && logo && (
-        <div className="mb-4 flex items-center justify-center">
-          <img
-            src={logo.logo}
-            alt="Uploaded Logo"
-            className="w-36 h-36 object-contain rounded-lg border border-gray-300 bg-gray-50 p-2 shadow-sm"
-          />
-        </div>
-      )}
-
-      {checkout.artworkOption !== "upload" && (
-        <div className="mb-3">
-          <p className="text-sm font-semibold text-gray-700">
-            Artwork Option:
-          </p>
-          <p className="text-sm capitalize text-gray-600">
-            {checkout.artworkOption === "on_file" ? "Already On File": checkout.artworkOption === "no_artwork" ? "No Artwork" : checkout.artworkOption || "N/A"}
-          </p>
-        </div>
-      )}
-
-      <div>
-        <p className="text-sm font-semibold text-gray-700">
-          {checkout.artworkOption === "text" ? "Text to be printed:" : " Artwork Instruction:"}
-        </p>
-        <p className="text-sm text-gray-600 whitespace-pre-wrap">
-          {checkout.artworkMessage || "No instructions provided"}
-        </p>
-      </div>
-    </div>
-
-    {/* RIGHT SECTION - ORDER SUMMARY */}
-    <div className="w-full md:w-1/2">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">
-        Order Summary
-      </h2>
-
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Shipping</span>
-          <span className="font-medium">{formatCurrency(checkout.shipping)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Setup Fee</span>
-          <span className="font-medium">{formatCurrency(checkout.setupFee)}</span>
-        </div>
-
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Discount</span>
-          <span className="font-medium">
-            {checkout.discount ? `${checkout.discount}%` : "0%"}
-          </span>
-        </div>
-
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">GST (10%)</span>
-          <span className="font-medium">{formatCurrency(checkout.gst)}</span>
-        </div>
-
-        <div className="border-t pt-3 flex justify-between text-base font-semibold">
-          <span>Order Total</span>
-          <span>{formatCurrency(checkout.total)}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-          {/* Addresses */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <div className="flex flex-col md:flex-row md:justify-between gap-6">
+          {/* Artwork & Summary */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Artwork Details */}
               <div>
-                <h2 className="text-lg font-semibold mb-2">Billing</h2>
-                <p className="text-sm text-gray-700">
-                  <strong>
-                    {checkout.billingAddress?.firstName || checkout.user?.firstName} {checkout.billingAddress?.lastName}
-                  </strong>
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.billingAddress?.addressLine}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.billingAddress?.city},{" "}
-                  {checkout.billingAddress?.state}{" "}
-                  {checkout.billingAddress?.postalCode}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.billingAddress?.country}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Company: {checkout.billingAddress?.companyName || "—"}
-                </p>
+                <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                  Artwork Details
+                </h3>
+                {checkout.artworkOption === "upload" && logo && (
+                  <div className="mb-3 flex items-center justify-center">
+                    <img
+                      src={logo.logo}
+                      alt="Uploaded Logo"
+                      className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-gray-50 p-2"
+                    />
+                  </div>
+                )}
+                {checkout.artworkOption !== "upload" && (
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-500 mb-1">
+                      Artwork Option:
+                    </p>
+                    <p className="text-sm font-medium text-gray-700 capitalize">
+                      {checkout.artworkOption === "on_file"
+                        ? "Already On File"
+                        : checkout.artworkOption === "no_artwork"
+                        ? "No Artwork"
+                        : checkout.artworkOption || "N/A"}
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">
+                    {checkout.artworkOption === "text"
+                      ? "Text to be printed:"
+                      : "Artwork Instruction:"}
+                  </p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-2 rounded border border-gray-200">
+                    {checkout.artworkMessage || "No instructions provided"}
+                  </p>
+                </div>
               </div>
 
+              {/* Order Summary */}
               <div>
-                <h2 className="text-lg font-semibold mb-2">Shipping</h2>
-                <p className="text-sm text-gray-700">
-                  <strong>
-                    {checkout.shippingAddress?.firstName}{" "}
-                    {checkout.shippingAddress?.lastName}
-                  </strong>
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.shippingAddress?.addressLine}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.shippingAddress?.city},{" "}
-                  {checkout.shippingAddress?.state}{" "}
-                  {checkout.shippingAddress?.postalCode}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.shippingAddress?.country}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Company: {checkout.shippingAddress?.companyName || "—"}
-                </p>
-                <p className="text-sm text-blue-600 underline mt-2">
-                  {checkout.shippingAddress?.email}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {checkout.shippingAddress?.phone}
-                </p>
+                <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-green-600" />
+                  Order Summary
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="font-medium text-gray-900">
+                      {formatCurrency(checkout.shipping)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Setup Fee</span>
+                    <span className="font-medium text-gray-900">
+                      {formatCurrency(checkout.setupFee)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Discount</span>
+                    <span className="font-medium text-gray-900">
+                      {checkout.discount ? `${checkout.discount}%` : "0%"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">GST (10%)</span>
+                    <span className="font-medium text-gray-900">
+                      {formatCurrency(checkout.gst)}
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between text-base font-bold text-gray-900">
+                    <span>Total</span>
+                    <span>{formatCurrency(checkout.total)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          {/* Input for sending note to the user */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <h2 className="text-lg font-semibold mb-2">Send Note to user:</h2>
-            <div className="flex flex-col items-end md:flex-row md:justify-between gap-4">
+
+          {/* Addresses */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Billing Address */}
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-600" />
+                  Billing Address
+                </h3>
+                <div className="space-y-1 text-sm">
+                  <p className="font-semibold text-gray-900">
+                    {checkout.billingAddress?.firstName ||
+                      checkout.user?.firstName}{" "}
+                    {checkout.billingAddress?.lastName}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.billingAddress?.addressLine}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.billingAddress?.city},{" "}
+                    {checkout.billingAddress?.state}{" "}
+                    {checkout.billingAddress?.postalCode}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.billingAddress?.country}
+                  </p>
+                  {checkout.billingAddress?.companyName && (
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+                      <Building className="w-3 h-3 text-gray-400" />
+                      <span className="text-gray-600">
+                        {checkout.billingAddress.companyName}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-green-600" />
+                  Shipping Address
+                </h3>
+                <div className="space-y-1 text-sm">
+                  <p className="font-semibold text-gray-900">
+                    {checkout.shippingAddress?.firstName}{" "}
+                    {checkout.shippingAddress?.lastName}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.shippingAddress?.addressLine}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.shippingAddress?.city},{" "}
+                    {checkout.shippingAddress?.state}{" "}
+                    {checkout.shippingAddress?.postalCode}
+                  </p>
+                  <p className="text-gray-600">
+                    {checkout.shippingAddress?.country}
+                  </p>
+                  {checkout.shippingAddress?.companyName && (
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+                      <Building className="w-3 h-3 text-gray-400" />
+                      <span className="text-gray-600">
+                        {checkout.shippingAddress.companyName}
+                      </span>
+                    </div>
+                  )}
+                  {checkout.shippingAddress?.email && (
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+                      <Mail className="w-3 h-3 text-gray-400" />
+                      <span className="text-blue-600">
+                        {checkout.shippingAddress.email}
+                      </span>
+                    </div>
+                  )}
+                  {checkout.shippingAddress?.phone && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Phone className="w-3 h-3 text-gray-400" />
+                      <span className="text-gray-600">
+                        {checkout.shippingAddress.phone}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Send Note */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Send className="w-4 h-4 text-purple-600" />
+              Send Note to User
+            </h3>
+            <div className="space-y-2">
               <textarea
-                type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="border border-gray-300 h-32 rounded-md p-2 w-full"
+                placeholder="Enter your message..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows="4"
               />
               <button
                 onClick={() =>
@@ -616,121 +764,150 @@ const Products = () => {
                     checkout.products
                   )
                 }
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+                disabled={noteLoading || !note.trim()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {noteLoading ? "Sending..." : "Send"}
+                {noteLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send Note
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Right: Order summary (sticky-ish) */}
-        <aside className="space-y-4">
-          <div className="p-4 border border-gray-200 rounded bg-white shadow-sm">
-            <h4 className="text-lg font-semibold mb-2">Order Summary</h4>
-            <div className="text-sm text-gray-600 space-y-2">
+        {/* Right: Sidebar */}
+        <aside className="space-y-3">
+          {/* Order Summary Card */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-600" />
+              Order Summary
+            </h4>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Items</span>
-                <span>{checkout.products?.length || 0}</span>
+                <span className="text-gray-600">Items</span>
+                <span className="font-medium text-gray-900">
+                  {checkout.products?.length || 0}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{formatCurrency(checkout.shipping)}</span>
+                <span className="text-gray-600">Shipping</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(checkout.shipping)}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Setup Fee</span>
-                <span>{formatCurrency(checkout.setupFee)}</span>
+                <span className="text-gray-600">Setup Fee</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(checkout.setupFee)}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>GST</span>
-                <span>{formatCurrency(checkout.gst)}</span>
+                <span className="text-gray-600">GST</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(checkout.gst)}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Discount</span>
-                <span>
+                <span className="text-gray-600">Discount</span>
+                <span className="font-medium text-gray-900">
                   {checkout.discount ? `${checkout.discount}%` : "0%"}
                 </span>
               </div>
-              <div className="flex justify-between font-semibold pt-2 border-t mt-2">
+              <div className="flex justify-between font-bold pt-2 border-t border-gray-200 mt-2 text-base text-gray-900">
                 <span>Total</span>
                 <span>{formatCurrency(checkout.total)}</span>
               </div>
             </div>
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">Payment Status:</p>
-              <p className="font-medium">{checkout.paymentStatus}</p>
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Payment Status:</p>
+              <span
+                className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(
+                  checkout.paymentStatus
+                )}`}
+              >
+                {checkout.paymentStatus || "N/A"}
+              </span>
             </div>
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">Order Reference:</p>
-              <p className="font-medium">{checkout.orderId || checkout._id}</p>
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Order Reference:</p>
+              <p className="text-sm font-medium text-gray-900 font-mono">
+                {checkout.orderId || checkout._id}
+              </p>
             </div>
           </div>
 
-          {/* Quick contact / shipping info */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <h4 className="text-md font-semibold mb-2">Customer</h4>
-            <p className="text-sm text-gray-700">
-              {checkout.user?.firstName} {checkout.user?.lastName}
-            </p>
-            <p className="text-sm text-blue-600 underline">
-              {checkout.user?.email}
-            </p>
-            {/* <p className="text-sm text-gray-700">{checkout.user?.phone}</p> */}
+          {/* Customer Info Card */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <User className="w-4 h-4 text-cyan-600" />
+              Customer Info
+            </h4>
+            <div className="space-y-2 text-sm">
+              <p className="font-semibold text-gray-900">
+                {checkout.user?.firstName} {checkout.user?.lastName}
+              </p>
+              <div className="flex items-center gap-2 text-gray-700">
+                <Mail className="w-3 h-3 text-gray-400" />
+                <span className="text-blue-600">{checkout.user?.email}</span>
+              </div>
+              {checkout.user?.phone && (
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Phone className="w-3 h-3 text-gray-400" />
+                  <span>{checkout.user.phone}</span>
+                </div>
+              )}
+            </div>
           </div>
-          {/* Comments Section - Add this after the Customer card in the aside */}
-          <div className="p-4 border border-gray-200 rounded bg-white">
-            <h4 className="text-md font-semibold mb-3">Order Comments</h4>
+
+          {/* Comments Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-purple-600" />
+              Order Comments
+            </h4>
 
             {loadingComments ? (
-              <div className="flex items-center justify-center py-4">
+              <div className="flex items-center justify-center py-6">
                 <div className="w-6 h-6 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
               </div>
             ) : (
               <>
-                {/* Display existing comments */}
-                {/* Display existing comments */}
                 {orderComments?.comments &&
                 orderComments.comments.length > 0 ? (
-                  <div className="mb-4">
-                    <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto">
-                      {orderComments.comments.map((comment, index) => (
-                        <li
-                          key={index}
-                          className="text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-2 border-blue-500 flex justify-between items-start gap-2"
+                  <div className="mb-3 max-h-64 overflow-y-auto space-y-2">
+                    {orderComments.comments.map((comment, index) => (
+                      <div
+                        key={index}
+                        className="text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border-l-2 border-blue-500 flex justify-between items-start gap-2"
+                      >
+                        <div className="flex-1">
+                          <span className="font-medium text-blue-600 text-xs">
+                            Comment {index + 1}:
+                          </span>
+                          <p className="mt-1">{comment}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteComment(index)}
+                          className="text-red-500 hover:text-red-700 flex-shrink-0 p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Delete comment"
                         >
-                          <div>
-                            <span className="font-medium text-blue-600">
-                              Comment {index + 1}:
-                            </span>{" "}
-                            {comment}
-                          </div>
-                          <button
-                            onClick={() => handleDeleteComment(index)}
-                            className="text-red-500 hover:text-red-700 flex-shrink-0"
-                            title="Delete comment"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 mb-4">
-                    No comments yet. Add the first comment below.
+                  <p className="text-xs text-gray-500 mb-3 text-center py-2">
+                    No comments yet.
                   </p>
                 )}
 
@@ -740,16 +917,16 @@ const Products = () => {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a new comment..."
-                    className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     rows="3"
                   />
                   <button
                     onClick={handleAddOrUpdateComment}
                     disabled={addingComment || !newComment.trim()}
-                    className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {addingComment && (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     )}
                     {addingComment
                       ? "Adding..."
@@ -764,25 +941,30 @@ const Products = () => {
         </aside>
       </div>
 
-      {/* Edit Modal (unchanged logic & fields) */}
+      {/* Edit Modal */}
       {showEditModal && editData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Edit Order Details</h2>
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Edit className="w-6 h-6 text-blue-600" />
+                  Edit Order Details
+                </h2>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-8">
                 {/* User Details */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">User Details</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    User Details
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">
@@ -794,7 +976,7 @@ const Products = () => {
                         onChange={(e) =>
                           handleInputChange("user", "firstName", e.target.value)
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -807,7 +989,7 @@ const Products = () => {
                         onChange={(e) =>
                           handleInputChange("user", "lastName", e.target.value)
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -820,7 +1002,7 @@ const Products = () => {
                         onChange={(e) =>
                           handleInputChange("user", "email", e.target.value)
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -833,7 +1015,7 @@ const Products = () => {
                         onChange={(e) =>
                           handleInputChange("user", "phone", e.target.value)
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -841,7 +1023,7 @@ const Products = () => {
 
                 {/* Billing Address */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                     Billing Address
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -903,7 +1085,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -920,7 +1102,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -937,7 +1119,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -954,7 +1136,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -971,7 +1153,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -979,7 +1161,7 @@ const Products = () => {
 
                 {/* Shipping Address */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                     Shipping Address
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -997,7 +1179,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1014,7 +1196,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1031,7 +1213,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1048,7 +1230,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1112,7 +1294,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1129,7 +1311,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1146,7 +1328,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1163,7 +1345,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1180,7 +1362,7 @@ const Products = () => {
                             e.target.value
                           )
                         }
-                        className="w-full p-2 border border-gray-300 rounded"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -1188,13 +1370,17 @@ const Products = () => {
 
                 {/* Products */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Products</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    Products
+                  </h3>
                   {editData.products.map((product, index) => (
                     <div
                       key={index}
-                      className="border border-gray-300 rounded p-4 mb-4"
+                      className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50"
                     >
-                      <h4 className="font-medium mb-3">Product {index + 1}</h4>
+                      <h4 className="font-semibold text-sm mb-3 text-gray-900">
+                        Product {index + 1}
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-sm font-medium mb-1">
@@ -1211,7 +1397,7 @@ const Products = () => {
                                 index
                               )
                             }
-                            className="w-full p-2 border border-gray-300 rounded"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                         <div>
@@ -1229,7 +1415,7 @@ const Products = () => {
                                 index
                               )
                             }
-                            className="w-full p-2 border border-gray-300 rounded"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                         <div>
@@ -1248,7 +1434,7 @@ const Products = () => {
                                 index
                               )
                             }
-                            className="w-full p-2 border border-gray-300 rounded"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                         <div>
@@ -1260,7 +1446,7 @@ const Products = () => {
                             step="0.01"
                             value={product.subTotal.toFixed(2)}
                             readOnly
-                            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -1270,10 +1456,10 @@ const Products = () => {
               </div>
 
               {/* Modal Actions */}
-              <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
+              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
                   disabled={updating}
                 >
                   Cancel
@@ -1281,7 +1467,7 @@ const Products = () => {
                 <button
                   onClick={handleUpdateOrder}
                   disabled={updating}
-                  className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                   {updating && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

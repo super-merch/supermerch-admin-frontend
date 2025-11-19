@@ -1,41 +1,53 @@
 import React, { useState, useEffect } from "react";
 import { editUser, deleteUser } from "../apis/UserApi";
-import { FaEdit } from "react-icons/fa";
-import { MdDeleteForever } from "react-icons/md";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
-import { Search } from "lucide-react";
+import {
+  Users,
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Eye,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  User as UserIcon,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import ActionButton from "../ui/ActionButton";
 
 const User = () => {
-  const { 
-    users, 
-    setUsers, 
-    loading, 
-    fetchUsers, 
-    usersPagination  // Add this to AdminContext
+  const {
+    users,
+    setUsers,
+    loading,
+    fetchUsers,
+    usersPagination, // Add this to AdminContext
   } = useContext(AdminContext);
-  
+
   // Existing states
   const [editingUser, setEditingUser] = useState(null);
   const [updatedName, setUpdatedName] = useState("");
   const [updatedEmail, setUpdatedEmail] = useState("");
-  const [showEditPopup, setShowEditPopup] = useState(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  
+  const [editModal, setEditModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(null); // { id, name }
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState({});
+
   // Updated pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [mySearch, setMySearch] = useState("");
-  
 
   useEffect(() => {
     fetchUsers();
-    console.log(users)
   }, []);
 
   // Updated useEffect for pagination and search
@@ -51,11 +63,13 @@ const User = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  const navigate = useNavigate();
+
   const handleEdit = (user) => {
     setEditingUser(user._id);
     setUpdatedName(user.name || "");
     setUpdatedEmail(user.email || "");
-    setShowEditPopup(true);
+    setEditModal(true);
   };
 
   const handleUpdate = async () => {
@@ -69,12 +83,13 @@ const User = () => {
         return toast.error("Name should be less than 20 characters");
       }
 
+      setUpdateLoading(true);
       const updatedData = { name: updatedName, email: updatedEmail };
-      const updatedUser = await editUser(editingUser, updatedData);
+      await editUser(editingUser, updatedData);
 
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
-          user._id === updatedUser
+          user._id === editingUser
             ? { ...user, name: updatedName, email: updatedEmail }
             : user
         )
@@ -82,37 +97,39 @@ const User = () => {
 
       toast.success("User updated successfully!");
       setEditingUser(null);
-      setShowEditPopup(false);
+      setEditModal(false);
       // Refresh current page
       fetchUsers(currentPage, { searchTerm });
     } catch (error) {
       toast.error(error?.response?.data?.error || error.message);
       console.error(error);
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
-  const confirmDelete = (userId) => {
-    setUserToDelete(userId);
-    setShowDeletePopup(true);
-  };
-  const navigate = useNavigate();
   const handleViewDetails = (user) => {
     navigate(`/user-orders/${user._id}`);
   };
 
   const handleDelete = async () => {
+    if (!deleteModal) return;
+
+    const { id: userId } = deleteModal;
+    setDeleteLoading((prev) => ({ ...prev, [userId]: true }));
+
     try {
-      await deleteUser(userToDelete);
-      setUsers(users.filter((user) => user._id !== userToDelete));
+      await deleteUser(userId);
+      setUsers(users.filter((user) => user._id !== userId));
       toast.success("User deleted successfully!");
+      setDeleteModal(null);
       // Refresh current page
       fetchUsers(currentPage, { searchTerm });
     } catch (error) {
       toast.error("Error deleting user");
       console.error(error);
     } finally {
-      setShowDeletePopup(false);
-      setUserToDelete(null);
+      setDeleteLoading((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -135,232 +152,417 @@ const User = () => {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center mt-20">
-        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <p className="ml-4 text-lg font-semibold">Loading Users...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading users...
+          </p>
+        </div>
       </div>
     );
 
   return (
-    <div className="px-4 overflow-x-auto lg:px-10 md:px-8 sm:px-6">
-      <h1 className="pt-4 text-2xl font-medium text-start text-black">Users Page</h1>
-      
-      {/* Updated Search and Results Info */}
-      <div className="mb-2 inine">
-        <div className="mb-2 relative max-w-md mx-auto">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Search Users
-          </label>
-          <div className="relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
+      {/* Edit Modal */}
+      {editModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
+              <button
+                onClick={() => {
+                  setEditModal(false);
+                  setEditingUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={updatedName}
+                  onChange={(e) => setUpdatedName(e.target.value)}
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Enter username"
+                  maxLength={20}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Maximum 20 characters
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={updatedEmail}
+                  onChange={(e) => setUpdatedEmail(e.target.value)}
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Enter email"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => {
+                  setEditModal(false);
+                  setEditingUser(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <ActionButton
+                label="Save Changes"
+                onClick={handleUpdate}
+                disabled={updateLoading || !updatedName || !updatedEmail}
+                loading={updateLoading}
+                variant="primary"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Delete User</h2>
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-5">
+              Are you sure you want to delete the user "{deleteModal.name}"?
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <ActionButton
+                label="Delete"
+                onClick={handleDelete}
+                disabled={deleteLoading[deleteModal.id]}
+                loading={deleteLoading[deleteModal.id]}
+                variant="danger"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Users Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Manage and view all registered users
+            </p>
+          </div>
+          <ActionButton
+            icon={RefreshCw}
+            label="Refresh"
+            onClick={() => fetchUsers(currentPage, { searchTerm })}
+            variant="outline"
+          />
+        </div>
+
+        {/* Stats Card */}
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Total Users</p>
+              <p className="text-xl font-bold text-gray-900">
+                {usersPagination?.totalUsers || users.length || 0}
+              </p>
+            </div>
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
+        <div className="flex flex-col md:flex-row gap-2 mb-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name, email, or phone number..."
               value={mySearch}
               onChange={(e) => setMySearch(e.target.value)}
-              className="w-full max-w-md px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <Search
-              onClick={() => setSearchTerm(mySearch)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-800 hover:text-blue-600"
-            />
-          </div>
-        </div>
-        
-        {/* Updated Results Info */}
-        <div className="text-sm text-gray-600">
-          Showing {users.length} of {usersPagination?.totalUsers || 0} users
-          from page: {currentPage}
-          {searchTerm && (
-            <span className="ml-2 text-blue-600">(filtered)</span>
-          )}
-        </div>
-
-        {/* Updated Clear Search Button */}
-        <div className="mt-2">
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setMySearch("");
-            }}
-            className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md"
-          >
-            Clear Search
-          </button>
-        </div>
-      </div>
-
-      <table className="w-full border">
-        <thead className="border">
-          <tr className="border">
-            <th className="px-2 text-left border-r">Sr. No</th>
-            <th className="px-2 text-left border-r">Username</th>
-            <th className="pl-2 text-left border-r">Email</th>
-            <th className="pl-2 text-left border-r">Phone</th>
-            <th className="pl-2 text-left border-r">City</th>
-            <th className="pl-2 text-left border-r">Joined</th>
-            {/* <th className="pl-2 text-left border-r">Country</th>
-            <th className="pl-2 text-left border-r">Address</th>
-            <th className="pl-2 text-left border-r">Postal Code</th> */}
-            <th className="pl-2 text-left">Action</th>
-          </tr>
-        </thead>
-        <tbody className="border">
-          {users.map((user, index) => (
-            <tr key={user._id} className="border">
-              <td className="p-2 border">
-                {((currentPage - 1) * 15) + index + 1}
-              </td>
-              <td className="p-2 border">{user.name}</td>
-              <td className="p-2 border">{user.email}</td>
-              <td className="p-2 border">{user?.defaultShippingAddress?.phone || "-"}</td>
-              <td className="p-2 border">{user?.defaultShippingAddress?.city || "-"}</td>
-              <td className="p-2 border">{new Date(user.createdAt).toLocaleString()}</td>
-              {/* <td className="p-2 border">{user?.defaultAddress?.phone || "No Phone"}</td>
-              <td className="p-2 border">{user?.defaultAddress?.country || "No Country"}</td>
-              <td className="p-2 border">{user?.defaultAddress?.addressLine || "No Address"}</td>
-              <td className="p-2 border">{user?.defaultAddress?.postalCode || "No Code"}</td> */}
-              <td className="flex items-center px-2">
-                <FaEdit
-                  className="text-xl cursor-pointer hover:text-blue-600"
-                  onClick={() => handleEdit(user)}
-                />
-                <MdDeleteForever
-                  className="ml-4 text-2xl cursor-pointer hover:text-red-600"
-                  onClick={() => confirmDelete(user._id)}
-                />
-                {/* view details button */}
-                <button
-                  className="ml-4 py-1 my-1 px-3 border border-gray-300 rounded-lg text-base cursor-pointer hover:text-blue-600"
-                  onClick={() => handleViewDetails(user)}
-                > View Details
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* No Users Found */}
-      {users.length === 0 && !loading && (
-        <div className="text-center py-8 text-gray-500">
-          {searchTerm ? "No users found matching your search." : "No users found."}
-        </div>
-      )}
-
-      {/* Updated Pagination */}
-      {usersPagination && usersPagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-center items-center space-x-2">
-          <button
-            onClick={goToPreviousPage}
-            disabled={!usersPagination.hasPrevPage}
-            className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Previous
-          </button>
-
-          <div className="flex space-x-1">
-            {Array.from(
-              { length: Math.min(5, usersPagination.totalPages) },
-              (_, i) => {
-                let pageNum;
-                if (usersPagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= usersPagination.totalPages - 2) {
-                  pageNum = usersPagination.totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setSearchTerm(mySearch);
                 }
-
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => goToPage(pageNum)}
-                    className={`px-3 py-2 border border-gray-300 rounded-md ${
-                      currentPage === pageNum
-                        ? "bg-blue-500 text-white"
-                        : "hover:bg-gray-50"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              }
+              }}
+              className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+            {mySearch && (
+              <button
+                onClick={() => {
+                  setMySearch("");
+                  setSearchTerm("");
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
           </div>
 
-          <button
-            onClick={goToNextPage}
-            disabled={!usersPagination.hasNextPage}
-            className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Next
-          </button>
-
-          <span className="ml-4 text-sm text-gray-600">
-            Page {usersPagination.currentPage} of {usersPagination.totalPages}
-          </span>
+          {/* Clear Search */}
+          {searchTerm && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setMySearch("");
+              }}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          )}
         </div>
-      )}
+        <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
+          Showing <span className="font-semibold">{users.length}</span> of{" "}
+          <span className="font-semibold">
+            {usersPagination?.totalUsers || 0}
+          </span>{" "}
+          users
+          {searchTerm && <span className="ml-1 text-blue-600">(filtered)</span>}
+        </div>
+      </div>
 
-      {/* Edit Popup - No changes needed */}
-      {showEditPopup && (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-full h-full bg-black backdrop-blur-sm bg-opacity-50 z-50">
-          <div className="p-6 bg-white rounded shadow-lg">
-            <h2 className="mb-4 text-lg font-bold">Edit User</h2>
-            <input
-              type="text"
-              value={updatedName}
-              onChange={(e) => setUpdatedName(e.target.value)}
-              className="w-full p-2 mt-2 border rounded"
-              placeholder="Enter username"
-            />
-            <input
-              type="email"
-              value={updatedEmail}
-              onChange={(e) => setUpdatedEmail(e.target.value)}
-              className="w-full p-2 mt-2 border rounded"
-              placeholder="Enter email"
-            />
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                className="px-4 py-2 text-white bg-green-500 rounded"
-                onClick={handleUpdate}
-              >
-                Save
-              </button>
-              <button
-                className="px-4 py-2 text-gray-800 bg-gray-200 rounded"
-                onClick={() => setShowEditPopup(false)}
-              >
-                Cancel
-              </button>
-            </div>
+      {/* Users Table */}
+      {users.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12">
+          <div className="flex flex-col items-center gap-3">
+            <Users className="w-12 h-12 text-gray-300" />
+            <p className="text-sm font-medium text-gray-500">
+              {searchTerm
+                ? "No users found matching your search."
+                : "No users found."}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
+                    #
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[150px]">
+                    User
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                    Contact
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Location
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Joined
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {users.map((user, index) => (
+                  <tr
+                    key={user._id}
+                    className="group hover:bg-teal-50/30 transition-colors border-b border-gray-100"
+                  >
+                    {/* Serial Number */}
+                    <td className="px-3 py-3 whitespace-nowrap text-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {(currentPage - 1) * 15 + index + 1}
+                      </span>
+                    </td>
+
+                    {/* User Name */}
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-gray-100 rounded-lg">
+                          <UserIcon className="w-3.5 h-3.5 text-gray-500" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {user.name || "N/A"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Contact (Email & Phone) */}
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                          <Mail className="w-3 h-3 text-gray-400" />
+                          <span className="truncate max-w-[180px]">
+                            {user.email || "N/A"}
+                          </span>
+                        </div>
+                        {user?.defaultShippingAddress?.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            <span>{user.defaultShippingAddress.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Location (City) */}
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      {user?.defaultShippingAddress?.city ? (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                          <span>{user.defaultShippingAddress.city}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
+                    </td>
+
+                    {/* Joined Date */}
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                        <span>
+                          {user.createdAt
+                            ? new Date(user.createdAt).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-3 py-3 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <ActionButton
+                          icon={Eye}
+                          onClick={() => handleViewDetails(user)}
+                          variant="outline"
+                          size="sm"
+                        />
+                        <ActionButton
+                          icon={Edit}
+                          onClick={() => handleEdit(user)}
+                          variant="outline"
+                          size="sm"
+                        />
+                        <ActionButton
+                          icon={Trash2}
+                          onClick={() =>
+                            setDeleteModal({
+                              id: user._id,
+                              name: user.name || "Unknown",
+                            })
+                          }
+                          disabled={deleteLoading[user._id]}
+                          loading={deleteLoading[user._id]}
+                          variant="danger"
+                          size="sm"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Popup - No changes needed */}
-      {showDeletePopup && (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-full h-full bg-black backdrop-blur-sm bg-opacity-50 z-50">
-          <div className="p-6 bg-white rounded shadow-lg">
-            <h2 className="mb-4 text-lg font-bold">Confirm Deletion</h2>
-            <p>Are you sure you want to delete this user?</p>
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                className="px-4 py-2 text-white bg-red-500 rounded"
-                onClick={handleDelete}
-              >
-                Delete
-              </button>
-              <button
-                className="px-4 py-2 text-gray-800 bg-gray-200 rounded"
-                onClick={() => setShowDeletePopup(false)}
-              >
-                Cancel
-              </button>
+      {/* Pagination */}
+      {usersPagination && usersPagination.totalPages > 1 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPreviousPage}
+              disabled={!usersPagination.hasPrevPage}
+              className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Prev
+            </button>
+
+            <div className="flex gap-1">
+              {Array.from(
+                { length: Math.min(5, usersPagination.totalPages) },
+                (_, i) => {
+                  let pageNum;
+                  if (usersPagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= usersPagination.totalPages - 2) {
+                    pageNum = usersPagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === pageNum
+                          ? "bg-teal-600 text-white"
+                          : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                }
+              )}
             </div>
+
+            <button
+              onClick={goToNextPage}
+              disabled={!usersPagination.hasNextPage}
+              className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-gray-600">
+            <span>
+              Page <span className="font-semibold">{currentPage}</span> of{" "}
+              <span className="font-semibold">
+                {usersPagination.totalPages}
+              </span>
+            </span>
           </div>
         </div>
       )}

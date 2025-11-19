@@ -1,12 +1,9 @@
 import React from "react";
 
-const DashboardContent = ({children }) => {
+const DashboardContent = ({ children }) => {
   return (
     <main className="">
-     
-      <div className="">
-        {children}
-      </div>
+      <div className="">{children}</div>
     </main>
   );
 };

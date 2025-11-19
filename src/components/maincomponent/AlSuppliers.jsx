@@ -1,19 +1,27 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "../ui/button";
 import { toast } from "react-toastify";
-import { Search } from "lucide-react";
+import {
+  Truck,
+  Search,
+  X,
+  RefreshCw,
+  Building,
+  MapPin,
+  Calendar,
+  Percent,
+  CheckCircle2,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FolderTree,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import axios from "axios";
+import ActionButton from "../ui/ActionButton";
 
 const AlSuppliers = () => {
   const {
@@ -41,7 +49,9 @@ const AlSuppliers = () => {
   const fetchSupplierDiscounts = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/add-discount/list-supplier-discounts`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/add-discount/list-supplier-discounts`
       );
       if (response.ok) {
         const data = await response.json();
@@ -129,7 +139,9 @@ const AlSuppliers = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/add-discount/add-supplier-discounts`,
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/add-discount/add-supplier-discounts`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -259,11 +271,24 @@ const AlSuppliers = () => {
     }
   };
 
+  // Calculate stats
+  const totalSuppliers = ignored
+    ? ignoredSuppliers.length
+    : suppliersPagination?.totalSuppliers || suppliers.length || 0;
+  const activeSuppliers = !ignored
+    ? suppliersPagination?.totalSuppliers || suppliers.length || 0
+    : 0;
+  const inactiveSuppliers = ignored ? ignoredSuppliers.length : 0;
+
   if (supplierLoading || loading)
     return (
-      <div className="flex items-center justify-center mt-20">
-        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <p className="ml-4 text-lg font-semibold">Loading Suppliers...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading suppliers...
+          </p>
+        </div>
       </div>
     );
 
@@ -444,330 +469,491 @@ const AlSuppliers = () => {
     }
   };
 
+  const currentSuppliers = ignored ? ignoredSuppliers : suppliers;
+
   return (
-    <div className="px-4 pb-6 lg:pb-10 md:pb-10 lg:px-10 md:px-10 sm:px-6">
-      <h1 className="pt-3  text-2xl font-bold text-left inline-block text-gray-800">
-        All Suppliers
-      </h1>
-      <div className=" relative max-w-md mx-auto">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search Suppliers by name..."
-            value={mySearch}
-            onChange={(e) => setMySearch(e.target.value)}
-            className="w-full max-w-md px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Search
-            onClick={() => setSearchTerm(mySearch)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-800 hover:text-blue-600 cursor-pointer"
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Suppliers Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Manage suppliers, margins, and discounts
+            </p>
+          </div>
+          <ActionButton
+            icon={RefreshCw}
+            label="Refresh"
+            onClick={() => {
+              if (ignored) {
+                fetchIgnoredSuppliers();
+              } else {
+                fetchSuppliers(currentPage);
+              }
+            }}
+            variant="outline"
           />
         </div>
 
-        {/* Clear Search Button */}
-        {searchTerm && (
-          <button
-            onClick={clearSearch}
-            className="mt-2 px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md"
-          >
-            Clear Search
-          </button>
-        )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Suppliers</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {suppliersPagination?.totalSuppliers || 0}
+                </p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Truck className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Active</p>
+                <p className="text-xl font-bold text-green-600">
+                  {activeSuppliers}
+                </p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Inactive</p>
+                <p className="text-xl font-bold text-red-600">
+                  {inactiveSuppliers}
+                </p>
+              </div>
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Search Results Info */}
-      {isSearchMode && searchTerm && (
-        <div className="mb-4 flex gap-5 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800">
-            Showing search results for: <strong>"{searchTerm}"</strong>
-          </p>
-          <p className="text-xs text-blue-600 mt-1">
-            Found {suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""}
-            {suppliers.length === 25 ? " (showing first 25 results)" : ""}
-          </p>
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
+        <div className="flex flex-col md:flex-row gap-2 mb-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search suppliers by name..."
+              value={mySearch}
+              onChange={(e) => setMySearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setSearchTerm(mySearch);
+                }
+              }}
+              className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+            {mySearch && (
+              <button
+                onClick={() => {
+                  setMySearch("");
+                  setSearchTerm("");
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex gap-2">
+            <button
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                !ignored && !isSearchMode
+                  ? "bg-teal-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              onClick={() => {
+                fetchSuppliers(1);
+                setIgnored(false);
+                setIsSearchMode(false);
+                setSearchTerm("");
+                setMySearch("");
+                setCurrentPage(1);
+              }}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Active
+            </button>
+            <button
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                ignored
+                  ? "bg-teal-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              onClick={() => {
+                fetchIgnoredSuppliers();
+                setIgnored(true);
+                setIsSearchMode(false);
+                setSearchTerm("");
+                setMySearch("");
+              }}
+            >
+              <XCircle className="w-4 h-4" />
+              Inactive
+            </button>
+          </div>
+
+          {/* Clear Search */}
+          {searchTerm && (
+            <button
+              onClick={clearSearch}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          )}
         </div>
-      )}
-
-      <div className="flex gap-2 py-3">
-        <button
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            !ignored
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-          onClick={() => {
-            fetchSuppliers();
-            setIgnored(false);
-            setIsSearchMode(false);
-            setSearchTerm("");
-            setMySearch("");
-          }}
-        >
-          Active Suppliers
-        </button>
-
-        <button
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            ignored
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-          onClick={() => {
-            fetchIgnoredSuppliers();
-            setIgnored(true);
-            setIsSearchMode(false);
-            setSearchTerm("");
-            setMySearch("");
-          }}
-        >
-          Inactive Suppliers
-        </button>
+        <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
+          Showing{" "}
+          <span className="font-semibold">{currentSuppliers.length}</span> of{" "}
+          <span className="font-semibold">{totalSuppliers}</span> suppliers
+          {isSearchMode && searchTerm && (
+            <span className="ml-1 text-blue-600">(search: "{searchTerm}")</span>
+          )}
+        </div>
       </div>
-      {/* loding div */}
-      {addLoading && (
-        <div className="flex items-center justify-center">
-          <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-          <p className="ml-4 text-lg font-semibold">Updating Margin...</p>
+      {/* Suppliers Table */}
+      {currentSuppliers.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12">
+          <div className="flex flex-col items-center gap-3">
+            <Truck className="w-12 h-12 text-gray-300" />
+            <p className="text-sm font-medium text-gray-500">
+              {isSearchMode
+                ? `No suppliers found matching "${searchTerm}"`
+                : ignored
+                ? "No inactive suppliers found"
+                : "No suppliers found"}
+            </p>
+          </div>
         </div>
-      )}
-      <Table>
-        <TableCaption>
-          {ignored
-            ? ignoredSuppliers.length > 0
-              ? "List of inactive suppliers"
-              : "No inactive suppliers found"
-            : isSearchMode
-            ? `Search results for "${searchTerm}"`
-            : "A list of all suppliers."}
-        </TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead>Active</TableHead>
-            <TableHead>Created At</TableHead>
-            <TableHead className="text-center">Manage Margin%</TableHead>
-            <TableHead className="text-center">Manage Discount%</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-            <TableHead className="text-right">View Categories</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(ignored ? ignoredSuppliers : suppliers).map((sup) => {
-            const createdAt = new Date(sup.created_at).toLocaleDateString();
-            const hasExistingMargin = supplierMargins[sup.id] !== undefined;
-
-            return (
-              <TableRow key={sup.id}>
-                <TableCell>{sup.name}</TableCell>
-                <TableCell>{sup.country}</TableCell>
-                <TableCell>{!ignored ? "Yes" : "No"}</TableCell>
-                <TableCell>{createdAt}</TableCell>
-                {/* Margin Management Cell */}
-                <TableCell>
-                  <div className="flex  items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-24 p-1 border rounded"
-                      placeholder="Margin"
-                      value={margins[sup.id] || ""}
-                      onChange={(e) =>
-                        handleMarginChange(sup.id, e.target.value)
-                      }
-                    />
-                    <Button
-                      onClick={() => handleAddMargin(sup)}
-                      disabled={loadingSuppliers[sup.id]}
-                      className={`${
-                        loadingSuppliers[sup.id]
-                          ? "cursor-not-allowed bg-blue-400 hover:bg-blue-400"
-                          : "bg-blue-600 hover:bg-blue-700"
-                      }`}
-                    >
-                      {loadingSuppliers[sup.id] === "adding"
-                        ? hasExistingMargin
-                          ? "Updating..."
-                          : "Adding..."
-                        : hasExistingMargin
-                        ? "Update"
-                        : "Add"}
-                    </Button>
-                    {hasExistingMargin && (
-                      <Button
-                        onClick={() => handleDeleteMargin(sup)}
-                        disabled={loadingSuppliers[sup.id]}
-                        className={`${
-                          loadingSuppliers[sup.id]
-                            ? "cursor-not-allowed bg-red-400 hover:bg-red-400"
-                            : "bg-red-600 hover:bg-red-700"
-                        }`}
-                      >
-                        {loadingSuppliers[sup.id] === "deleting"
-                          ? "Deleting..."
-                          : "Delete"}
-                      </Button>
-                    )}
-                  </div>
-                  {hasExistingMargin && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      Current: {supplierMargins[sup.id]}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-24 p-1 border rounded"
-                      placeholder="Discount"
-                      value={discounts[sup.id] || ""}
-                      onChange={(e) =>
-                        handleDiscountChange(sup.id, e.target.value)
-                      }
-                    />
-                    <Button
-                      onClick={() => handleAddDiscount(sup)}
-                      disabled={loadingSuppliers[sup.id]}
-                      className={`${
-                        loadingSuppliers[sup.id]
-                          ? "cursor-not-allowed bg-blue-400 hover:bg-blue-400"
-                          : "bg-blue-600 hover:bg-blue-700"
-                      }`}
-                    >
-                      {loadingSuppliers[sup.id] === "adding"
-                        ? supplierDiscounts[sup.id] !== undefined
-                          ? "Updating..."
-                          : "Adding..."
-                        : supplierDiscounts[sup.id] !== undefined
-                        ? "Update"
-                        : "Add"}
-                    </Button>
-                    {supplierDiscounts[sup.id] !== undefined && (
-                      <Button
-                        onClick={() => handleDeleteDiscount(sup)}
-                        disabled={loadingSuppliers[sup.id]}
-                        className={`${
-                          loadingSuppliers[sup.id]
-                            ? "cursor-not-allowed bg-red-400 hover:bg-red-400"
-                            : "bg-red-600 hover:bg-red-700"
-                        }`}
-                      >
-                        {loadingSuppliers[sup.id] === "deleting"
-                          ? "Deleting..."
-                          : "Delete"}
-                      </Button>
-                    )}
-                  </div>
-                  {supplierDiscounts[sup.id] !== undefined && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      Current: {supplierDiscounts[sup.id]}
-                    </div>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  {!ignored ? (
-                    <Button
-                      className="bg-red-700 hover:bg-red-600 mr-1 my-1"
-                      onClick={() => deactivateSupplier(sup)}
-                    >
-                      Deactivate
-                    </Button>
-                  ) : (
-                    <Button
-                      className="bg-green-700 hover:bg-green-600 mr-1 my-1"
-                      onClick={() => activateSupplier(sup)}
-                    >
-                      Activate
-                    </Button>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    className="bg-blue-700 hover:bg-blue-600 mr-1 my-1"
-                    onClick={() =>
-                      handleViewCategories(sup, supplierMargins[sup.id])
-                    }
-                  >
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[150px]">
+                    Supplier
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Country
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                    Status
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Created
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                    Margin %
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                    Discount %
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Actions
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Categories
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {currentSuppliers.map((sup) => {
+                  const createdAt = new Date(
+                    sup.created_at
+                  ).toLocaleDateString();
+                  const hasExistingMargin =
+                    supplierMargins[sup.id] !== undefined;
+                  const hasExistingDiscount =
+                    supplierDiscounts[sup.id] !== undefined;
 
-      {/* Pagination Controls */}
+                  return (
+                    <tr
+                      key={sup.id}
+                      className="group hover:bg-teal-50/30 transition-colors border-b border-gray-100"
+                    >
+                      {/* Supplier Name */}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-gray-100 rounded-lg">
+                            <Building className="w-3.5 h-3.5 text-gray-600" />
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {sup.name || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Country */}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                          <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                          <span>{sup.country || "N/A"}</span>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        {!ignored ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 border border-green-200">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 border border-red-200">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Created At */}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                          <span>{createdAt}</span>
+                        </div>
+                      </td>
+
+                      {/* Margin Management */}
+                      <td className="px-3 py-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <Percent className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                              <input
+                                type="number"
+                                className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="Margin %"
+                                value={margins[sup.id] || ""}
+                                onChange={(e) =>
+                                  handleMarginChange(sup.id, e.target.value)
+                                }
+                                disabled={loadingSuppliers[sup.id]}
+                              />
+                            </div>
+                            <ActionButton
+                              icon={hasExistingMargin ? Plus : Plus}
+                              label={hasExistingMargin ? "Update" : "Add"}
+                              onClick={() => handleAddMargin(sup)}
+                              disabled={loadingSuppliers[sup.id]}
+                              loading={loadingSuppliers[sup.id] === "adding"}
+                              variant="primary"
+                              size="sm"
+                            />
+                            {hasExistingMargin && (
+                              <ActionButton
+                                icon={Trash2}
+                                onClick={() => handleDeleteMargin(sup)}
+                                disabled={loadingSuppliers[sup.id]}
+                                loading={
+                                  loadingSuppliers[sup.id] === "deleting"
+                                }
+                                variant="danger"
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                          {hasExistingMargin && (
+                            <div className="text-xs text-gray-600">
+                              Current:{" "}
+                              <span className="font-semibold">
+                                {supplierMargins[sup.id]}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Discount Management */}
+                      <td className="px-3 py-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <Percent className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                              <input
+                                type="number"
+                                className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="Discount %"
+                                value={discounts[sup.id] || ""}
+                                onChange={(e) =>
+                                  handleDiscountChange(sup.id, e.target.value)
+                                }
+                                disabled={loadingSuppliers[sup.id]}
+                              />
+                            </div>
+                            <ActionButton
+                              icon={hasExistingDiscount ? Plus : Plus}
+                              label={hasExistingDiscount ? "Update" : "Add"}
+                              onClick={() => handleAddDiscount(sup)}
+                              disabled={loadingSuppliers[sup.id]}
+                              loading={loadingSuppliers[sup.id] === "adding"}
+                              variant="primary"
+                              size="sm"
+                            />
+                            {hasExistingDiscount && (
+                              <ActionButton
+                                icon={Trash2}
+                                onClick={() => handleDeleteDiscount(sup)}
+                                disabled={loadingSuppliers[sup.id]}
+                                loading={
+                                  loadingSuppliers[sup.id] === "deleting"
+                                }
+                                variant="danger"
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                          {hasExistingDiscount && (
+                            <div className="text-xs text-gray-600">
+                              Current:{" "}
+                              <span className="font-semibold">
+                                {supplierDiscounts[sup.id]}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        {!ignored ? (
+                          <ActionButton
+                            icon={XCircle}
+                            label="Deactivate"
+                            onClick={() => deactivateSupplier(sup)}
+                            variant="danger"
+                            size="sm"
+                          />
+                        ) : (
+                          <ActionButton
+                            icon={CheckCircle2}
+                            label="Activate"
+                            onClick={() => activateSupplier(sup)}
+                            variant="success"
+                            size="sm"
+                          />
+                        )}
+                      </td>
+
+                      {/* View Categories */}
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <ActionButton
+                          icon={FolderTree}
+                          label="View"
+                          onClick={() =>
+                            handleViewCategories(sup, supplierMargins[sup.id])
+                          }
+                          variant="primary"
+                          size="sm"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
       {!ignored &&
         !isSearchMode &&
         suppliersPagination &&
         suppliersPagination.totalPages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={!suppliersPagination.hasPrevPage}
-              className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-                !suppliersPagination.hasPrevPage
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              Previous
-            </button>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!suppliersPagination.hasPrevPage}
+                className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Prev
+              </button>
 
-            <div className="flex space-x-1">
-              {Array.from(
-                { length: Math.min(5, suppliersPagination.totalPages) },
-                (_, i) => {
-                  let pageNum;
-                  if (suppliersPagination.totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (
-                    currentPage >=
-                    suppliersPagination.totalPages - 2
-                  ) {
-                    pageNum = suppliersPagination.totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
+              <div className="flex gap-1">
+                {Array.from(
+                  { length: Math.min(5, suppliersPagination.totalPages) },
+                  (_, i) => {
+                    let pageNum;
+                    if (suppliersPagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (
+                      currentPage >=
+                      suppliersPagination.totalPages - 2
+                    ) {
+                      pageNum = suppliersPagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? "bg-teal-600 text-white"
+                            : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
                   }
+                )}
+              </div>
 
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-2 border border-gray-300 rounded-md ${
-                        currentPage === pageNum
-                          ? "bg-blue-600 text-white"
-                          : "hover:bg-gray-50"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                }
-              )}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!suppliersPagination.hasNextPage}
+                className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={!suppliersPagination.hasNextPage}
-              className={`px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 ${
-                !suppliersPagination.hasNextPage
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              Next
-            </button>
-
-            <span className="ml-4 text-sm text-gray-600">
-              Page {suppliersPagination.currentPage} of{" "}
-              {suppliersPagination.totalPages}(
-              {suppliersPagination.totalSuppliers} total suppliers)
-            </span>
+            <div className="flex items-center gap-3 text-xs text-gray-600">
+              <span>
+                Page <span className="font-semibold">{currentPage}</span> of{" "}
+                <span className="font-semibold">
+                  {suppliersPagination.totalPages}
+                </span>
+              </span>
+              <div className="h-4 w-px bg-gray-300"></div>
+              <span>
+                <span className="font-semibold">
+                  {suppliersPagination.totalSuppliers}
+                </span>{" "}
+                total
+              </span>
+            </div>
           </div>
         )}
     </div>

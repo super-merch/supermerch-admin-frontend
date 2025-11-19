@@ -6,6 +6,22 @@ import axios from "axios";
 import { AdminContext } from "../context/AdminContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  ArrowLeft,
+  Package,
+  DollarSign,
+  Percent,
+  Tag,
+  Edit,
+  Save,
+  X,
+  FileText,
+  Building,
+  Hash,
+  Info,
+  FileEdit,
+} from "lucide-react";
+import ActionButton from "../ui/ActionButton";
 
 const AlProductDetail = () => {
   const { state: product } = useLocation();
@@ -587,363 +603,532 @@ const AlProductDetail = () => {
 
   if (initialLoading) {
     return (
-      <p className="pt-32 text-5xl text-center text-gray-500">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading product details...
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="mx-4 mt-20 mb-12 space-y-8 lg:mx-8 md:mx-6 sm:mx-4">
-      {/* good designed back button to navigate(-1) */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-100"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-6 h-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        <span>Back</span>
-      </button>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-50 p-6">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Product Info */}
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 border-b border-gray-200">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
-            Product Details
-          </h1>
-        </div>
-
-        <div className="p-8 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">ID</span>
-                <span className="font-semibold text-gray-800">
-                  {product?.meta?.id || "N/A"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">Code</span>
-                <span className="font-semibold text-gray-800">
-                  {product?.overview?.code || "N/A"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">
-                  Supplier
-                </span>
-                <span className="font-semibold text-gray-800">
-                  {product.supplier?.supplier || "Unknown"}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <span className="text-sm font-medium text-blue-700">
-                  Base Price
-                </span>
-                <span className="text-xl font-bold text-blue-800">
-                  ${newBasePrice?.toFixed(2)}
-                </span>
-              </div>
-
-              {discountPercent !== "" && (
-                <div className="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-200">
-                  <span className="text-sm font-medium text-red-700">
-                    Discount
-                  </span>
-                  <span className="text-lg font-bold text-red-800">
-                    {discountPercent}%
-                  </span>
-                </div>
-              )}
-
-              {discountPrice !== null && (
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200">
-                  <span className="text-sm font-medium text-green-700">
-                    Discounted Price
-                  </span>
-                  <span className="text-xl font-bold text-green-800">
-                    ${discountPrice?.toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Discount Form */}
-          <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">
-              Apply Discount
-            </h3>
-            <form
-              onSubmit={handleAddDiscount}
-              className="flex flex-col space-y-4"
-            >
-              <input
-                type="number"
-                placeholder="Enter discount percentage"
-                value={discountPercent}
-                onChange={(e) => setDiscountPercent(e.target.value)}
-                className="w-full p-4 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm"
-                disabled={isDiscountLoading}
-              />
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isDiscountLoading}
-                >
-                  {isDiscountLoading ? "Applying..." : "Apply Discount"}
-                </button>
-              </div>
-              {discountMessage && (
-                <p className="text-sm text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  {discountMessage}
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 hover:bg-white rounded-lg transition-colors border border-gray-200/50 hover:border-gray-300 hover:shadow-sm"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                  Product Details
+                </h1>
+                <p className="text-sm text-gray-500 mt-1 font-medium">
+                  Manage product information, pricing, and settings
                 </p>
-              )}
-            </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Margin Section */}
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="w-2 h-7 bg-green-500 rounded-full"></div>
-            Margin
-          </h2>
-        </div>
-
-        <div className="p-8 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Pricing Configuration - Moved to Top */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {marginPercent !== "" && (
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200">
-                <span className="text-sm font-medium text-green-700">
-                  Margin
-                </span>
-                <span className="text-lg font-bold text-green-800">
-                  % {marginPercent}
-                </span>
-              </div>
-            )}
-
-            {marginPrice !== null && (
-              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                <span className="text-sm font-medium text-emerald-700">
-                  Price with Margin
-                </span>
-                <span className="text-xl font-bold text-emerald-800">
-                  ${marginPrice?.toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Margin Form */}
-          <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200">
-            <h3 className="text-lg font-semibold text-green-800 mb-4">
-              Apply Margin
-            </h3>
-            <form
-              onSubmit={handleAddMargin}
-              className="flex flex-col space-y-4"
-            >
-              <input
-                type="number"
-                placeholder="Enter margin amount in dollars"
-                value={marginPercent}
-                onChange={(e) => setMarginPercent(e.target.value)}
-                className="w-full p-4 border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm"
-                disabled={isMarginLoading}
-              />
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-3 text-white bg-green-600 hover:bg-green-700 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isMarginLoading}
-                >
-                  {isMarginLoading ? "Applying..." : "Apply Margin"}
-                </button>
-              </div>
-              {marginMessage && (
-                <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
-                  {marginMessage}
-                </p>
-              )}
-            </form>
-          </div>
-        </div>
-      </div>
-      {/* Product Specifications Section */}
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-8 py-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="w-2 h-7 bg-purple-500 rounded-full"></div>
-            Product Specifications
-          </h2>
-        </div>
-
-        <div className="p-8 space-y-4">
-          {/* Name (editable) */}
-          <div className="p-4 bg-gray-50 rounded-xl">
-            <div className="flex justify-between items-start">
-              <h3 className="text-sm font-medium text-gray-600 mb-1">Name</h3>
-              {!isEditingName && (
-                <button
-                  onClick={startEditName}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-
-            {isEditingName ? (
-              <div className="mt-2">
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onKeyDown={onNameKeyDown}
-                  className="w-full p-3 border rounded text-sm"
-                  placeholder="Enter product name..."
-                  disabled={updatingName}
-                />
-                <div className="mt-3 flex justify-end gap-2">
-                  <button
-                    onClick={saveName}
-                    disabled={updatingName || !(editingName || "").trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                  >
-                    {updatingName ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={cancelEditName}
-                    disabled={updatingName}
-                    className="px-4 py-2 border rounded"
-                  >
-                    Cancel
-                  </button>
+            {/* Discount Form */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-red-50 to-red-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-red-50 to-red-100 rounded-lg">
+                    <Percent className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      Apply Discount
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Set discount percentage
+                    </p>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-800 text-sm leading-relaxed mt-2">
-                {prodName || localProduct?.overview?.name || "N/A"}
-              </p>
-            )}
+              <form onSubmit={handleAddDiscount} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+                    Discount Percentage
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white font-medium"
+                    disabled={isDiscountLoading}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Enter a value between 0 and 100
+                  </p>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <ActionButton
+                    label={isDiscountLoading ? "Applying..." : "Apply Discount"}
+                    onClick={handleAddDiscount}
+                    disabled={isDiscountLoading}
+                    loading={isDiscountLoading}
+                    variant="danger"
+                    size="md"
+                    type="submit"
+                  />
+                </div>
+                {discountMessage && (
+                  <div className="p-3 text-xs text-red-700 bg-red-50 rounded-lg border border-red-200 font-medium">
+                    {discountMessage}
+                  </div>
+                )}
+              </form>
+            </div>
+
+            {/* Margin Form */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-green-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      Apply Margin
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Set profit margin
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <form onSubmit={handleAddMargin} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+                    Margin Percentage
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={marginPercent}
+                    onChange={(e) => setMarginPercent(e.target.value)}
+                    className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white font-medium"
+                    disabled={isMarginLoading}
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Percentage added to discounted price
+                  </p>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <ActionButton
+                    label={isMarginLoading ? "Applying..." : "Apply Margin"}
+                    onClick={handleAddMargin}
+                    disabled={isMarginLoading}
+                    loading={isMarginLoading}
+                    variant="success"
+                    size="md"
+                    type="submit"
+                  />
+                </div>
+                {marginMessage && (
+                  <div className="p-3 text-xs text-green-700 bg-green-50 rounded-lg border border-green-200 font-medium">
+                    {marginMessage}
+                  </div>
+                )}
+              </form>
+            </div>
           </div>
 
-          {/* Price */}
-          <div className="flex items-start justify-between p-4 bg-gray-50 rounded-xl">
-            <span className="text-sm font-medium text-gray-600">Price</span>
-            <span className="font-semibold text-gray-800 text-right">
-              {product?.product?.prices?.price_groups[0]?.base_price
-                ?.price_breaks[0]?.price || "N/A"}
-            </span>
-          </div>
+          {/* Product Information Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                  <Package className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Product Information
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Core product details and specifications
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Hash className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Product ID
+                    </span>
+                  </div>
+                  <span className="text-base font-bold text-gray-900 font-mono">
+                    {product?.meta?.id || "N/A"}
+                  </span>
+                </div>
 
-          {/* Description (editable) */}
-          {localProduct?.product?.description !== undefined && (
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <div className="flex justify-between items-start">
-                <h3 className="text-sm font-medium text-gray-600 mb-1">
-                  Description
-                </h3>
-                {!isEditingDesc && (
-                  <button
-                    onClick={startEditDesc}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
+                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Hash className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Product Code
+                    </span>
+                  </div>
+                  <span className="text-base font-bold text-gray-900 font-mono">
+                    {product?.overview?.code || "N/A"}
+                  </span>
+                </div>
+
+                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all md:col-span-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <Building className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Supplier
+                    </span>
+                  </div>
+                  <span className="text-base font-bold text-gray-900">
+                    {product.supplier?.supplier ||
+                      product?.product?.supplier_name ||
+                      "Unknown"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Name Section */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Product Name
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Display name for this product
+                      </p>
+                    </div>
+                  </div>
+                  {!isEditingName && (
+                    <ActionButton
+                      icon={Edit}
+                      label="Edit"
+                      onClick={startEditName}
+                      variant="outline"
+                      size="sm"
+                    />
+                  )}
+                </div>
+
+                {isEditingName ? (
+                  <div className="space-y-3 p-4 bg-blue-50/30 rounded-lg border border-blue-200/50">
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={onNameKeyDown}
+                      className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white font-medium"
+                      placeholder="Enter product name..."
+                      disabled={updatingName}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <ActionButton
+                        icon={X}
+                        label="Cancel"
+                        onClick={cancelEditName}
+                        disabled={updatingName}
+                        variant="outline"
+                        size="sm"
+                      />
+                      <ActionButton
+                        icon={Save}
+                        label="Save Changes"
+                        onClick={saveName}
+                        disabled={updatingName || !(editingName || "").trim()}
+                        loading={updatingName}
+                        variant="primary"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
+                    <p className="text-base font-semibold text-gray-900">
+                      {prodName || localProduct?.overview?.name || "N/A"}
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {isEditingDesc ? (
-                <div className="mt-2">
-                  <textarea
-                    value={editingDesc}
-                    onChange={(e) => setEditingDesc(e.target.value)}
-                    rows={6}
-                    className="w-full p-3 border rounded resize-y"
-                    placeholder="Enter custom description..."
-                  />
-                  <div className="mt-3 flex justify-end gap-2">
-                    <button
-                      onClick={saveDesc}
-                      disabled={updatingDesc}
-                      className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                    >
-                      {updatingDesc ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      onClick={cancelEditDesc}
-                      disabled={updatingDesc}
-                      className="px-4 py-2 border rounded"
-                    >
-                      Cancel
-                    </button>
+              {/* Description Section */}
+              {localProduct?.product?.description !== undefined && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-50 rounded-lg">
+                        <FileEdit className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Product Description
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Detailed product information
+                        </p>
+                      </div>
+                    </div>
+                    {!isEditingDesc && (
+                      <ActionButton
+                        icon={Edit}
+                        label="Edit"
+                        onClick={startEditDesc}
+                        variant="outline"
+                        size="sm"
+                      />
+                    )}
                   </div>
+
+                  {isEditingDesc ? (
+                    <div className="space-y-3 p-4 bg-purple-50/30 rounded-lg border border-purple-200/50">
+                      <textarea
+                        value={editingDesc}
+                        onChange={(e) => setEditingDesc(e.target.value)}
+                        rows={6}
+                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white resize-none"
+                        placeholder="Enter custom description..."
+                      />
+                      <div className="flex justify-end gap-2">
+                        <ActionButton
+                          icon={X}
+                          label="Cancel"
+                          onClick={cancelEditDesc}
+                          disabled={updatingDesc}
+                          variant="outline"
+                          size="sm"
+                        />
+                        <ActionButton
+                          icon={Save}
+                          label="Save Changes"
+                          onClick={saveDesc}
+                          disabled={updatingDesc}
+                          loading={updatingDesc}
+                          variant="primary"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 min-h-[100px]">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {productDesc ||
+                          localProduct.product.description ||
+                          "No description available."}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-gray-800 text-sm leading-relaxed mt-2">
-                  {productDesc ||
-                    localProduct.product.description ||
-                    "No description available."}
-                </p>
               )}
             </div>
-          )}
+          </div>
 
-          {/* Details List */}
+          {/* Additional Information - Specifications */}
           {product?.product?.details?.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {product.product.details.map((detail, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                >
-                  <span className="text-sm font-medium text-gray-600">
-                    {detail.name}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-indigo-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg">
+                    <Info className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">
+                      Product Specifications
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Additional product details and specifications
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {product.product.details.map((detail, idx) => (
+                    <div
+                      key={idx}
+                      className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-indigo-300 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              {detail.name}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900">
+                            {detail.detail}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Price Summary */}
+        <div className="space-y-6">
+          {/* Price Summary Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden sticky top-6">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-teal-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg">
+                  <DollarSign className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">
+                    Price Summary
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Complete pricing breakdown
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Base Price */}
+              <div className="flex items-center justify-between p-4 bg-gradient-to-br from-blue-50 to-blue-50/50 rounded-lg border border-blue-200/50">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider block">
+                    Base Price
                   </span>
-                  <span className="text-sm font-semibold text-gray-800 text-right">
-                    {detail.detail}
+                  <p className="text-xs text-gray-600">Original cost</p>
+                </div>
+                <span className="text-lg font-bold text-blue-900">
+                  ${newBasePrice?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+
+              {/* Discount Row */}
+              {discountPercent !== "" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-br from-red-50 to-red-50/50 rounded-lg border border-red-200/50">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-semibold text-red-700 uppercase tracking-wider block">
+                        Discount ({discountPercent}%)
+                      </span>
+                    </div>
+                    <span className="text-base font-bold text-red-900">
+                      -$
+                      {(
+                        (newBasePrice * parseFloat(discountPercent)) /
+                        100
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  {discountPrice !== null && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-br from-green-50 to-green-50/50 rounded-lg border border-green-200/50">
+                      <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">
+                        After Discount
+                      </span>
+                      <span className="text-base font-bold text-green-900">
+                        ${discountPrice?.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Margin Row */}
+              {marginPercent !== "" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-br from-yellow-50 to-yellow-50/50 rounded-lg border border-yellow-200/50">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-semibold text-yellow-700 uppercase tracking-wider block">
+                        Margin ({marginPercent}%)
+                      </span>
+                    </div>
+                    <span className="text-base font-bold text-yellow-900">
+                      +$
+                      {(
+                        ((discountPrice || newBasePrice) *
+                          parseFloat(marginPercent)) /
+                        100
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Final Price - Highlighted */}
+              {marginPrice !== null && (
+                <div className="pt-4 mt-2 border-t-2 border-gray-200">
+                  <div className="flex items-center justify-between p-5 bg-gradient-to-br from-purple-100 via-purple-50 to-purple-50/50 rounded-xl border-2 border-purple-300">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-purple-900 uppercase tracking-wider block">
+                        Final Price
+                      </span>
+                      <p className="text-xs text-purple-700 font-medium">
+                        Customer pays this
+                      </p>
+                    </div>
+                    <span className="text-3xl font-bold text-purple-900">
+                      ${marginPrice?.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Original Price Reference */}
+              <div className="pt-4 mt-2 border-t border-gray-200">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
+                      Original Price
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">From API</p>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    $
+                    {product?.product?.prices?.price_groups[0]?.base_price
+                      ?.price_breaks[0]?.price || "N/A"}
                   </span>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-
-          {/* Supplier Name */}
-          {product?.product?.supplier_name && (
-            <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-              <span className="text-sm font-medium text-indigo-700">
-                Supplier
-              </span>
-              <span className="text-sm font-semibold text-indigo-900">
-                {product.product.supplier_name}
-              </span>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

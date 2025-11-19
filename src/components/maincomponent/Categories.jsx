@@ -2,6 +2,16 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { useNavigate } from "react-router-dom";
+import {
+  FolderTree,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Hash,
+  RefreshCw,
+  Layers,
+} from "lucide-react";
+import ActionButton from "../ui/ActionButton";
 
 export default function Categories() {
   const { categories, fetchCategories } = useContext(AdminContext);
@@ -12,7 +22,6 @@ export default function Categories() {
     const getCategories = async () => {
       setLoading(true);
       const data = await fetchCategories();
-      console.log(data, "data");
       setCount(data.data.length);
       setLoading(false);
     };
@@ -28,102 +37,176 @@ export default function Categories() {
     }));
   };
   const totalCount = categories.reduce(
-    (acc, category) => acc + category.subTypes.length,
+    (acc, category) => acc + (category.subTypes?.length || 0),
     0
   );
-  // circuler loading icon
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <p className="ml-4 text-lg font-semibold">Loading Categories...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
+          <p className="mt-4 text-sm font-medium text-gray-600">
+            Loading categories...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold m-2">Categories</h1>
-      {/* show total number of categories */}
-      <div>
-        <p className="text-lg font-semibold mx-2">Total Categories: {count}</p>
-        {/* show all subCategories */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
+      <style>{`
+        .subcategory-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .subcategory-scroll::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 10px;
+        }
+        .subcategory-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .subcategory-scroll::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Categories Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Manage and view all product categories and subcategories
+            </p>
+          </div>
+          <ActionButton
+            icon={RefreshCw}
+            label="Refresh"
+            onClick={async () => {
+              setLoading(true);
+              const data = await fetchCategories();
+              setCount(data.data.length);
+              setLoading(false);
+            }}
+            variant="outline"
+          />
+        </div>
 
-        <p className="text-lg font-semibold mx-2">
-          Total Sub-Categories: {totalCount}
-        </p>
-      </div>
-
-      {categories.length > 0 ? (
-        categories.map((category) => (
-          <div key={category?._id} className="bg-white rounded-lg shadow">
-            {/* Main Category Header */}
-            <div className="bg-gray-100 px-4 py-3 rounded-t-lg border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    {category?.name} (ID: {category?.id})
-                  </h2>
-                  <span className="text-sm text-gray-600">
-                    {category?.subTypes?.length || 0} subcategories
-                  </span>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded"
-                    onClick={() =>
-                      navigate("/category-detail", {
-                        state: { id: category.id, name: category.name },
-                      })
-                    }
-                  >
-                    View Category
-                  </button>
-                  <button
-                    className="px-3 py-1 text-sm text-gray-600 bg-gray-200 hover:bg-gray-300 rounded"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    {expandedCategories[category.id] ? "Hide" : "Show"}{" "}
-                    Subcategories
-                  </button>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Categories</p>
+                <p className="text-xl font-bold text-gray-900">{count}</p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FolderTree className="w-5 h-5 text-blue-600" />
               </div>
             </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Sub-Categories</p>
+                <p className="text-xl font-bold text-gray-900">{totalCount}</p>
+              </div>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Layers className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Subcategories Table */}
-            {expandedCategories[category.id] && category?.subTypes && (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
-                        Subcategory Name
-                      </th>
-                      <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
-                        Subcategory ID
-                      </th>
-                      <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {category.subTypes.map((subType, index) => (
-                      <tr
-                        key={subType?.id}
-                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                      >
-                        <td className="px-4 py-3 border border-gray-300">
-                          <div className="font-medium text-gray-900">
-                            {subType?.name}
+      {/* Categories List */}
+      {categories.length > 0 ? (
+        <div className="space-y-3">
+          {categories.map((category) => {
+            const isExpanded = expandedCategories[category.id];
+            const subCount = category?.subTypes?.length || 0;
+
+            return (
+              <div
+                key={category?._id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              >
+                {/* Category Header */}
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <FolderTree className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h2 className="text-base font-semibold text-gray-900">
+                            {category?.name || "Unnamed Category"}
+                          </h2>
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-200 rounded">
+                            <Hash className="w-3 h-3 text-gray-500" />
+                            <span className="text-xs font-mono text-gray-600">
+                              {category?.id}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 border border-gray-300">
-                          {subType?.id}
-                        </td>
-                        <td className="px-4 py-3 border border-gray-300">
-                          <button
-                            className="px-2 py-2 text-sm text-center text-white bg-blue-700 hover:bg-blue-800 rounded"
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Layers className="w-3.5 h-3.5" />
+                          <span className="text-xs">
+                            {subCount}{" "}
+                            {subCount === 1 ? "subcategory" : "subcategories"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ActionButton
+                        icon={Eye}
+                        label="View"
+                        onClick={() =>
+                          navigate("/category-detail", {
+                            state: { id: category.id, name: category.name },
+                          })
+                        }
+                        variant="primary"
+                        size="sm"
+                      />
+                      <button
+                        onClick={() => toggleCategory(category.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isExpanded
+                            ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subcategories List */}
+                {isExpanded && category?.subTypes && (
+                  <div className="p-4 bg-white">
+                    {subCount > 0 ? (
+                      <div
+                        className="subcategory-scroll space-y-2 max-h-96 overflow-y-auto pr-2"
+                        style={{
+                          scrollbarWidth: "thin",
+                          scrollbarColor: "#cbd5e1 #f1f5f9",
+                        }}
+                      >
+                        {category.subTypes.map((subType) => (
+                          <div
+                            key={subType?.id}
                             onClick={() =>
                               navigate("/category-detail", {
                                 state: {
@@ -134,32 +217,57 @@ export default function Categories() {
                                 },
                               })
                             }
+                            className="group bg-gray-50 rounded-lg p-3 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer"
                           >
-                            View More
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {category.subTypes.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan="3"
-                          className="px-4 py-8 text-center text-gray-500"
-                        >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="p-1.5 bg-gray-200 rounded-lg">
+                                  <Layers className="w-3.5 h-3.5 text-gray-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-gray-900 truncate">
+                                    {subType?.name || "Unnamed Subcategory"}
+                                  </h3>
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <Hash className="w-3 h-3 text-gray-400" />
+                                    <span className="text-xs font-mono text-gray-500">
+                                      {subType?.id || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="ml-2 flex-shrink-0">
+                                <Eye className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="inline-flex p-3 bg-gray-100 rounded-full mb-3">
+                          <Layers className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-500 font-medium">
                           No subcategories available
-                        </td>
-                      </tr>
+                        </p>
+                      </div>
                     )}
-                  </tbody>
-                </table>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))
+            );
+          })}
+        </div>
       ) : (
-        <div className="bg-white rounded-lg shadow p-8">
-          <div className="text-center text-gray-500">
-            No categories available
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="p-4 bg-gray-100 rounded-full">
+              <FolderTree className="w-12 h-12 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-500">
+              No categories available
+            </p>
           </div>
         </div>
       )}
