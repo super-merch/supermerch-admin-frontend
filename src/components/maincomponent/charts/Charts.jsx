@@ -26,7 +26,7 @@ const Charts = ({ isOpen }) => {
     orderCompleted,
     orderPending,
     products,
-    blogs,
+    totalBlogs,
     quoteData,
     allProductLoading,
     pagination,
@@ -97,7 +97,7 @@ const Charts = ({ isOpen }) => {
     },
     {
       title: "Blogs",
-      value: blogs?.length ?? 0,
+      value: totalBlogs ?? 0,
       icon: FileText,
       gradient: "from-orange-500 to-orange-600",
       bgGradient: "from-orange-50 to-orange-100",

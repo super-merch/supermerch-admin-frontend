@@ -12,6 +12,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import ActionButton from "../ui/ActionButton";
 
@@ -22,12 +24,26 @@ const Blog = () => {
   const [expandedBlogs, setExpandedBlogs] = useState({});
   const [deletingBlogs, setDeletingBlogs] = useState({});
   const [deleteModal, setDeleteModal] = useState(null); // { id, title }
-  
+  const [totalBlogs, setTotalBlogs] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const prevDisabled = currentPage === 1;
+  let nextDisabled;
+
   useEffect(() => {
     if (aToken) {
-      fetchBlogs();
+      const getBlogs = async () => {
+        setLoading(true);
+        const data = await fetchBlogs(currentPage);
+        setTotalBlogs(data.total);
+        setTotalPages(data.totalPages);
+        nextDisabled = currentPage >= data.totalPages;
+        setLoading(false);
+      };
+      getBlogs();
     }
-  }, [aToken]);
+  }, [currentPage]);
 
   const toggleExpanded = (blogId) => {
     setExpandedBlogs((prev) => ({
@@ -71,6 +87,14 @@ const Blog = () => {
       ? plainText.substring(0, maxLength) + "..."
       : plainText;
   };
+  if(loading){
+    return(
+      <div className="w-full h-screen flex justify-center items-center" >
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
@@ -134,7 +158,7 @@ const Blog = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 mb-1">Total Blogs</p>
-              <p className="text-xl font-bold text-gray-900">{blogs.length}</p>
+              <p className="text-xl font-bold text-gray-900">{totalBlogs}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <FileText className="w-5 h-5 text-blue-600" />
@@ -306,6 +330,68 @@ const Blog = () => {
               </tbody>
             </table>
           </div>
+          { totalPages > 1 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={prevDisabled}
+                  className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from(
+                    { length: Math.min(5, totalPages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? "bg-teal-600 text-white"
+                              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={nextDisabled}
+                  className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs text-gray-600">
+                <span>
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{totalPages}</span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

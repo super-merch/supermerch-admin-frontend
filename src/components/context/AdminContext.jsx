@@ -31,6 +31,7 @@ const AdminContextProvider = (props) => {
   const [quoteLoading, setQuoteLoading] = useState(false);
 
   const [blogs, setBlogs] = useState([]);
+  const [totalBlogs, setTotalBlogs] = useState(0);
 
   useEffect(() => {
     if (aToken) {
@@ -56,7 +57,7 @@ const AdminContextProvider = (props) => {
       console.log(data.item_count,'data');
       return data.item_count;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     } finally {
       setAllProductLoading(false);
     }
@@ -94,7 +95,7 @@ const AdminContextProvider = (props) => {
       setProdLength(data.item_count);
       return data.data;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     } finally {
       setAllProductLoading(false);
     }
@@ -171,7 +172,7 @@ const AdminContextProvider = (props) => {
       // setTotalPages(data.total_pages);
       return data.data;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     }
   };
 
@@ -208,7 +209,7 @@ const AdminContextProvider = (props) => {
       setSearchedProducts(data); // Store the full response object
       return data;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
       throw err; // Re-throw so the component can handle it
     } finally {
       setSearchLoading(false);
@@ -238,7 +239,7 @@ const AdminContextProvider = (props) => {
 
       return data;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
       throw err; // Re-throw so the component can handle it
     } finally {
       setSearchLoading(false);
@@ -279,7 +280,7 @@ const AdminContextProvider = (props) => {
         hasPrevPage: data.page > 1,
       });
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     } finally {
       setSupplierLoading(false);
     }
@@ -301,7 +302,7 @@ const AdminContextProvider = (props) => {
       setDeactiveSuppliers(data.item_count);
 
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     }
   }
   const getLogo = async(id)=>{
@@ -587,7 +588,7 @@ const getOrderComments = async (orderId) => {
 
       return data;
     } catch (err) {
-      setError(err.message);
+      console.log(err.message);
     } finally {
       setParamLoading(false);
     }
@@ -673,10 +674,15 @@ const getOrderComments = async (orderId) => {
     }
   };
 
-  const fetchBlogs = async () => {
+  const fetchBlogs = async (page) => {
     try {
-      const { data } = await axios.get(`${backednUrl}/api/blogs/get-blogs`);
+      const { data } = await axios.get(`${backednUrl}/api/blogs/get-blogs${page && `?page=${page}`}`);
       setBlogs(data.blogs); // Note: updated to access data.blogs
+      setTotalBlogs(data.totalBlogs);
+      return {
+        total: data.totalBlogs,
+        totalPages: data.totalPages
+      }
     } catch (error) {
       toast.error(error.message);
       console.error(error);
@@ -747,7 +753,7 @@ const getOrderComments = async (orderId) => {
       fetchProducts();
       fetchSuppliers();
       deactivateSuppliers();
-      fetchBlogs();
+      fetchBlogs(1);
       listQuotes();
     }
   }, [aToken]);
@@ -797,6 +803,7 @@ const getOrderComments = async (orderId) => {
     fetchSearchedProduct, // Add this
     searchLoading,
     blogs,
+    totalBlogs,
     setBlogs,
     fetchBlogs,
     listQuotes,
