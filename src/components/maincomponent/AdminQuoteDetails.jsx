@@ -166,7 +166,7 @@ export default function AdminQuoteDetails() {
               Customer Information
             </h2>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Customer Name</p>
                   <p className="text-lg font-semibold text-gray-900">{quote.customer.name}</p>
@@ -174,6 +174,10 @@ export default function AdminQuoteDetails() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Email Address</p>
                   <p className="text-lg font-semibold text-gray-900">{quote.customer.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Customer Type</p>
+                  <p className="text-lg font-semibold text-gray-900">{quote.customer.type}</p>
                 </div>
               </div>
 

@@ -21,6 +21,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { toast } from "react-toastify";
+import { FaFileUpload } from "react-icons/fa";
 
 export default function AddQuotePage() {
   const BACKEND_URL =
@@ -44,6 +45,7 @@ export default function AddQuotePage() {
     userId: null,
     name: "",
     email: "",
+    type: "",
     defaultAddress: {
       firstName: "",
       lastName: "",
@@ -137,6 +139,8 @@ export default function AddQuotePage() {
   const [showShippingAddressForm, setShowShippingAddressForm] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams({});
   const [editLoading, setEditLoading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
   const id = searchParams.get("id");
   useEffect(() => {
     if (id) {
@@ -167,6 +171,45 @@ export default function AddQuotePage() {
   // Refs
   const customerDropdownRef = useRef(null);
   const productDropdownRef = useRef(null);
+  const handleAddImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      setUploadLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_PRESET || "super_merch"
+      ); // change this
+      formData.append(
+        "cloud_name",
+        import.meta.env.VITE_CLOUDINARY_NAME || "desggvwcg"
+      );
+      const cloudname = import.meta.env.VITE_CLOUDINARY_NAME || "desggvwcg";
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudname}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      console.log("Uploaded Image URL:", data.secure_url);
+      setUploadedImage(data.secure_url);
+      setCurrentItem({
+        ...currentItem,
+        productImage: data.secure_url,
+      });
+    } catch (error) {
+      console.error("Cloudinary Upload Error:", error);
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
   // Get logged-in admin details
   const [createdBy] = useState({
@@ -304,6 +347,7 @@ export default function AddQuotePage() {
           userId: user._id,
           name: user.name,
           email: user.email,
+          type: user?.type,
           defaultAddress: user.defaultAddress || {
             firstName: "",
             lastName: "",
@@ -724,6 +768,7 @@ export default function AddQuotePage() {
 
     // Reset current item
     resetCurrentItem();
+    setUploadedImage(null)
   };
 
   // Edit item
@@ -1014,6 +1059,29 @@ export default function AddQuotePage() {
                     }`}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Customer Type *
+                  </label>
+                  <select
+                    name="customerType"
+                    onChange={(e) => {
+                      setCustomerData({
+                        ...customerData,
+                        type: e.target.value,
+                      });
+                    }}
+                    value={customerData.type}
+                    a
+                    id="customerType"
+                    className={`w-full px-4 py-2 border rounded-lg ${
+                      errors.customerEmail ? "border-red-500" : ""
+                    }`}
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="company">Company</option>
+                  </select>
+                </div>
               </div>
 
               {/* Billing Address */}
@@ -1206,10 +1274,57 @@ export default function AddQuotePage() {
               {/* Shipping Address */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <Package size={16} className="inline mr-1" />
-                    Shipping Address
-                  </label>
+                  <div className="flex items-center gap-8">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <Package size={16} className="inline mr-1" />
+                      Shipping Address
+                    </label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setCustomerData({
+                              ...customerData,
+                              defaultShippingAddress: {
+                                ...customerData.defaultShippingAddress,
+                                firstName:
+                                  customerData.defaultAddress.firstName,
+                                lastName: customerData.defaultAddress.lastName,
+                                country: customerData.defaultAddress.country,
+                                state: customerData.defaultAddress.state,
+                                city: customerData.defaultAddress.city,
+                                postalCode:
+                                  customerData.defaultAddress.postalCode,
+                                addressLine:
+                                  customerData.defaultAddress.addressLine,
+                                companyName:
+                                  customerData.defaultAddress.companyName,
+                              },
+                            });
+                          } else {
+                            setCustomerData({
+                              ...customerData,
+                              defaultShippingAddress: {
+                                firstName: "",
+                                lastName: "",
+                                country: "",
+                                state: "",
+                                city: "",
+                                postalCode: "",
+                                addressLine: "",
+                                companyName: "",
+                              },
+                            });
+                          }
+                        }}
+                        type="checkbox"
+                        id="copyBilling"
+                      />
+                      <label htmlFor="copyBilling" className="text-sm">
+                        Copy Billing Address
+                      </label>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() =>
@@ -1431,6 +1546,7 @@ export default function AddQuotePage() {
                     setIsCustomProduct(!isCustomProduct);
                     resetCurrentItem();
                     setProductSearch("");
+                    setUploadedImage(null)
                   }}
                   className={`px-4 py-2 rounded-lg transition font-medium text-sm ${
                     isCustomProduct
@@ -1470,11 +1586,17 @@ export default function AddQuotePage() {
                           <div
                             key={index}
                             onClick={() => selectProduct(product)}
-                            className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition"
+                            className="px-4 py-3 hover:bg-blue-50 flex gap-5 items-center cursor-pointer border-b last:border-b-0 transition"
                           >
-                            <p className="font-medium text-gray-900">
-                              {product.name}
-                            </p>
+                            <img src={product.image} className="w-12" alt="" />
+                            <div className="flex flex-col ">
+                              <p className="font-medium text-gray-900">
+                                {product.name}
+                              </p>
+                              <p className=" text-gray-500">
+                                {product.supplier}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1486,12 +1608,20 @@ export default function AddQuotePage() {
                     <div className="space-y-4 border-t pt-4">
                       {/* Product Image and Name */}
                       <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                        {currentItem.productImage && (
-                          <img
-                            src={currentItem.productImage}
-                            alt={currentItem.productName}
-                            className="w-20 h-20 object-cover rounded border"
-                          />
+                        {uploadLoading ? (
+                          <div className="w-20 h-20 flex justify-center items-center rounded border">
+                            <div className="w-12 h-12 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                          </div>
+                        ) : (
+                          (uploadedImage
+                            ? uploadedImage
+                            : currentItem.productImage) && (
+                            <img
+                              src={currentItem.productImage}
+                              alt={currentItem.productName}
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                          )
                         )}
                         <div>
                           <p className="font-medium text-lg">
@@ -1503,6 +1633,26 @@ export default function AddQuotePage() {
                           <p className="text-sm text-gray-600">
                             Code: {currentItem.productCode}
                           </p>
+                        </div>
+                        <div>
+                          <label
+                            className="w-20 h-20 flex flex-col items-center justify-center 
+                     bg-white border-2 border-dashed border-gray-300 rounded-xl
+                     cursor-pointer hover:border-gray-400 transition"
+                          >
+                            <input
+                              type="file"
+                              onChange={handleAddImage}
+                              className="hidden"
+                            />
+
+                            {/* Upload Icon */}
+                            <FaFileUpload />
+
+                            <span className="text-xs text-gray-500 mt-1">
+                              Upload
+                            </span>
+                          </label>
                         </div>
                       </div>
 
@@ -1754,6 +1904,43 @@ export default function AddQuotePage() {
 
                     {/* Product Name */}
                     <div>
+                      <label
+                        className="w-20 relative h-20 flex flex-col items-center justify-center 
+                     bg-white border-2 border-dashed border-gray-300 rounded-xl
+                     cursor-pointer hover:border-gray-400 transition"
+                      >
+                        {uploadLoading ? (
+                          <div className="w-20 h-20 absolute bg-white flex justify-center items-center rounded border">
+                            <div className="w-12 h-12 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                          </div>
+                        ) : (
+                          uploadedImage && (
+                            <img
+                              src={uploadedImage}
+                              className="w-full h-full absolute"
+                              alt=""
+                            />
+                          )
+                        )}
+                        <input
+                          type="file"
+                          onChange={handleAddImage}
+                          className="hidden"
+                        />
+
+                        {/* Upload Icon */}
+                        {!uploadedImage && (
+                          <div className="flex flex-col justify-center items-center" >
+                            <FaFileUpload />
+
+                            <span className="text-xs text-gray-500 mt-1">
+                              Upload
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Product Name *
                       </label>
@@ -1948,6 +2135,25 @@ export default function AddQuotePage() {
                           setCurrentItem({
                             ...currentItem,
                             unitPrice: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Setup Price ($) *
+                      </label>
+                      <input
+                        type="number"
+                        value={currentItem.setup}
+                        onChange={(e) =>
+                          setCurrentItem({
+                            ...currentItem,
+                            setup: parseFloat(e.target.value) || 0,
                           })
                         }
                         step="0.01"
