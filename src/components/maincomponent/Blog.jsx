@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AdminContext } from "../context/AdminContext";
@@ -27,23 +27,29 @@ const Blog = () => {
   const [totalBlogs, setTotalBlogs] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResultsCount, setSearchResultsCount] = useState(0);
+  const pageRef = useRef(null);
   const prevDisabled = currentPage === 1;
   let nextDisabled;
 
   useEffect(() => {
     if (aToken) {
       const getBlogs = async () => {
-        setLoading(true);
-        const data = await fetchBlogs(currentPage);
+        setSearching(true);
+        const data = await fetchBlogs(currentPage, searchTerm);
+        console.log(data);
+        setSearchResultsCount(data.searchedBlogs);
         setTotalBlogs(data.total);
         setTotalPages(data.totalPages);
         nextDisabled = currentPage >= data.totalPages;
-        setLoading(false);
+        setSearching(false);
       };
       getBlogs();
     }
-  }, [currentPage]);
+  }, [currentPage, searchTerm]);
 
   const toggleExpanded = (blogId) => {
     setExpandedBlogs((prev) => ({
@@ -87,13 +93,12 @@ const Blog = () => {
       ? plainText.substring(0, maxLength) + "..."
       : plainText;
   };
-  if(loading){
-    return(
-      <div className="w-full h-screen flex justify-center items-center" >
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-
+  if (searching && blogs.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="w-20 h-20 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
       </div>
-    )
+    );
   }
 
   return (
@@ -166,6 +171,51 @@ const Blog = () => {
           </div>
         </div>
       </div>
+      <div className="mb-3">
+        <div className="relative w-full max-w-sm">
+          <input
+            type="text"
+            placeholder="Search blogs..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setSearchTerm(searchInput);
+              }
+            }}
+            className="w-full pl-10 pr-3 py-2.5 text-sm bg-white shadow-sm border border-gray-200 rounded-xl
+                 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent
+                 placeholder:text-gray-400 transition-all"
+          />
+
+          {/* Search Icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z"
+            />
+          </svg>
+        </div>
+      </div>
+      {/* show search term and number and cross number if searchterm is present */}
+      {(searchTerm && !searching && searchResultsCount>0) && (
+        <div className="mb-3">
+          <p className="text-sm text-gray-600">
+            Showing {searchResultsCount} results for "{searchTerm}" <span className="text-red-600 cursor-pointer" onClick={()=>{
+              setSearchTerm(null)
+              setSearchInput('')
+              }} >x</span>
+          </p>
+        </div>
+      )}
 
       {/* Blogs Table */}
       {blogs.length === 0 ? (
@@ -207,7 +257,13 @@ const Blog = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+
+              <tbody className="bg-white divide-y relative divide-gray-100">
+                {searching && (
+                  <div className="absolute w-full h-full bg-black/10 backdrop-blur-sm flex justify-center items-center ">
+                    <p className="">Loading ...</p>
+                  </div>
+                )}
                 {blogs.map((blog) => (
                   <React.Fragment key={blog._id}>
                     <tr className="group hover:bg-teal-50/30 transition-colors border-b border-gray-100">
@@ -330,7 +386,7 @@ const Blog = () => {
               </tbody>
             </table>
           </div>
-          { totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
                 <button
@@ -343,35 +399,32 @@ const Blog = () => {
                 </button>
 
                 <div className="flex gap-1">
-                  {Array.from(
-                    { length: Math.min(5, totalPages) },
-                    (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                            currentPage === pageNum
-                              ? "bg-teal-600 text-white"
-                              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
                     }
-                  )}
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? "bg-teal-600 text-white"
+                            : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button

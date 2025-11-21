@@ -1294,7 +1294,7 @@ const AlProducts = () => {
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                       Status
                     </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                    {/* <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Trending
                     </th>
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
@@ -1302,7 +1302,7 @@ const AlProducts = () => {
                     </th>
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">
                       24Hr Prod
-                    </th>
+                    </th> */}
                     <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Last Update
                     </th>
@@ -1472,7 +1472,7 @@ const AlProducts = () => {
                           </td>
 
                           {/* Trending Toggle */}
-                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <ToggleSwitch
                                 checked={isTrending}
@@ -1488,10 +1488,10 @@ const AlProducts = () => {
                                 size="sm"
                               />
                             </div>
-                          </td>
+                          </td> */}
 
                           {/* Australia Toggle */}
-                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <ToggleSwitch
                                 checked={isAustralia}
@@ -1507,10 +1507,10 @@ const AlProducts = () => {
                                 size="sm"
                               />
                             </div>
-                          </td>
+                          </td> */}
 
                           {/* 24Hr Production Toggle */}
-                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <ToggleSwitch
                                 checked={is24HourProduction}
@@ -1526,7 +1526,7 @@ const AlProducts = () => {
                                 size="sm"
                               />
                             </div>
-                          </td>
+                          </td> */}
 
                           {/* Last Update */}
                           <td className="px-3 py-3 whitespace-nowrap">

@@ -523,9 +523,34 @@ const Orders = () => {
                         <td className="px-3 py-2 whitespace-nowrap">
                           <select
                             value={order.status}
-                            onChange={(e) =>
-                              handleStatusChange(order._id, e.target.value)
-                            }
+                            onChange={(e) => {
+                              handleStatusChange(order._id, e.target.value);
+                              if(order.status === "Delivered"){
+                                if(e.target.value === "Pending"){
+                                  setPendingOrders(pendingOrders + 1);
+                                  setDeliveredOrders(deliveredOrders - 1);
+                                }else if(e.target.value === "Cancelled"){
+                                  setCancelledOrders(cancelledOrders + 1);
+                                  setDeliveredOrders(deliveredOrders - 1);
+                                }
+                              }else if(order.status === "Pending"){
+                                if(e.target.value === "Delivered"){
+                                  setDeliveredOrders(deliveredOrders + 1);
+                                  setPendingOrders(pendingOrders - 1);
+                                }else if(e.target.value === "Cancelled"){
+                                  setCancelledOrders(cancelledOrders + 1);
+                                  setPendingOrders(pendingOrders - 1);
+                                }
+                              }else if(order.status === "Cancelled"){
+                                if(e.target.value === "Delivered"){
+                                  setDeliveredOrders(deliveredOrders + 1);
+                                  setCancelledOrders(cancelledOrders - 1);
+                                }else if(e.target.value === "Pending"){
+                                  setCancelledOrders(cancelledOrders - 1);
+                                  setPendingOrders(pendingOrders + 1);
+                                }
+                              }
+                            }}
                             className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors"
                           >
                             <option value="Pending">Pending</option>

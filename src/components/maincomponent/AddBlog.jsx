@@ -114,7 +114,6 @@ const AddBlog = () => {
       return;
     }
 
-
     if (!content.trim() || content === "<p><br></p>") {
       toast.error("Content is required");
       return;
@@ -129,12 +128,12 @@ const AddBlog = () => {
       toast.error("Title must be between 10 and 100 characters");
       return;
     }
-    if(!metaTitle){
-      toast.error("Meta Title is required")
+    if (!metaTitle) {
+      toast.error("Meta Title is required");
       return;
     }
-    if(!metaDescription){
-      toast.error("Meta Description is required")
+    if (!metaDescription) {
+      toast.error("Meta Description is required");
       return;
     }
 
@@ -183,7 +182,7 @@ const AddBlog = () => {
       setThumbnailFile(null);
       setCurrentImageUrl("");
 
-      fetchBlogs();
+      await fetchBlogs(1,null);
       navigate("/blogs");
     } catch (error) {
       console.error(`Error ${isEditMode ? "updating" : "saving"} blog`, error);
@@ -237,36 +236,40 @@ const AddBlog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={handleCancel}
-            className="group flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm mb-4"
-          >
-            <svg
-              className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Blogs
-          </button>
+        <div className="mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEditMode ? "Edit Blog Post" : "Create New Blog Post"}
-            </h1>
+            <div className="flex justify-between items-center w-full">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {isEditMode ? "Edit Blog Post" : "Create New Blog Post"}
+                </h1>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="group flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm"
+              >
+                <svg
+                  className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Back to Blogs
+              </button>
+            </div>
           </div>
-          <p className="mt-2 text-gray-600 ml-7">
+          <p className=" text-gray-600 ">
             {isEditMode
               ? "Update your blog post content and settings"
               : "Share your thoughts and ideas with the world"}
@@ -275,104 +278,107 @@ const AddBlog = () => {
 
         {/* Main Form Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="p-8 space-y-8">
+          <div className="p-4 space-y-8">
             {/* Thumbnail Section */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">
-                Featured Image{" "}
-                {!isEditMode && <span className="text-red-500">*</span>}
-              </label>
-              <p className="text-sm text-gray-500">
-                This image will be used as the thumbnail for your blog post
-              </p>
-              <div className="flex items-start gap-6">
-                <label
-                  htmlFor="thumbnail"
-                  className="relative group cursor-pointer flex-shrink-0"
-                >
-                  <div className="w-48 h-48 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 group-hover:border-blue-500 transition-all duration-200 bg-gray-50 group-hover:bg-blue-50">
-                    <img
-                      className="w-full h-full object-cover"
-                      src={getThumbnailPreview()}
-                      alt="Thumbnail preview"
-                    />
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-xl">
-                    <span className="text-white opacity-0 group-hover:opacity-100 font-medium flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      {thumbnailFile || currentImageUrl ? "Change" : "Upload"}
-                    </span>
-                  </div>
+            <div className="grid grid-cols-2" >
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-900">
+                  Featured Image{" "}
+                  {!isEditMode && <span className="text-red-500">*</span>}
                 </label>
-                <input
-                  type="file"
-                  id="thumbnail"
-                  hidden
-                  accept="image/*"
-                  onChange={(e) => setThumbnailFile(e.target.files[0])}
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="text-sm text-gray-600">
-                    <p className="font-medium mb-1">Image Requirements:</p>
-                    <ul className="space-y-1 list-disc list-inside text-gray-500">
-                      <li>Recommended size: 1200x630 pixels</li>
-                      <li>Maximum file size: 5MB</li>
-                      <li>Formats: JPG, PNG, WebP</li>
-                    </ul>
+                <p className="text-sm text-gray-500">
+                  This image will be used as the thumbnail for your blog post
+                </p>
+                <div className="flex items-start gap-6">
+                  <label
+                    htmlFor="thumbnail"
+                    className="relative group cursor-pointer flex-shrink-0"
+                  >
+                    <div className="w-48 h-48 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 group-hover:border-blue-500 transition-all duration-200 bg-gray-50 group-hover:bg-blue-50">
+                      <img
+                        className="w-full h-full object-cover"
+                        src={getThumbnailPreview()}
+                        alt="Thumbnail preview"
+                      />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-xl">
+                      <span className="text-white opacity-0 group-hover:opacity-100 font-medium flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        {thumbnailFile || currentImageUrl ? "Change" : "Upload"}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    type="file"
+                    id="thumbnail"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => setThumbnailFile(e.target.files[0])}
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium mb-1">Image Requirements:</p>
+                      <ul className="space-y-1 list-disc list-inside text-gray-500">
+                        <li>Recommended size: 1200x630 pixels</li>
+                        <li>Maximum file size: 5MB</li>
+                        <li>Formats: JPG, PNG, WebP</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+              <div>
+                <h1 className="text-[18px] font-semibold" >Meta Data:</h1>
+                <div className="space-y-3 ml-5 mt-2">
+                  <label
+                    htmlFor="title"
+                    className="block text-sm font-semibold text-gray-900"
+                  >
+                    Meta Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                    id="title"
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
+                    placeholder="Enter an engaging blog title..."
+                    maxLength={100}
+                  />
+                </div>
 
+                <div className="space-y-3 ml-5 mt-2">
+                  <label
+                    htmlFor="title"
+                    className="block text-sm font-semibold text-gray-900"
+                  >
+                    Meta Description <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={metaDescription}
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    id="title"
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
+                    placeholder="Enter an engaging blog title..."
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="border-t border-gray-200"></div>
-            {/* input for metaTitle and metaDescription */}
-            <div className="space-y-3">
-              <label
-                htmlFor="title"
-                className="block text-sm font-semibold text-gray-900"
-              >
-                Meta Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={metaTitle}
-                onChange={(e) => setMetaTitle(e.target.value)}
-                id="title"
-                className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
-                placeholder="Enter an engaging blog title..."
-                maxLength={100}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label
-                htmlFor="title"
-                className="block text-sm font-semibold text-gray-900"
-              >
-                Meta Description <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={metaDescription}
-                onChange={(e) => setMetaDescription(e.target.value)}
-                id="title"
-                className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
-                placeholder="Enter an engaging blog title..."
-                maxLength={100}
-              />
-            </div>
 
             {/* Title Section */}
             <div className="space-y-3">
@@ -392,9 +398,6 @@ const AddBlog = () => {
                 maxLength={100}
               />
               <div className="flex justify-between items-center text-sm">
-                <p className="text-gray-500">
-                  A compelling title helps attract readers
-                </p>
                 <span
                   className={`font-medium ${
                     title.length > 90 ? "text-orange-500" : "text-gray-400"

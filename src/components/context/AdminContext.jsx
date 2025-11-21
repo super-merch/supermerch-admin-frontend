@@ -14,6 +14,7 @@ const AdminContextProvider = (props) => {
   const [ignoredProductIds, setIgnoredProductIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [allProductLoading, setAllProductLoading] = useState(true);
+  const [unseenMessages, setUnseenMessages] = useState(0);
   const [userOrders, setUserOrders] = useState([]);
 
   const [orders, setOrders] = useState([]);
@@ -40,6 +41,7 @@ const AdminContextProvider = (props) => {
       localStorage.removeItem("aToken");
     }
   }, [aToken]);
+  
   const fetchSupplierProductNumber=async(supplier)=>{
     setAllProductLoading(true);
 
@@ -54,7 +56,6 @@ const AdminContextProvider = (props) => {
       if (!data || !data.data) {
         throw new Error("Unexpected API response structure");
       }
-      console.log(data.item_count,'data');
       return data.item_count;
     } catch (err) {
       console.log(err.message);
@@ -268,7 +269,6 @@ const AdminContextProvider = (props) => {
 
       setSuppliers(data.data);
       setSupplierCount(data.item_count);
-      console.log(data.data)
 
       // Set pagination info from API response
       setSuppliersPagination({
@@ -674,14 +674,15 @@ const getOrderComments = async (orderId) => {
     }
   };
 
-  const fetchBlogs = async (page) => {
+  const fetchBlogs = async (page,searchTerm) => {
     try {
-      const { data } = await axios.get(`${backednUrl}/api/blogs/get-blogs${page && `?page=${page}`}`);
+      const { data } = await axios.get(`${backednUrl}/api/blogs/get-blogs${page && `?page=${page}`}${searchTerm && `&search=${searchTerm}`}`);
       setBlogs(data.blogs); // Note: updated to access data.blogs
       setTotalBlogs(data.totalBlogs);
       return {
         total: data.totalBlogs,
-        totalPages: data.totalPages
+        totalPages: data.totalPages,
+        searchedBlogs: data.searchedBlogs||0
       }
     } catch (error) {
       toast.error(error.message);
@@ -828,6 +829,8 @@ const getOrderComments = async (orderId) => {
     fetchCategories,
     paramProducts,
     fetchParamProducts,
+    setUnseenMessages,
+    unseenMessages
   };
 
   return (

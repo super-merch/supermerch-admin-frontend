@@ -9,10 +9,9 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
-  const { setShowPopup } = useContext(AdminContext);
+  const { setShowPopup,setUnseenMessages,unseenMessages } = useContext(AdminContext);
   const [profileDropDown, setProfileDropDown] = useState(false);
   const aToken = localStorage.getItem("aToken");
-  const [isSeen, setIsSeen] = useState(true);
   const navigate = useNavigate()
 
   const getNotificationStatus = async () => {
@@ -20,14 +19,15 @@ const Navbar = () => {
       const response = await axios(
         `${
           import.meta.env.VITE_BACKEND_URL
-        }/api/notifications/get-last-notification`,
+        }/api/notifications/get-unread-notification`,
         {
           headers: { aToken },
         }
       );
       const data =  response.data
       if(data){
-        setIsSeen(data.seen)
+        console.log(data)
+        setUnseenMessages(data.unreadCount)
       }
     } catch (error) {
       console.log(error);
@@ -45,15 +45,14 @@ const Navbar = () => {
       <div className="flex justify-center gap-4 items-center">
         <div className="relative">
           <div onClick={() => {
-            setIsSeen(true)
             navigate("/notifications")
-            }} className="flex justify-center gap-1 items-center px-2 py-1 border border-gray-300 rounded-md bg-gray-200 hover:bg-gray-300 transition-all duration-200 cursor-pointer">
+            }} className="flex justify-center gap-1 items-center px-3 py-2 border border-gray-300 rounded-md bg-gray-200 hover:bg-gray-300 transition-all duration-200 cursor-pointer">
             <IoMdNotificationsOutline className="w-5 h-5" />
             Notifications
           </div>
 
-          {!isSeen && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full"></span>
+          {unseenMessages > 0 && (
+            <span className="absolute -top-2 -right-2 flex justify-center items-center text-sm w-5 h-5 bg-red-600 rounded-full text-white">{unseenMessages}</span>
           )}
         </div>
         <div className="flex flex-col items-center space-x-4 relative transition-transform duration-300">
