@@ -5,9 +5,11 @@ import { AdminContext } from "../context/AdminContext";
 import { Bell, LogOut, Settings, ChevronDown, User } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { IoMdNotificationsOutline } from "react-icons/io";
 
 const Navbar = () => {
-  const { setShowPopup } = useContext(AdminContext);
+  const { setShowPopup, setUnseenMessages, unseenMessages } =
+    useContext(AdminContext);
   const [profileDropDown, setProfileDropDown] = useState(false);
   const aToken = localStorage.getItem("aToken");
   const [isSeen, setIsSeen] = useState(true);
@@ -20,14 +22,14 @@ const Navbar = () => {
       const response = await axios(
         `${
           import.meta.env.VITE_BACKEND_URL
-        }/api/notifications/get-last-notification`,
+        }/api/notifications/get-unread-notification`,
         {
           headers: { aToken },
         }
       );
       const data = response.data;
       if (data) {
-        setIsSeen(data.seen);
+        setUnseenMessages(data.unreadCount);
       }
     } catch (error) {
       console.log(error);
@@ -38,52 +40,32 @@ const Navbar = () => {
     getNotificationStatus();
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setProfileDropDown(false);
-      }
-    };
-
-    if (profileDropDown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [profileDropDown]);
-
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm px-6 py-4">
-      <div className="flex items-center justify-between">
-        {/* Logo/Brand Section */}
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
-            SuperMerch Dashboard
-          </h1>
+    <header className="bg-white shadow p-4 flex items-center justify-between">
+      <h1 className="text-lg font-semibold text-gray-700">
+        SuperMerch Dashboard
+      </h1>
+      <div className="flex justify-center gap-4 items-center">
+        <div className="relative">
+          <div
+            onClick={() => {
+              navigate("/notifications");
+            }}
+            className="relative p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-teal-300 transition-all duration-200 group"
+          >
+            <Bell className="w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-colors" />{" "}
+          </div>
+
+          {unseenMessages > 0 && (
+            <span className="absolute -top-2 -right-2 flex justify-center items-center text-sm w-5 h-5 bg-red-600 rounded-full text-white">
+              {unseenMessages}
+            </span>
+          )}
         </div>
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Notifications Button - Icon Only */}
-          <button
-            ref={notificationRef}
-            onClick={() => {
-              setIsSeen(true);
-              navigate("/notifications");
-            }}
-            className="relative p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-teal-300 transition-all duration-200 group"
-          >
-            <Bell className="w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-colors" />
-            {!isSeen && (
-              <>
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75"></span>
-              </>
-            )}
-          </button>
 
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -123,7 +105,7 @@ const Navbar = () => {
                 <div className="py-1">
                   <button
                     onClick={() => {
-                      navigate("/change-pass");
+                      navigate("/settings");
                       setProfileDropDown(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150"
@@ -138,7 +120,7 @@ const Navbar = () => {
                 <div className="py-1">
                   <button
                     onClick={() => {
-                      navigate("/change-pass");
+                      navigate("/settings");
                       setProfileDropDown(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150"

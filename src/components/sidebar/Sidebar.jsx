@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   X,
+  Settings,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -100,6 +101,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { icon: Ticket, label: "Coupon", path: "/add-coupen", exact: true },
     { icon: Ship, label: "Shipping", path: "/shipping", exact: true },
     { icon: Lock, label: "Change Password", path: "/change-pass", exact: true },
+    { icon: Settings, label: "Settings", path: "/settings", exact: true },
   ];
 
   const isActive = (item) => {

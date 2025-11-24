@@ -22,19 +22,38 @@ import { useSearchParams } from "react-router-dom";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { toast } from "react-toastify";
 import { FaFileUpload } from "react-icons/fa";
+import axios from "axios";
 
 export default function AddQuotePage() {
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // Company Details (Default)
-  const [companyDetails] = useState({
-    name: "SuperMerch Merchandise",
-    address: "230 meurants lane, Glenwood, GLENWOOD, NSW, Australia, 2768",
-    phone: "0466468528",
-    email: "ankit@supermerch.com.au",
-    logo: "",
-  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const aToken = localStorage.getItem("aToken");
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-profile/get`,
+        {
+          headers: { aToken },
+        }
+      );
+      if (response.data.success) {
+        setCompanyDetails(response.data.admin);
+        setProfileLoading(false);
+      }
+      setProfileLoading(false);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setProfileLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+  const [companyDetails, setCompanyDetails] = useState(null);
 
   // User/Customer Details
   const [customerSearch, setCustomerSearch] = useState("");
@@ -198,7 +217,6 @@ export default function AddQuotePage() {
 
       const data = await res.json();
 
-      console.log("Uploaded Image URL:", data.secure_url);
       setUploadedImage(data.secure_url);
       setCurrentItem({
         ...currentItem,
@@ -594,7 +612,10 @@ export default function AddQuotePage() {
           };
 
           // Calculate initial prices for clothing
-          let initialUnitPrice = firstBreak.price;
+          let initialUnitPrice = parseFloat(
+            Number(firstBreak.price).toFixed(2)
+          );
+
           let initialDecorationPrice = 0;
 
           if (isClothing) {
@@ -649,7 +670,6 @@ export default function AddQuotePage() {
 
     let unitPrice = 0;
     let decorationPrice = 0;
-    
 
     if (isClothing) {
       // For clothing: use base price, decoration cost is separate and editable
@@ -768,7 +788,7 @@ export default function AddQuotePage() {
 
     // Reset current item
     resetCurrentItem();
-    setUploadedImage(null)
+    setUploadedImage(null);
   };
 
   // Edit item
@@ -952,7 +972,8 @@ export default function AddQuotePage() {
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Company Details */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg relative shadow-sm border border-gray-200 p-6">
+              {profileLoading &&<div className="absolute w-full h-full top-0 left-0 rounded-lg bg-black/10 backdrop-blur-sm flex justify-center items-center" ><p>Loading...</p></div>}
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Package size={20} className="text-blue-600" />
                 Company Details
@@ -960,19 +981,19 @@ export default function AddQuotePage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Company Name</p>
-                  <p className="font-medium">{companyDetails.name}</p>
+                  <p className="font-medium">{companyDetails?.name}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Email</p>
-                  <p className="font-medium">{companyDetails.email}</p>
+                  <p className="font-medium">{companyDetails?.email}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-gray-500">Address</p>
-                  <p className="font-medium">{companyDetails.address}</p>
+                  <p className="font-medium">{companyDetails?.address}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Phone</p>
-                  <p className="font-medium">{companyDetails.phone}</p>
+                  <p className="font-medium">{companyDetails?.phone}</p>
                 </div>
               </div>
             </div>
@@ -1546,7 +1567,7 @@ export default function AddQuotePage() {
                     setIsCustomProduct(!isCustomProduct);
                     resetCurrentItem();
                     setProductSearch("");
-                    setUploadedImage(null)
+                    setUploadedImage(null);
                   }}
                   className={`px-4 py-2 rounded-lg transition font-medium text-sm ${
                     isCustomProduct
@@ -1760,12 +1781,13 @@ export default function AddQuotePage() {
                         <input
                           type="number"
                           value={currentItem.unitPrice}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            // i can change decial price manually even the toFixed(2)
                             setCurrentItem({
                               ...currentItem,
-                              unitPrice: parseFloat(e.target.value) || 0,
-                            })
-                          }
+                              unitPrice: parseFloat(e.target.value),
+                            });
+                          }}
                           step="0.01"
                           min="0"
                           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -1788,7 +1810,7 @@ export default function AddQuotePage() {
                                 ...currentItem,
                                 decoration: {
                                   ...currentItem.decoration,
-                                  price: parseFloat(e.target.value) || 0,
+                                  price: parseFloat(e.target.value),
                                 },
                               })
                             }
@@ -1809,11 +1831,11 @@ export default function AddQuotePage() {
                           onChange={(e) =>
                             setCurrentItem({
                               ...currentItem,
-                              setup: parseFloat(e.target.value) || 0,
+                              setup: parseFloat(e.target.value),
                             })
                           }
                           step="0.01"
-                          min="0"
+                          // min="0"
                           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -1930,7 +1952,7 @@ export default function AddQuotePage() {
 
                         {/* Upload Icon */}
                         {!uploadedImage && (
-                          <div className="flex flex-col justify-center items-center" >
+                          <div className="flex flex-col justify-center items-center">
                             <FaFileUpload />
 
                             <span className="text-xs text-gray-500 mt-1">
@@ -2070,7 +2092,7 @@ export default function AddQuotePage() {
                             ...currentItem,
                             decoration: {
                               ...currentItem.decoration,
-                              price: parseFloat(e.target.value) || 0,
+                              price: parseFloat(e.target.value),
                             },
                           })
                         }
@@ -2134,7 +2156,7 @@ export default function AddQuotePage() {
                         onChange={(e) =>
                           setCurrentItem({
                             ...currentItem,
-                            unitPrice: parseFloat(e.target.value) || 0,
+                            unitPrice: parseFloat(e.target.value),
                           })
                         }
                         step="0.01"
@@ -2153,7 +2175,7 @@ export default function AddQuotePage() {
                         onChange={(e) =>
                           setCurrentItem({
                             ...currentItem,
-                            setup: parseFloat(e.target.value) || 0,
+                            setup: parseFloat(e.target.value),
                           })
                         }
                         step="0.01"
@@ -2564,7 +2586,7 @@ export default function AddQuotePage() {
                               setCurrentItem(item);
                             }}
                             className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-blue-200 transition"
-                            title="Remove item"
+                            title="Copy Item"
                           >
                             <Copy size={14} />
                           </button>

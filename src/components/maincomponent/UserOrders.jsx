@@ -99,12 +99,14 @@ export default function UserOrders() {
             </>
           )}
         </div>
-        {user?.defaultShippingAddress &&<div className="mt-3 max-w-2xl" >
-          <span className="font-medium  text-gray-600">Address: </span>
-          <span className="text-gray-800">
-            {user?.defaultShippingAddress?.addressLine}
-          </span>
-        </div>}
+        {user?.defaultShippingAddress && (
+          <div className="mt-3 max-w-2xl">
+            <span className="font-medium  text-gray-600">Address: </span>
+            <span className="text-gray-800">
+              {user?.defaultShippingAddress?.addressLine}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -122,56 +124,68 @@ export default function UserOrders() {
               </span>
             </div>
 
-            <table className="w-full border border-collapse border-gray-200 table-auto">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="px-4 py-2 border border-gray-300">Order ID</th>
-                  <th className="px-4 py-2 border border-gray-300">
-                    Order Date
-                  </th>
-                  <th className="px-4 py-2 border border-gray-300">Status</th>
-                  <th className="px-4 py-2 border border-gray-300">
-                    Total Payment
-                  </th>
-                  <th className="px-4 py-2 border border-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userOrders.map((order) => (
-                  <tr key={order._id}>
-                    <td className="px-4 py-2 text-center border border-gray-300">
-                      {order._id}
-                    </td>
-                    <td className="px-4 py-2 text-center border border-gray-300">
-                      {new Date(order.orderDate).toLocaleDateString()}
-                    </td>
-                    <td className="py-2 text-center border border-gray-300">
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleStatusChange(order._id, e.target.value)
-                        }
-                        className="px-1 py-1 border border-gray-600 outline-none"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Complete">Complete</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-2 text-center border border-gray-300">
-                      ${order.total.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2 text-center border border-gray-300">
-                      <button
-                        className="px-4 py-2 text-center text-white bg-blue-500 rounded"
-                        onClick={() => navigate(`/order-details/${order._id}`)}
-                      >
-                        View More
-                      </button>
-                    </td>
+            {userOrders.length > 0 ? (
+              <table className="w-full border border-collapse border-gray-200 table-auto">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="px-4 py-2 border border-gray-300">
+                      Order ID
+                    </th>
+                    <th className="px-4 py-2 border border-gray-300">
+                      Order Date
+                    </th>
+                    <th className="px-4 py-2 border border-gray-300">Status</th>
+                    <th className="px-4 py-2 border border-gray-300">
+                      Total Payment
+                    </th>
+                    <th className="px-4 py-2 border border-gray-300">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {userOrders.map((order) => (
+                    <tr key={order._id}>
+                      <td className="px-4 py-2 text-center border border-gray-300">
+                        {order._id}
+                      </td>
+                      <td className="px-4 py-2 text-center border border-gray-300">
+                        {new Date(order.orderDate).toLocaleDateString()}
+                      </td>
+                      <td className="py-2 text-center border border-gray-300">
+                        <select
+                          value={order.status}
+                          onChange={(e) =>
+                            handleStatusChange(order._id, e.target.value)
+                          }
+                          className="px-1 py-1 border border-gray-600 outline-none"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Complete">Complete</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-2 text-center border border-gray-300">
+                        ${order.total.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-center border border-gray-300">
+                        <button
+                          className="px-4 py-2 text-center text-white bg-blue-500 rounded"
+                          onClick={() =>
+                            navigate(`/order-details/${order._id}`)
+                          }
+                        >
+                          View More
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="w-full flex items-center justify-center py-12">
+                <p>No orders found</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center">

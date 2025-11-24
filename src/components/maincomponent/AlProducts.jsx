@@ -281,9 +281,9 @@ const AlProducts = () => {
           case "newArrivals":
             productData = await fetchNewArrivalProduct();
             break;
-          // case "all":
-          //   productData = await fetchProducts();
-          //   break;
+          case "all":
+            productData = await fetchProducts();
+            break;
           default:
             // await fetchProducts();
             productData = products;
@@ -1295,14 +1295,21 @@ const AlProducts = () => {
                       Status
                     </th>
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                      Discount
+                    </th>{" "}
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                      Margin %
+                    </th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Trending
                     </th>
+                    {/* 
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                       Australia
                     </th>
                     <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">
                       24Hr Prod
-                    </th>
+                    </th> */}
                     <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Last Update
                     </th>
@@ -1360,7 +1367,7 @@ const AlProducts = () => {
                       const isSelected = selectedProducts.has(
                         String(product.meta.id)
                       );
-
+                      console.log(product);
                       return (
                         <tr
                           key={index}
@@ -1470,6 +1477,12 @@ const AlProducts = () => {
                               </span>
                             )}
                           </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            {product.discount || "N/A"}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            {product.margin || "N/A"}
+                          </td>
 
                           {/* Trending Toggle */}
                           <td className="px-3 py-3 whitespace-nowrap text-center">
@@ -1491,7 +1504,7 @@ const AlProducts = () => {
                           </td>
 
                           {/* Australia Toggle */}
-                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <ToggleSwitch
                                 checked={isAustralia}
@@ -1507,10 +1520,10 @@ const AlProducts = () => {
                                 size="sm"
                               />
                             </div>
-                          </td>
+                          </td> */}
 
                           {/* 24Hr Production Toggle */}
-                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <ToggleSwitch
                                 checked={is24HourProduction}
@@ -1526,7 +1539,7 @@ const AlProducts = () => {
                                 size="sm"
                               />
                             </div>
-                          </td>
+                          </td> */}
 
                           {/* Last Update */}
                           <td className="px-3 py-3 whitespace-nowrap">
