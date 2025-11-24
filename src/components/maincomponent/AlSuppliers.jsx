@@ -699,7 +699,12 @@ const AlSuppliers = () => {
                           <div className="p-1.5 bg-gray-100 rounded-lg">
                             <Building className="w-3.5 h-3.5 text-gray-600" />
                           </div>
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span
+                            className="text-sm font-semibold text-gray-90 cursor-pointer"
+                            onClick={() =>
+                              handleViewCategories(sup, supplierMargins[sup.id])
+                            }
+                          >
                             {sup.name || "N/A"}
                           </span>
                         </div>

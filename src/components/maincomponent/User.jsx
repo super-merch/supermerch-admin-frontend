@@ -19,6 +19,8 @@ import {
   ChevronRight,
   RefreshCw,
   User as UserIcon,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ActionButton from "../ui/ActionButton";
@@ -149,6 +151,27 @@ const User = () => {
       setCurrentPage(currentPage + 1);
     }
   };
+
+  const getUserStatus = (user) => {
+    if (typeof user?.isActive === "boolean") {
+      return user.isActive ? "active" : "inactive";
+    }
+    if (typeof user?.active === "boolean") {
+      return user.active ? "active" : "inactive";
+    }
+    if (typeof user?.status === "string") {
+      return user.status.toLowerCase();
+    }
+    return null;
+  };
+
+  const totalUsers = usersPagination?.totalUsers ?? users.length ?? 0;
+  const activeUsers =
+    usersPagination?.activeUsers ??
+    users.filter((user) => getUserStatus(user) === "active").length;
+  const inactiveUsers =
+    usersPagination?.inactiveUsers ??
+    users.filter((user) => getUserStatus(user) === "inactive").length;
 
   if (loading)
     return (
@@ -287,17 +310,43 @@ const User = () => {
           />
         </div>
 
-        {/* Stats Card */}
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Total Users</p>
-              <p className="text-xl font-bold text-gray-900">
-                {usersPagination?.totalUsers || users.length || 0}
-              </p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Users</p>
+                <p className="text-xl font-bold text-gray-900">{totalUsers}</p>
+              </div>
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <Users className="w-5 h-5 text-teal-600" />
+              </div>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Active</p>
+                <p className="text-xl font-bold text-green-600">
+                  {activeUsers}
+                </p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <UserCheck className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Inactive</p>
+                <p className="text-xl font-bold text-red-600">
+                  {inactiveUsers}
+                </p>
+              </div>
+              <div className="p-2 bg-red-100 rounded-lg">
+                <UserX className="w-5 h-5 text-red-600" />
+              </div>
             </div>
           </div>
         </div>
