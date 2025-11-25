@@ -94,7 +94,7 @@ const App = () => {
                 <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
                 <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
-                <Route path="/quote-detail" element={<PrivateRoute element={<QuoteDetail />} />} /> 
+                <Route path="/quote-detail/:id" element={<PrivateRoute element={<QuoteDetail />} />} /> 
                 <Route path="/global-margin" element={<PrivateRoute element={<GlobalMargin />} />} /> 
                 <Route path="/categories" element={<PrivateRoute element={<Categories />} />} /> 
                 <Route path="/edit-blog/:id" element={<EditBlog />} />

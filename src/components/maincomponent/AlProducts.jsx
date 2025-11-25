@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
@@ -31,24 +31,19 @@ const AlProducts = () => {
     products,
     setProducts,
     allProductLoading,
-    setAllProductLoading,
     ignoredProductIds,
     prodLength,
     fetchSearchedProduct,
     searchedProducts,
     searchLoading,
     fetchTrendingProduct,
+    fetchAustraliaProducts,
     trendingProducts,
-    fetchBestSellerProduct,
-    bestSellerProducts,
-    fetchNewArrivalProduct,
-    arrivalProducts,
+    fetchProductionProducts,
     fetchCategories,
     fetchParamProducts,
     totalApiPages,
-    paramLoading,
   } = useContext(AdminContext);
-  const prevCategoryRef = useRef(null);
   const [categoryProducts, setCategoryProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,24 +57,17 @@ const AlProducts = () => {
   const [editingName, setEditingName] = useState("");
   const [customNames, setCustomNames] = useState({});
   const [updatingName, setUpdatingName] = useState(false);
-  const [trending, setTrending] = useState([]);
-  const [arrival, setArrival] = useState([]);
   const [sortOption, setSortOption] = useState("all");
-  const [best, setBest] = useState([]);
   // Store trending product IDs from API
   const [trendingIds, setTrendingIds] = useState(new Set());
   const [trendingLoading, setTrendingLoading] = useState(false);
-  // Store new arrival product IDs from API
-  const [newArrivalIds, setNewArrivalIds] = useState(new Set());
-  const [newArrivalLoading, setNewArrivalLoading] = useState(false);
-  // Store best sellers product IDs from API
-  const [bestSellerIds, setBestSellerIds] = useState(new Set());
-  const [bestSellerLoading, setBestSellerLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   // Bulk selection state
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [bulkMode, setBulkMode] = useState(null); // 'australia', '24hour', or null
+  const [bulkMode, setBulkMode] = useState(null);
+  const [australiaCount, setAustraliaCount] = useState(0);
+  const [trendingCount, setTrendingCount] = useState(0);
 
   // Bulk selection handlers
   const handleBulkSelect = (productId) => {
@@ -121,7 +109,7 @@ const AlProducts = () => {
         const firstProduct = currentProducts.find((p) =>
           selectedProducts.has(String(p.meta.id))
         );
-        if (firstProduct && australiaIds.has(String(firstProduct.meta.id))) {
+        if (firstProduct) {
           endpoint = `${backednUrl}/api/australia/bulk-remove`;
         } else {
           endpoint = `${backednUrl}/api/australia/bulk-add`;
@@ -154,13 +142,6 @@ const AlProducts = () => {
           `${data.added || data.removed} products ${action} ${actionName}!`
         );
 
-        // Refresh data
-        if (mode === "australia") {
-          await getAllAustralia();
-        } else {
-          await getAll24HourProduction();
-        }
-
         // Reset selection
         setSelectedProducts(new Set());
         setBulkMode(null);
@@ -180,11 +161,14 @@ const AlProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [productionIds, setProductionIds] = useState(new Set());
-  const [productionLoading, setProductionLoading] = useState(false);
   useEffect(() => {
     const loadData = async () => {
       const data = await fetchCategories();
+      const resp = await fetch(`${backednUrl}/api/products-count`);
+      const data2 = await resp.json();
       setCategories(data.data);
+      setTrendingCount(data2.trendingCount);
+      setAustraliaCount(data2.australiaCount);
     };
     loadData();
   }, []);
@@ -206,7 +190,6 @@ const AlProducts = () => {
           selectedSupplier || null
         );
         setCategoryProducts(data?.data || []);
-        console.log(data);
       } catch (err) {
         console.error("Error fetching category products:", err);
         setCategoryProducts([]);
@@ -217,30 +200,39 @@ const AlProducts = () => {
 
     loadData();
   }, [selectedCategory, selectedSupplier]);
-  const getAll24HourProduction = async () => {
-    try {
-      const response = await fetch(`${backednUrl}/api/24hour/get`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const productIds = data.map((item) => String(item.id));
-        setProductionIds(new Set(productIds));
-      } else {
-        console.error(
-          "Failed to fetch 24 Hour Production products:",
-          response.status
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching 24 Hour Production products:", error);
-    }
-  };
 
   const itemsPerPage = searchTerm ? 50 : 25;
+  const isCategoryMode = selectedCategory && selectedCategory !== "all";
+  // Get current products based on search state
+  const getCurrentProducts = () => {
+    return isSearching ? searchedProducts?.data || [] : products || [];
+  };
+
+  const currentProductList = getCurrentProducts();
+  const filteredProducts = selectedSupplier
+    ? currentProductList.filter(
+        (product) => product.supplier?.supplier === selectedSupplier
+      )
+    : currentProductList;
+  const paginationTotal = useMemo(() => {
+    if (isCategoryMode) {
+      return totalApiPages || 1;
+    }
+    if (sortOption === "australia" || sortOption === "24hrProducts") {
+      return totalApiPages || 1;
+    }
+    if (sortOption === "all") {
+      return Math.ceil(prodLength / itemsPerPage);
+    }
+    return Math.ceil(filteredProducts.length / itemsPerPage);
+  }, [
+    isCategoryMode,
+    sortOption,
+    totalApiPages,
+    prodLength,
+    filteredProducts.length,
+    itemsPerPage,
+  ]);
   const processedProductsRef = useRef(new Set());
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -263,23 +255,35 @@ const AlProducts = () => {
 
     fetchNextBatch();
   }, [lastPage, sortOption]);
+  const sortOptionRef = useRef(sortOption);
   useEffect(() => {
     const search = async () => {
       setLoadingProducts(true);
 
       try {
         let productData = [];
-        setPage(1);
-
+        setCurrentPage(1);
+        if (searchTerm && sortOption !== "all") {
+          setIsSearching(true);
+          setCurrentPage(1);
+          setSelectedCategory("all");
+          productData = await fetchSearchedProduct(searchTerm, sortOption);
+          setProducts(productData.data);
+          setSearchTerm("")
+          return;
+        }
+        setIsSearching(false);
         switch (sortOption) {
           case "trending":
             productData = await fetchTrendingProduct();
             break;
-          case "bestSellers":
-            productData = await fetchBestSellerProduct();
+          case "australia":
+            const data = await fetchAustraliaProducts(1, 25);
+            productData = data.data;
             break;
-          case "newArrivals":
-            productData = await fetchNewArrivalProduct();
+          case "24hrProducts":
+            const data2 = await fetchProductionProducts(1, 25);
+            productData = data2.data;
             break;
           case "all":
             productData = await fetchProducts();
@@ -299,7 +303,7 @@ const AlProducts = () => {
     };
 
     search();
-  }, [sortOption]);
+  }, [sortOption, isSearching]);
   const getIgnored = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
@@ -327,22 +331,13 @@ const AlProducts = () => {
     const loadData = async () => {
       try {
         if (products.length > 0) {
-          fetchCustomNames(),
-            fetchTrendingProducts(),
-            fetchNewArrivalProducts(),
-            fetchBestSellerProducts(),
-            getAllAustralia();
-          getAll24HourProduction();
+          fetchCustomNames(), fetchTrendingProducts();
           return;
         }
         await Promise.all([
           // fetchProducts(),
           fetchCustomNames(),
           fetchTrendingProducts(),
-          fetchNewArrivalProducts(),
-          fetchBestSellerProducts(),
-          getAllAustralia(),
-          getAll24HourProduction(),
         ]);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -357,171 +352,29 @@ const AlProducts = () => {
       setLocalIgnoredIds(new Set(ignoredProductIds));
     }
   }, []);
-  const [australiaIds, setAustraliaIds] = useState(new Set());
-  const [australiaLoading, setAustraliaLoading] = useState(false);
-  const getAllAustralia = async () => {
-    try {
-      const response = await fetch(`${backednUrl}/api/australia/get`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Ensure consistent data types (convert to strings)
-        const productIds = data.map((item) => String(item.id));
-        setAustraliaIds(new Set(productIds));
-      } else {
-        console.error("Failed to fetch Australia products:", response.status);
-      }
-    } catch (error) {
-      console.error("Error fetching Australia products:", error);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProducts = useMemo(() => {
+    // Server-paginated modes: use data as-is without slicing
+    if (selectedCategory && selectedCategory !== "all") {
+      return categoryProducts;
     }
-  };
 
-  const addToAustralia = async (product) => {
-    setAustraliaLoading(true);
-    try {
-      const response = await fetch(`${backednUrl}/api/australia/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: product.meta.id,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Already added") {
-          toast.info("Product is already in Australia");
-        } else {
-          // Add to local state
-          setAustraliaIds((prev) => new Set([...prev, product.meta.id]));
-          toast.success("Product added to Australia!");
-          // Refresh Australia data to ensure consistency
-          await getAllAustralia();
-        }
-      } else {
-        toast.error("Failed to add to Australia", response.message);
-      }
-    } catch (error) {
-      console.error("Error adding to Australia:", error);
-      toast.error("Error adding to Australia");
-    } finally {
-      setAustraliaLoading(false);
+    if (sortOption === "australia" || sortOption === "24hrProducts") {
+      return products || []; // Use products directly from API
     }
-  };
 
-  const removeFromAustralia = async (product) => {
-    setAustraliaLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/australia/delete/${product.meta.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Not found") {
-          toast.info("Product was not in Australia");
-        } else {
-          // Remove from local state
-          setAustraliaIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(product.meta.id);
-            return newSet;
-          });
-          toast.success("Product removed from Australia!");
-          // Refresh Australia data to ensure consistency
-          await getAllAustralia();
-        }
-      } else {
-        toast.error("Failed to remove from Australia");
-      }
-    } catch (error) {
-      console.error("Error removing from Australia:", error);
-      toast.error("Error removing from Australia");
-    } finally {
-      setAustraliaLoading(false);
-    }
-  };
-  const addTo24HourProduction = async (product) => {
-    setProductionLoading(true);
-    try {
-      const response = await fetch(`${backednUrl}/api/24hour/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: product.meta.id,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Already added") {
-          toast.info("Product is already in 24 Hour Production");
-        } else {
-          setProductionIds((prev) => new Set([...prev, product.meta.id]));
-          toast.success("Product added to 24 Hour Production!");
-          await getAll24HourProduction();
-        }
-      } else {
-        toast.error("Failed to add to 24 Hour Production", response.message);
-      }
-    } catch (error) {
-      console.error("Error adding to 24 Hour Production:", error);
-      toast.error("Error adding to 24 Hour Production");
-    } finally {
-      setProductionLoading(false);
-    }
-  };
-
-  const removeFrom24HourProduction = async (product) => {
-    setProductionLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/24hour/delete/${product.meta.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Not found") {
-          toast.info("Product was not in 24 Hour Production");
-        } else {
-          setProductionIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(product.meta.id);
-            return newSet;
-          });
-          toast.success("Product removed from 24 Hour Production!");
-          await getAll24HourProduction();
-        }
-      } else {
-        toast.error("Failed to remove from 24 Hour Production");
-      }
-    } catch (error) {
-      console.error("Error removing from 24 Hour Production:", error);
-      toast.error("Error removing from 24 Hour Production");
-    } finally {
-      setProductionLoading(false);
-    }
-  };
+    // Client-side pagination for other modes
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [
+    selectedCategory,
+    categoryProducts,
+    sortOption,
+    products,
+    filteredProducts,
+    startIndex,
+    itemsPerPage,
+  ]);
 
   // Handle search
   const handleSearch = async (e) => {
@@ -537,7 +390,9 @@ const AlProducts = () => {
       setIsSearching(true);
       setCurrentPage(1);
       setSelectedCategory("all");
-      await fetchSearchedProduct(searchTerm.trim());
+      if(sortOption == "all"){
+        await fetchSearchedProduct(searchTerm.trim(), sortOption);
+      }
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search products");
@@ -549,11 +404,6 @@ const AlProducts = () => {
     setSearchTerm("");
     setIsSearching(false);
     setCurrentPage(1);
-  };
-
-  // Get current products based on search state
-  const getCurrentProducts = () => {
-    return isSearching ? searchedProducts?.data || [] : products || [];
   };
 
   // Fetch trending products from API
@@ -572,46 +422,6 @@ const AlProducts = () => {
     } catch (error) {
       console.error("Error fetching trending products:", error);
       toast.error("Error loading trending products");
-    }
-  };
-
-  // Fetch new arrival products from API
-  const fetchNewArrivalProducts = async () => {
-    try {
-      const response = await fetch(`${backednUrl}/api/newArrival/get-arrivals`);
-      if (response.ok) {
-        const data = await response.json();
-        // Ensure consistent data types (convert to strings)
-        const productIds = data.map((item) => String(item.productId));
-        setNewArrivalIds(new Set(productIds));
-      } else {
-        console.error("Failed to fetch new arrival products:", response.status);
-        toast.error("Failed to load new arrival products");
-      }
-    } catch (error) {
-      console.error("Error fetching new arrival products:", error);
-      toast.error("Error loading new arrival products");
-    }
-  };
-
-  // Fetch best seller products from API
-  const fetchBestSellerProducts = async () => {
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/bestSeller/get-bestSeller`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        // Ensure consistent data types (convert to strings)
-        const productIds = data.map((item) => String(item.productId));
-        setBestSellerIds(new Set(productIds));
-      } else {
-        console.error("Failed to fetch best seller products:", response.status);
-        toast.error("Failed to load best seller products");
-      }
-    } catch (error) {
-      console.error("Error fetching best seller products:", error);
-      toast.error("Error loading best seller products");
     }
   };
 
@@ -689,162 +499,6 @@ const AlProducts = () => {
       setTrendingLoading(false);
     }
   };
-
-  // Add to new arrival
-  const addToNewArrival = async (product) => {
-    setNewArrivalLoading(true);
-    try {
-      const response = await fetch(`${backednUrl}/api/newArrival/add-arrival`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ productId: product.meta.id }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Already added") {
-          toast.info("Product is already in new arrivals");
-        } else {
-          // Add to local state
-          setNewArrivalIds((prev) => new Set([...prev, product.meta.id]));
-          toast.success("Product added to new arrivals!");
-          // Refresh new arrival data to ensure consistency
-          await fetchNewArrivalProducts();
-        }
-      } else {
-        toast.error("Failed to add to new arrivals");
-      }
-    } catch (error) {
-      console.error("Error adding to new arrivals:", error);
-      toast.error("Error adding to new arrivals");
-    } finally {
-      setNewArrivalLoading(false);
-    }
-  };
-
-  // Remove from new arrival
-  const removeFromNewArrival = async (product) => {
-    setNewArrivalLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/newArrival/delete-arrival`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product.meta.id }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Not found") {
-          toast.info("Product was not in new arrivals");
-        } else {
-          // Remove from local state
-          setNewArrivalIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(product.meta.id);
-            return newSet;
-          });
-          toast.success("Product removed from new arrivals!");
-          // Refresh new arrival data to ensure consistency
-          await fetchNewArrivalProducts();
-        }
-      } else {
-        toast.error("Failed to remove from new arrivals");
-      }
-    } catch (error) {
-      console.error("Error removing from new arrivals:", error);
-      toast.error("Error removing from new arrivals");
-    } finally {
-      setNewArrivalLoading(false);
-    }
-  };
-
-  // Add to best seller
-  const addToBestSeller = async (product) => {
-    setBestSellerLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/bestSeller/add-bestSeller`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product.meta.id }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Already added") {
-          toast.info("Product is already in best sellers");
-        } else {
-          // Add to local state
-          setBestSellerIds((prev) => new Set([...prev, product.meta.id]));
-          toast.success("Product added to best sellers!");
-          // Refresh best seller data to ensure consistency
-          await fetchBestSellerProducts();
-        }
-      } else {
-        toast.error("Failed to add to best sellers");
-      }
-    } catch (error) {
-      console.error("Error adding to best sellers:", error);
-      toast.error("Error adding to best sellers");
-    } finally {
-      setBestSellerLoading(false);
-    }
-  };
-
-  // Remove from best seller
-  const removeFromBestSeller = async (product) => {
-    setBestSellerLoading(true);
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/bestSeller/delete-bestSeller`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product.meta.id }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data === "Not found") {
-          toast.info("Product was not in best sellers");
-        } else {
-          // Remove from local state
-          setBestSellerIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(product.meta.id);
-            return newSet;
-          });
-          toast.success("Product removed from best sellers!");
-          // Refresh best seller data to ensure consistency
-          await fetchBestSellerProducts();
-        }
-      } else {
-        toast.error("Failed to remove from best sellers");
-      }
-    } catch (error) {
-      console.error("Error removing from best sellers:", error.message);
-      toast.error("Error removing from best sellers");
-    } finally {
-      setBestSellerLoading(false);
-    }
-  };
-
-  // Fetch custom names from backend
-  // Fetch custom names and normalize to { "<id>": "<string>" }
   const fetchCustomNames = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/custom-names`);
@@ -869,7 +523,6 @@ const AlProducts = () => {
       );
 
       setCustomNames(normalized);
-      console.log("customNames normalized:", normalized);
     } catch (error) {
       console.error("Error fetching custom names:", error);
     }
@@ -930,21 +583,7 @@ const AlProducts = () => {
     const productId = product.meta.id;
     return customNames[productId] || product.overview.name || "No Name";
   };
-  //call next products if page is last
   const [pageLoading, setPageLoading] = useState(false);
-  // useEffect(() => {
-  //   const nextPage = async () => {
-  //     setPageLoading(true);
-  //     if (lastPage) {
-  //       await fetchProducts(page + 1);
-  //       setPageLoading(false);
-  //       setPage(page + 1);
-  //       setLastPage(false);
-  //     }
-  //     setPageLoading(false);
-  //   };
-  //   nextPage();
-  // }, [lastPage]);
 
   if (pageLoading || (allProductLoading && !isSearching) || loadingProducts)
     return (
@@ -970,8 +609,6 @@ const AlProducts = () => {
       </div>
     );
 
-  const currentProductList = getCurrentProducts();
-
   const uniqueSuppliers = [
     ...new Set(
       currentProductList?.map(
@@ -979,31 +616,6 @@ const AlProducts = () => {
       )
     ),
   ];
-
-  const filteredProducts = selectedSupplier
-    ? currentProductList.filter(
-        (product) => product.supplier?.supplier === selectedSupplier
-      )
-    : currentProductList;
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  // Replace currentProducts creation with this
-  const currentProducts =
-    selectedCategory && selectedCategory !== "all"
-      ? categoryProducts // server-paginated results (no client-side slicing)
-      : filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-
-  const isCategoryMode = selectedCategory && selectedCategory !== "all";
-
-  // total pages: use backend total when in category mode, otherwise compute locally
-  const paginationTotal = isCategoryMode
-    ? totalApiPages || 1
-    : sortOption === "all"
-    ? Math.ceil(prodLength / itemsPerPage)
-    : Math.ceil(filteredProducts.length / itemsPerPage);
-
-  // simple prev/next disabled flags
   const prevDisabled = currentPage === 1;
   const nextDisabled = currentPage >= paginationTotal;
 
@@ -1028,11 +640,42 @@ const AlProducts = () => {
       }
       return;
     }
+    if (sortOption === "australia") {
+      if (totalApiPages && newPage > totalApiPages) return;
 
-    // existing behaviour for "all" / normal mode
+      setCurrentPage(newPage);
+      try {
+        setPageLoading(true);
+        const data = await fetchAustraliaProducts(newPage, 25);
+        console.log(data);
+        setProducts(data.data);
+      } catch (err) {
+        console.error("Error changing australia page:", err);
+      } finally {
+        setPageLoading(false);
+      }
+      return;
+    }
+
+    // Handle 24hr Production mode
+    if (sortOption === "24hrProducts") {
+      if (totalApiPages && newPage > totalApiPages) return;
+
+      setCurrentPage(newPage);
+      try {
+        setPageLoading(true);
+        const data2 = await fetchProductionProducts(newPage, 25);
+        setProducts(data2.data);
+      } catch (err) {
+        console.error("Error changing 24hr production page:", err);
+      } finally {
+        setPageLoading(false);
+      }
+      return;
+    }
+
     setCurrentPage(newPage);
 
-    // Only trigger backend fetch for "all" products when reaching last page (unchanged)
     if (
       sortOption === "all" &&
       newPage === Math.ceil(filteredProducts.length / itemsPerPage)
@@ -1086,18 +729,6 @@ const AlProducts = () => {
     }
   };
 
-  // Calculate stats
-  const totalProducts = currentProductList?.length || 0;
-  const activeProducts =
-    currentProductList?.filter((p) => !localIgnoredIds.has(p.meta.id)).length ||
-    0;
-  const trendingProductsCount =
-    currentProductList?.filter((p) => trendingIds.has(String(p.meta.id)))
-      .length || 0;
-  const australiaProducts =
-    currentProductList?.filter((p) => australiaIds.has(String(p.meta.id)))
-      .length || 0;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
       {/* Header */}
@@ -1131,9 +762,7 @@ const AlProducts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Total Products</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {totalProducts}
-                </p>
+                <p className="text-xl font-bold text-gray-900">{prodLength}</p>
               </div>
               <div className="p-2 bg-teal-100 rounded-lg">
                 <Package className="w-5 h-5 text-teal-600" />
@@ -1144,9 +773,7 @@ const AlProducts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Active</p>
-                <p className="text-xl font-bold text-green-600">
-                  {activeProducts}
-                </p>
+                <p className="text-xl font-bold text-green-600">{prodLength}</p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -1158,7 +785,7 @@ const AlProducts = () => {
               <div>
                 <p className="text-xs text-gray-500 mb-1">Trending</p>
                 <p className="text-xl font-bold text-orange-600">
-                  {trendingProductsCount}
+                  {trendingCount}
                 </p>
               </div>
               <div className="p-2 bg-orange-100 rounded-lg">
@@ -1171,7 +798,7 @@ const AlProducts = () => {
               <div>
                 <p className="text-xs text-gray-500 mb-1">Australia</p>
                 <p className="text-xl font-bold text-purple-600">
-                  {australiaProducts}
+                  {australiaCount}
                 </p>
               </div>
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -1266,7 +893,7 @@ const AlProducts = () => {
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                   <tr>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
                       <input
                         type="checkbox"
                         checked={
@@ -1285,41 +912,34 @@ const AlProducts = () => {
                         className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
                       />
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
+                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
                       Image
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
                       Product Name
                     </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                       Status
                     </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Discount
                     </th>{" "}
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Margin %
                     </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Trending
                     </th>
-                    {/* 
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                      Australia
-                    </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">
-                      24Hr Prod
-                    </th> */}
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
+                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28">
                       Last Update
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                       Code
                     </th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                    <th className="px-3 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                       Price
                     </th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">
                       Actions
                     </th>
                   </tr>
@@ -1360,14 +980,12 @@ const AlProducts = () => {
                       const displayName = getDisplayName(product);
                       const isEditing = editingProductId === productId;
                       const isTrending = trendingIds.has(String(productId));
-                      const isAustralia = australiaIds.has(String(productId));
                       const is24HourProduction = productionIds.has(
                         String(productId)
                       );
                       const isSelected = selectedProducts.has(
                         String(product.meta.id)
                       );
-                      console.log(product);
                       return (
                         <tr
                           key={index}
@@ -1478,10 +1096,12 @@ const AlProducts = () => {
                             )}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-center">
-                            {product.discount || "N/A"}
+                            {(product?.discountInfo?.type == "product" &&
+                              product?.discountInfo?.discount) ||
+                              "0"}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-center">
-                            {product.margin || "N/A"}
+                            {product?.marginInfo?.productMargin || "0"}
                           </td>
 
                           {/* Trending Toggle */}
@@ -1502,46 +1122,6 @@ const AlProducts = () => {
                               />
                             </div>
                           </td>
-
-                          {/* Australia Toggle */}
-                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
-                            <div className="flex justify-center">
-                              <ToggleSwitch
-                                checked={isAustralia}
-                                onChange={() => {
-                                  if (isAustralia) {
-                                    removeFromAustralia(product);
-                                  } else {
-                                    addToAustralia(product);
-                                  }
-                                }}
-                                disabled={australiaLoading}
-                                loading={australiaLoading}
-                                size="sm"
-                              />
-                            </div>
-                          </td> */}
-
-                          {/* 24Hr Production Toggle */}
-                          {/* <td className="px-3 py-3 whitespace-nowrap text-center">
-                            <div className="flex justify-center">
-                              <ToggleSwitch
-                                checked={is24HourProduction}
-                                onChange={() => {
-                                  if (is24HourProduction) {
-                                    removeFrom24HourProduction(product);
-                                  } else {
-                                    addTo24HourProduction(product);
-                                  }
-                                }}
-                                disabled={productionLoading}
-                                loading={productionLoading}
-                                size="sm"
-                              />
-                            </div>
-                          </td> */}
-
-                          {/* Last Update */}
                           <td className="px-3 py-3 whitespace-nowrap">
                             <span className="text-xs text-gray-600">
                               {product.meta.last_changed_at?.slice(0, 10) ||
@@ -1585,7 +1165,14 @@ const AlProducts = () => {
                                     className="fixed inset-0 z-10"
                                     onClick={() => setOpenDropdown(null)}
                                   ></div>
-                                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden">
+                                  <div
+                                    className={`absolute right-0 ${
+                                      currentProducts.length < 2 ||
+                                      currentProducts.length === index + 1
+                                        ? "bottom-5"
+                                        : "top-full"
+                                    } mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-visible`}
+                                  >
                                     <div className="py-1">
                                       {isIgnored ? (
                                         <button

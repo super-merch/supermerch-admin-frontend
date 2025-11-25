@@ -217,13 +217,20 @@ const AdminContextProvider = (props) => {
     }
   };
 
-  const fetchSearchedProduct = async (searchTerm) => {
+  const fetchSearchedProduct = async (searchTerm,sortOption) => {
     setSearchLoading(true);
     try {
       // Set limit to 100 to get maximum products for admin, no pagination needed
+      let url = `${backednUrl}/api/client-products/search?searchTerm=${searchTerm}&page=1&limit=50&filter=false`;
+      if(sortOption == "australia"){
+        url = `${backednUrl}/api/australia/get-products?search=${searchTerm}&page=1&limit=25&filter=false`;
+      }
+      if(sortOption == "24hrProducts"){
+        url = `${backednUrl}/api/24hour/get-products?search=${searchTerm}&page=1&limit=25&filter=false`;
+      }
       const limit = 50;
       const response = await fetch(
-        `${backednUrl}/api/client-products/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false`
+        url
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -236,6 +243,8 @@ const AdminContextProvider = (props) => {
       }
 
       setSearchedProducts(data); // Store the full response object
+      const pages = data?.total_count / 25;
+      setTotalApiPages(pages);
       console.log("Search results:", data);
 
       return data;
@@ -746,6 +755,32 @@ const getOrderComments = async (orderId) => {
 
   const orderPending = orders.filter((order) => order.status === "Pending");
   const orderCompleted = orders.filter((order) => order.status === "Complete");
+  const fetchAustraliaProducts = async (page,limit) => {
+
+    try {
+      const response = await axios.get(
+        `${backednUrl}/api/australia/get-products?page=${page ||1}&limit=${limit||25}`,
+      )
+      const pages = Math.ceil(response.data.item_count/limit)
+      setTotalApiPages(pages)
+    return response.data
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  const fetchProductionProducts = async (page,limit) => {
+
+    try {
+      const response = await axios.get(
+        `${backednUrl}/api/24hour/get-products?page=${page ||1}&limit=${limit||25}`,
+      )
+      const pages = Math.ceil(response.data.item_count/limit)
+      setTotalApiPages(pages)
+    return response.data
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   useEffect(() => {
     if (aToken) {
@@ -772,6 +807,7 @@ const getOrderComments = async (orderId) => {
     fetchOrders,
     deleteOrderComment,
     updateOrderStatus,
+    fetchProductionProducts,
     aToken,
     getLogo,
     setAToken,
@@ -788,6 +824,7 @@ const getOrderComments = async (orderId) => {
     suppliers,
     deleteOrder,
     setSuppliers,
+    fetchAustraliaProducts,
     addOrderComment,
     updateOrderComment,
     getOrderComments,

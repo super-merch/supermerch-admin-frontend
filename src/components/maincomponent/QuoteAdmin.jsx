@@ -357,9 +357,7 @@ const QuoteAdmin = () => {
                           <button
                             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors ml-auto"
                             onClick={() =>
-                              navigate("/quote-detail", {
-                                state: { quote: quote },
-                              })
+                              navigate(`/quote-detail/${quote?._id}`)
                             }
                           >
                             <Eye className="w-3 h-3" />

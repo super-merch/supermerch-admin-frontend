@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,8 +13,92 @@ import {
 const QuoteDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const quote = location.state?.quote;
-
+  const [quote,setQuote] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const pathParts = window.location.pathname.split("/");
+  const id = pathParts[pathParts.length - 1];
+  const getQuote = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/checkout/get-single-quote/${id}`);
+      const data = await response.json();
+      setQuote(data.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching quote:", error);
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-content, #printable-content * {
+        visibility: visible;
+      }
+      #printable-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-header {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #1d4ed8;
+      }
+      .print-section {
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      .print-section.product-details-section {
+  page-break-inside: auto !important;
+}
+      /* Force grid to single column in print */
+      .lg\\:grid-cols-2 {
+        grid-template-columns: 1fr !important;
+      }
+      /* Remove large gaps in print */
+      .gap-8 {
+        gap: 1rem !important;
+      }
+      /* Reduce spacing */
+      .mt-8 {
+        margin-top: 1.5rem !important;
+      }
+      .pt-6 {
+        padding-top: 1rem !important;
+      }
+      .space-y-6 > * + * {
+        margin-top: 1rem !important;
+      }
+      img {
+        max-width: 100%;
+        max-height: 400px;
+        page-break-inside: avoid;
+      }
+    }
+  `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+  useEffect(() => {
+    getQuote();
+  }, []);
+  if(loading){
+    return(
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-gray-600 mb-4">Loading...</p>
+      </div>
+    )
+  }
   // If no quote data, redirect back
   if (!quote) {
     return (
@@ -33,8 +117,8 @@ const QuoteDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-4xl mx-auto px-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        {/* Header - Hidden in print */}
+        <div className="flex items-center gap-4 mb-6 no-print">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-100"
@@ -45,17 +129,21 @@ const QuoteDetail = () => {
           <h1 className="text-3xl font-bold text-gray-800">Quote Details</h1>
         </div>
 
-        {/* Quote Information Card */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Quote ID Header */}
-          <div className="bg-blue-700 text-white px-6 py-4">
-            <h2 className="text-xl font-semibold">Quote ID: {quote._id}</h2>
+        <div
+          id="printable-content"
+          className="bg-white rounded-lg shadow-md overflow-hidden"
+        >
+          {/* Print Header */}
+          <div className="print-header bg-blue-700 text-white px-6 py-4">
+            {/* <h2 className="text-xl font-semibold">Quote ID: {quote._id}</h2> */}
+            <p className="text-base mt-1">
+              <span className="font-semibold" >Date:</span> {new Date().toLocaleDateString()}
+            </p>
           </div>
-
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Customer Information */}
-              <div className="space-y-6">
+              <div className="space-y-6 print-section">
                 <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
                   Customer Information
                 </h3>
@@ -88,7 +176,7 @@ const QuoteDetail = () => {
               </div>
 
               {/* Quote Details */}
-              <div className="space-y-6">
+              <div className="space-y-6 print-section">
                 <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
                   Quote Details
                 </h3>
@@ -121,7 +209,7 @@ const QuoteDetail = () => {
               </div>
             </div>
             {/* Show product details properly in a section */}
-            <div className="mt-8 pt-6 border-t flex flex-col border-gray-200">
+            <div className="mt-8 pt-6 border-t flex flex-col border-gray-200 print-section product-details-section">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Product Details
               </h3>
@@ -165,7 +253,6 @@ const QuoteDetail = () => {
                   </p>
                 </div>
               </div>
-              
             </div>
 
             {/* File Attachment Section */}
@@ -207,7 +294,7 @@ const QuoteDetail = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4 justify-end">
+            <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4 justify-end no-print">
               <button
                 onClick={() => navigate(-1)}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"

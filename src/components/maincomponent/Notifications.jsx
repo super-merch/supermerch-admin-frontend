@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import ActionButton from "../ui/ActionButton";
+import ConfirmModal from "../ui/confirmModel";
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -30,11 +31,37 @@ export default function Notifications() {
   const [selectAll, setSelectAll] = useState(false);
   const navigate = useNavigate();
   const aToken = localStorage.getItem("aToken");
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: () => {},
+    confirmText: "Confirm",
+    variant: "danger",
+  });
 
   useEffect(() => {
     setSelectAll(false);
     setSelectedNotifications([]);
   }, [page]);
+  const showConfirmModal = (message, onConfirm, confirmText = "Confirm", variant = "danger") => {
+  setConfirmModal({
+    isOpen: true,
+    message,
+    onConfirm,
+    confirmText,
+    variant
+  });
+};
+
+const closeConfirmModal = () => {
+  setConfirmModal({
+    isOpen: false,
+    message: "",
+    onConfirm: () => {},
+    confirmText: "Confirm",
+    variant: "danger"
+  });
+};
 
   // Sync selectAll state with selectedNotifications
   useEffect(() => {
@@ -50,45 +77,42 @@ export default function Notifications() {
 
   // Mark all notifications as seen
   const markAllAsSeen = async () => {
-    if (
-      window.confirm("Are you sure you want to mark all notifications as read?")
-    ) {
-      try {
-        setLoading(true);
-        await axios.post(
-          `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/notifications/update-notification`,
-          {},
-          {
-            headers: { aToken },
-          }
-        );
-        await fetchNotifications(page);
-        setUnseenMessages(0);
-        toast.success("All notifications marked as read!");
-      } catch (error) {
-        console.error("Error marking notifications as seen:", error);
-        toast.error("Failed to mark all notifications as read");
-      } finally {
-        setLoading(false);
-      }
-    }
+    showConfirmModal(
+      "Are you sure you want to mark all notifications as read?",
+      async () => {
+        try {
+          setLoading(true);
+          await axios.post(
+            `${
+              import.meta.env.VITE_BACKEND_URL
+            }/api/notifications/update-notification`,
+            {},
+            { headers: { aToken } }
+          );
+          await fetchNotifications(page);
+          setUnseenMessages(0);
+          toast.success("All notifications marked as read!");
+        } catch (error) {
+          console.error("Error marking notifications as seen:", error);
+          toast.error("Failed to mark all notifications as read");
+        } finally {
+          setLoading(false);
+        }
+      },
+      "Mark All as Read",
+      "success"
+    );
   };
 
-  const markNotificationSeen = async (id) => {
-    if (
-      window.confirm("Are you sure you want to mark this notification as read?")
-    ) {
+  const markNotificationSeen = async (id,dontShowModel) => {
+    if(dontShowModel){
       try {
         await axios.post(
           `${
             import.meta.env.VITE_BACKEND_URL
           }/api/notifications/mark-notification-seen/${id}`,
           {},
-          {
-            headers: { aToken },
-          }
+          { headers: { aToken } }
         );
         await fetchNotifications(page);
         setUnseenMessages(Math.max(0, unseenMessages - 1));
@@ -96,39 +120,65 @@ export default function Notifications() {
         console.error("Error marking notifications as seen:", error);
         toast.error("Failed to mark notification as read");
       }
+      return
     }
+    showConfirmModal(
+      "Are you sure you want to mark this notification as read?",
+      async () => {
+        try {
+          await axios.post(
+            `${
+              import.meta.env.VITE_BACKEND_URL
+            }/api/notifications/mark-notification-seen/${id}`,
+            {},
+            { headers: { aToken } }
+          );
+          await fetchNotifications(page);
+          setUnseenMessages(Math.max(0, unseenMessages - 1));
+        } catch (error) {
+          console.error("Error marking notifications as seen:", error);
+          toast.error("Failed to mark notification as read");
+        }
+      },
+      "Mark as Read",
+      "success"
+    );
+    return null;
   };
   const deleteNotification = async (id) => {
-    if (window.confirm("Are you sure you want to delete this notification?")) {
-      try {
-        const data = await axios.delete(
-          `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/notifications/delete-notification/${id}`,
-          {
-            headers: { aToken },
-          }
-        );
-        if (data.data.data.seen == false) {
-          setUnseenMessages(Math.max(0, unseenMessages - 1));
-        }
-        let newPage = page;
-        if (notifications.length === 1 && page > 1) {
-          newPage = page - 1;
-          setPage(newPage);
-        }
-        await fetchNotifications(newPage);
-        if (selectedNotifications.includes(id)) {
-          setSelectedNotifications(
-            selectedNotifications.filter((n) => n !== id)
+    showConfirmModal(
+      "Are you sure you want to delete this notification?",
+      async () => {
+        try {
+          const data = await axios.delete(
+            `${
+              import.meta.env.VITE_BACKEND_URL
+            }/api/notifications/delete-notification/${id}`,
+            { headers: { aToken } }
           );
+          if (data.data.data.seen == false) {
+            setUnseenMessages(Math.max(0, unseenMessages - 1));
+          }
+          let newPage = page;
+          if (notifications.length === 1 && page > 1) {
+            newPage = page - 1;
+            setPage(newPage);
+          }
+          await fetchNotifications(newPage);
+          if (selectedNotifications.includes(id)) {
+            setSelectedNotifications(
+              selectedNotifications.filter((n) => n !== id)
+            );
+          }
+          toast.success("Notification deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting notification:", error);
+          toast.error("Failed to delete notification");
         }
-        toast.success("Notification deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting notification:", error);
-        toast.error("Failed to delete notification");
-      }
-    }
+      },
+      "Delete",
+      "danger"
+    );
   };
 
   // Fetch notifications
@@ -176,91 +226,95 @@ export default function Notifications() {
 
   // Bulk mark as seen
   const bulkMarkAsSeen = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to mark these notifications as read?"
-      )
-    ) {
-      try {
-        setLoading(true);
-        const unseenSelected = notifications.filter(
-          (n) => selectedNotifications.includes(n._id) && !n.seen
-        );
-
-        await axios.post(
-          `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/notifications/bulk-mark-seen`,
-          { ids: selectedNotifications },
-          { headers: { aToken } }
-        );
-
-        await fetchNotifications(page);
-        setUnseenMessages(Math.max(0, unseenMessages - unseenSelected.length));
-        setSelectedNotifications([]);
-        setSelectAll(false);
-        toast.success("Selected notifications marked as seen!");
-      } catch (error) {
-        console.error("Error marking notifications as seen:", error);
-        toast.error("Failed to mark notifications as seen");
-      } finally {
-        setLoading(false);
-      }
-    }
+    showConfirmModal(
+      "Are you sure you want to mark these notifications as read?",
+      async () => {
+        try {
+          setLoading(true);
+          const unseenSelected = notifications.filter(
+            (n) => selectedNotifications.includes(n._id) && !n.seen
+          );
+          await axios.post(
+            `${
+              import.meta.env.VITE_BACKEND_URL
+            }/api/notifications/bulk-mark-seen`,
+            { ids: selectedNotifications },
+            { headers: { aToken } }
+          );
+          await fetchNotifications(page);
+          setUnseenMessages(
+            Math.max(0, unseenMessages - unseenSelected.length)
+          );
+          setSelectedNotifications([]);
+          setSelectAll(false);
+          toast.success("Selected notifications marked as seen!");
+        } catch (error) {
+          console.error("Error marking notifications as seen:", error);
+          toast.error("Failed to mark notifications as seen");
+        } finally {
+          setLoading(false);
+        }
+      },
+      "Mark as Read",
+      "success"
+    );
   };
 
   // Bulk delete
   const bulkDelete = async () => {
-    if (
-      window.confirm("Are you sure you want to delete these notifications?")
-    ) {
-      try {
-        setLoading(true);
-        const unseenSelected = notifications.filter(
-          (n) => selectedNotifications.includes(n._id) && !n.seen
-        );
-
-        await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/notifications/bulk-delete`,
-          { ids: selectedNotifications },
-          { headers: { aToken } }
-        );
-        let newPage = page;
-
-        if (
-          selectAll ||
-          selectedNotifications.length === notifications.length
-        ) {
-          newPage = page - 1;
-          setPage(newPage);
+    showConfirmModal(
+      "Are you sure you want to delete these notifications?",
+      async () => {
+        try {
+          setLoading(true);
+          const unseenSelected = notifications.filter(
+            (n) => selectedNotifications.includes(n._id) && !n.seen
+          );
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/api/notifications/bulk-delete`,
+            { ids: selectedNotifications },
+            { headers: { aToken } }
+          );
+          let newPage = page;
+          if (
+            selectAll ||
+            selectedNotifications.length === notifications.length
+          ) {
+            newPage = page - 1;
+            setPage(newPage);
+          }
+          await fetchNotifications(newPage);
+          setUnseenMessages(
+            Math.max(0, unseenMessages - unseenSelected.length)
+          );
+          setSelectedNotifications([]);
+          setSelectAll(false);
+          toast.success("Selected notifications deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting notifications:", error);
+          toast.error("Failed to delete notifications");
+        } finally {
+          setLoading(false);
         }
-        await fetchNotifications(newPage);
-        setUnseenMessages(Math.max(0, unseenMessages - unseenSelected.length));
-        setSelectedNotifications([]);
-        setSelectAll(false);
-        toast.success("Selected notifications deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting notifications:", error);
-        toast.error("Failed to delete notifications");
-      } finally {
-        setLoading(false);
-      }
-    }
+      },
+      "Delete Selected",
+      "danger"
+    );
   };
 
-  const notificationNavigate = (type, id) => {
-    markNotificationSeen(id);
+  const notificationNavigate = (type, id, notiId) => {
+    markNotificationSeen(id,true);
     if (!type) return;
     if (type === "order") {
-      navigate("/orders");
+      navigate("/order-details/" + notiId);
     } else if (type === "quote") {
-      navigate("/admin-quotes");
+      navigate("/admin-quote-detail/" + notiId);
     } else if (type === "user") {
-      navigate("/all-users");
+      navigate("/user-orders/" + notiId);
     } else if (type === "query") {
-      navigate("/user-queries");
+      navigate("/user-query/" + notiId);
     } else if (type === "userQuote") {
-      navigate("/quote");
+      navigate("/quote-detail/" + notiId);
     }
   };
 
@@ -518,7 +572,8 @@ export default function Notifications() {
                           onClick={() => {
                             notificationNavigate(
                               notification.type,
-                              notification._id
+                              notification._id,
+                              notification.id
                             );
                           }}
                           className="px-3 py-3 cursor-pointer"
@@ -566,7 +621,8 @@ export default function Notifications() {
                           onClick={() => {
                             notificationNavigate(
                               notification.type,
-                              notification._id
+                              notification._id,
+                              notification.id
                             );
                           }}
                           className="px-3 py-3 cursor-pointer whitespace-nowrap"
@@ -676,6 +732,15 @@ export default function Notifications() {
           </div>
         )}
       </div>
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+      />
     </div>
   );
 }

@@ -64,8 +64,8 @@ const FiltersSection = ({
         >
           <option value="all">All Products</option>
           <option value="trending">Trending</option>
-          <option value="newArrivals">New Arrivals</option>
-          <option value="bestSellers">Best Sellers</option>
+          <option value="australia">Australia</option>
+          <option value="24hrProducts">24 Hour Products</option>
         </select>
 
         {/* Search Results Info */}
