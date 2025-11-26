@@ -247,7 +247,6 @@ const AlProductDetail = () => {
         )
         const data = await res.json();
         setProduct(data.data);
-        console.log(data)
         // Fetch discount and margin data
         const discountData = {
           discount:  data?.data?.discountInfo?.type == "product" && data?.data?.discountInfo?.discount ||0,
@@ -339,6 +338,7 @@ const AlProductDetail = () => {
       } else {
         setMarginPrice(newDiscountPrice);
       }
+      fetchInitialData();
     } catch (error) {
       const errorMsg = "Failed to add discount.";
       setDiscountMessage(errorMsg);
@@ -858,7 +858,7 @@ const AlProductDetail = () => {
               </div>
 
               {/* Discount Row */}
-              {discountPercent !== "" && (
+              {(discountPercent !== 0)  && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-red-50 to-red-50/50 rounded-lg border border-red-200/50">
                     <div className="space-y-0.5">
@@ -869,12 +869,12 @@ const AlProductDetail = () => {
                     <span className="text-base font-bold text-red-900">
                       -$
                       {(
-                        (newBasePrice * parseFloat(discountPercent)) /
+                        (newBasePrice * (discountPercent && parseFloat(discountPercent))) /
                         100
                       ).toFixed(2)}
                     </span>
                   </div>
-                  {discountPrice !== null && (
+                  {/* {discountPrice !== null && (
                     <div className="flex items-center justify-between p-3 bg-gradient-to-br from-green-50 to-green-50/50 rounded-lg border border-green-200/50">
                       <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">
                         After Discount
@@ -883,12 +883,12 @@ const AlProductDetail = () => {
                         ${discountPrice?.toFixed(2)}
                       </span>
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
 
               {/* Margin Row */}
-              {marginPercent !== "" && (
+              {marginPercent !== 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-yellow-50 to-yellow-50/50 rounded-lg border border-yellow-200/50">
                     <div className="space-y-0.5">
@@ -900,7 +900,7 @@ const AlProductDetail = () => {
                       +$
                       {(
                         ((discountPrice || newBasePrice) *
-                          parseFloat(marginPercent)) /
+                          ( marginPercent && parseFloat(marginPercent))) /
                         100
                       ).toFixed(2)}
                     </span>
@@ -908,25 +908,8 @@ const AlProductDetail = () => {
                 </div>
               )}
 
-              {/* Final Price - Highlighted */}
-              {marginPrice !== null && (
-                <div className="pt-4 mt-2 border-t-2 border-gray-200">
-                  <div className="flex items-center justify-between p-5 bg-gradient-to-br from-purple-100 via-purple-50 to-purple-50/50 rounded-xl border-2 border-purple-300">
-                    <div className="space-y-1">
-                      <span className="text-sm font-bold text-purple-900 uppercase tracking-wider block">
-                        Final Price
-                      </span>
-                      <p className="text-xs text-purple-700 font-medium">
-                        Customer pays this
-                      </p>
-                    </div>
-                    <span className="text-3xl font-bold text-purple-900">
-                      ${marginPrice?.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {discountMethod !== "product" && (
+
+              {(discountMethod !== "product" && discountMethod !== "none"  )&& (
                 <div className="pt-4 mt-2 border-t border-gray-200">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
                     <div>
@@ -943,7 +926,7 @@ const AlProductDetail = () => {
                   </div>
                 </div>
               )}
-              {marginMethod !== "product" && (
+              {(marginMethod !== "product"&& marginMethod !== "none") && (
                 <div className="pt-4 mt-2 border-t border-gray-200">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
                     <div>
@@ -955,14 +938,14 @@ const AlProductDetail = () => {
                       </p>
                     </div>
                     <span className="text-sm font-bold text-gray-900">
-                     + ${discountPrice * (additionalMargin / 100)}
+                     + ${(discountPrice - (discountMethod !== "product" && (newBasePrice * (additionalDiscount / 100)) )) * (additionalMargin / 100)}
                     </span>
                   </div>
                 </div>
               )}
 
               {/* Original Price Reference */}
-              <div className="pt-4 mt-2 border-t border-gray-200">
+              {/* <div className="pt-4 mt-2 border-t border-gray-200">
                 <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
                   <div>
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
@@ -976,7 +959,25 @@ const AlProductDetail = () => {
                       ?.price_breaks[0]?.price || "N/A"}
                   </span>
                 </div>
-              </div>
+              </div> */}
+              {marginPrice !== null && (
+                <div className="pt-4 mt-2 border-t-2 border-gray-200">
+                  <div className="flex items-center justify-between p-5 bg-gradient-to-br from-purple-100 via-purple-50 to-purple-50/50 rounded-xl border-2 border-purple-300">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-purple-900 uppercase tracking-wider block">
+                        Final Price
+                      </span>
+                      <p className="text-xs text-purple-700 font-medium">
+                        Customer pays this
+                      </p>
+                    </div>
+                    <span className="text-3xl font-bold text-purple-900">
+                      ${product?.product?.prices?.price_groups[0]?.base_price
+                      ?.price_breaks[0]?.price.toFixed(2) || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

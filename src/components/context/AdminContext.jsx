@@ -66,65 +66,6 @@ const AdminContextProvider = (props) => {
   }
 
 
-  // client api
-  const fetchProducts = async (page = 1) => {
-    setAllProductLoading(true);
-
-    try {
-      const response = await fetch(
-        `${backednUrl}/api/client-products?filter=false&page=${page}&limit=26`
-      );
-      if (!response.ok) throw new Error("Failed to fetch products");
-
-      const data = await response.json();
-
-      if (!data || !data.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      // If it's page 1, replace products. Otherwise, append to existing products.
-      if (page === 1) {
-        setProducts(data.data);
-      } else {
-        setProducts((prevProducts) => [...prevProducts, ...data.data]);
-      }
-
-      // Set ignored product IDs if they exist in the response
-      if (data.ignoredProductIds) {
-        setIgnoredProductIds(new Set(data.ignoredProductIds));
-      }
-      setProdLength(data.item_count);
-      return data.data;
-    } catch (err) {
-      console.log(err.message);
-    } finally {
-      setAllProductLoading(false);
-    }
-  };
-
-  const [trendingProducts, setTrendingProducts] = useState([]);
-  const fetchTrendingProduct = async (page = 1, sort = "", limit) => {
-    try {
-      if (!limit) limit = 100; // Default to 100 if limit is not provided
-      const response = await fetch(
-        `${backednUrl}/api/client-products-trending?page=${page}&limit=${limit}&sort=${sort}?filter=true`
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch products");
-
-      const data = await response.json();
-
-      // Validate response structure if needed
-      if (!data || !data.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      setTrendingProducts(data.data);
-      return data.data;
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
   const [arrivalProducts, setArrivalProducts] = useState([]);
   const fetchNewArrivalProduct = async (page = 1, sort = "", limit) => {
     try {
@@ -217,45 +158,6 @@ const AdminContextProvider = (props) => {
     }
   };
 
-  const fetchSearchedProduct = async (searchTerm,sortOption) => {
-    setSearchLoading(true);
-    try {
-      // Set limit to 100 to get maximum products for admin, no pagination needed
-      let url = `${backednUrl}/api/client-products/search?searchTerm=${searchTerm}&page=1&limit=50&filter=false`;
-      if(sortOption == "australia"){
-        url = `${backednUrl}/api/australia/get-products?search=${searchTerm}&page=1&limit=25&filter=false`;
-      }
-      if(sortOption == "24hrProducts"){
-        url = `${backednUrl}/api/24hour/get-products?search=${searchTerm}&page=1&limit=25&filter=false`;
-      }
-      const limit = 50;
-      const response = await fetch(
-        url
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch products");
-
-      const data = await response.json();
-
-      // Validate response structure
-      if (!data || !data.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      setSearchedProducts(data); // Store the full response object
-      const pages = data?.total_count / 25;
-      setTotalApiPages(pages);
-      console.log("Search results:", data);
-
-      return data;
-    } catch (err) {
-      console.log(err.message);
-      throw err; // Re-throw so the component can handle it
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
   const [supplierLoading, setSupplierLoading] = useState(false);
 
   const [suppliersPagination, setSuppliersPagination] = useState(null);
@@ -288,6 +190,8 @@ const AdminContextProvider = (props) => {
         hasNextPage: data.page < Math.ceil(data.item_count / 15),
         hasPrevPage: data.page > 1,
       });
+
+      return data.data;
     } catch (err) {
       console.log(err.message);
     } finally {
@@ -573,35 +477,111 @@ const getOrderComments = async (orderId) => {
   const [paramProducts, setParamProducts] = useState([]);
   const [paramLoading, setParamLoading] = useState(false);
   const [totalApiPages, setTotalApiPages] = useState(0);
-  const fetchParamProducts = async (categoryId, page, supplierId) => {
-    setParamLoading(true);
-    try {
-      const itemCount = 9;
-      const response = await fetch(
-        supplierId
-          ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${
-              supplierId || null
-            }&items_per_page=${itemCount}&page=${page}`
-          : `${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${itemCount}&page=${page}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch products");
-      const data = await response.json();
-
-      if (!data || !data.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      // Always get exactly 9 products (or less if not enough exist)
-      setParamProducts(data);
-      setTotalApiPages(data.total_pages);
-
-      return data;
-    } catch (err) {
-      console.log(err.message);
-    } finally {
-      setParamLoading(false);
+  const fetchProducts = async (page = 1, limit = 25,supplier,category) => {
+  setAllProductLoading(true);
+  try {
+    const response = await fetch(
+      `${backednUrl}/api/client-products?filter=false&page=${page}&limit=${limit}${supplier ? `&supplier=${supplier}` : ''}${category ? `&product_type_ids=${category}` : ''}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch products");
+    const data = await response.json();
+    
+    if (!data || !data.data) {
+      throw new Error("Unexpected API response structure");
     }
-  };
+    
+    setProducts(data.data);
+    if (data.ignoredProductIds) {
+      setIgnoredProductIds(new Set(data.ignoredProductIds));
+    }
+    setProdLength(data.item_count);
+    const pages = Math.ceil(data.item_count / limit);
+    setTotalApiPages(pages);
+    return data;
+  } catch (err) {
+    console.log(err.message);
+  } finally {
+    setAllProductLoading(false);
+  }
+};
+const [trendingProducts, setTrendingProducts] = useState([]);
+const fetchTrendingProduct = async (page = 1, limit = 25, supplier) => {
+  try {
+    const response = await fetch(
+      `${backednUrl}/api/client-products-trending?page=${page}&limit=${limit}&filter=true${supplier ? `&supplier=${supplier}` : ''}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch products");
+    const data = await response.json();
+    
+    if (!data || !data.data) {
+      throw new Error("Unexpected API response structure");
+    }
+    
+    setTrendingProducts(data.data);
+    const pages = Math.ceil(data.item_count / limit);
+    setTotalApiPages(pages);
+    return data;
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
+
+const fetchParamProducts = async (categoryId, page = 1, supplierId = null, limit = 25) => {
+  setParamLoading(true);
+  try {
+    const response = await fetch(
+      supplierId
+        ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId}&items_per_page=${limit}&page=${page}`
+        : `${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${limit}&page=${page}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch products");
+    const data = await response.json();
+
+    if (!data || !data.data) {
+      throw new Error("Unexpected API response structure");
+    }
+
+    setParamProducts(data);
+    setTotalApiPages(data.total_pages);
+    return data;
+  } catch (err) {
+    console.log(err.message);
+  } finally {
+    setParamLoading(false);
+  }
+};
+
+const fetchSearchedProduct = async (searchTerm, sortOption, supplier,category, page = 1, limit = 25) => {
+  setSearchLoading(true);
+  try {
+    let url = `${backednUrl}/api/client-products/search?searchTerm=${searchTerm}&page=${page}&limit=${limit}&filter=false${supplier ? `&supplier=${supplier}` : ""}${category ? `&product_type_ids=${category}` : ""}`;
+    
+    if (sortOption === "australia") {
+      url = `${backednUrl}/api/australia/get-products?search=${searchTerm}&page=${page}&limit=${limit}&filter=false${supplier ? `&supplier=${supplier}` : ""}${category ? `&product_type_ids=${category}` : ""}`;
+    }
+    if (sortOption === "24hrProducts") {
+      url = `${backednUrl}/api/24hour/get-products?search=${searchTerm}&page=${page}&limit=${limit}&filter=false${supplier ? `&supplier=${supplier}` : ""}${category ? `&product_type_ids=${category}` : ""}`;
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch products");
+    const data = await response.json();
+
+    if (!data || !data.data) {
+      throw new Error("Unexpected API response structure");
+    }
+    console.log(data);
+    setSearchedProducts(data);
+    
+    setTotalApiPages(data.total_pages);
+    return data;
+  } catch (err) {
+    console.log(err.message);
+    throw err;
+  } finally {
+    setSearchLoading(false);
+  }
+};
 
   //delete order
   const [deleteLoading, setDeleteLoading] = useState({}); // Object instead of boolean
@@ -755,11 +735,11 @@ const getOrderComments = async (orderId) => {
 
   const orderPending = orders.filter((order) => order.status === "Pending");
   const orderCompleted = orders.filter((order) => order.status === "Complete");
-  const fetchAustraliaProducts = async (page,limit) => {
+  const fetchAustraliaProducts = async (page,limit,supplier,category) => {
 
     try {
       const response = await axios.get(
-        `${backednUrl}/api/australia/get-products?page=${page ||1}&limit=${limit||25}`,
+        `${backednUrl}/api/australia/get-products?page=${page ||1}&limit=${limit||25}${supplier && `&supplier=${supplier}`}${category && `&product_type_ids=${category}`}`,
       )
       const pages = Math.ceil(response.data.item_count/limit)
       setTotalApiPages(pages)
@@ -768,11 +748,11 @@ const getOrderComments = async (orderId) => {
       console.log(error)
     }
   }
-  const fetchProductionProducts = async (page,limit) => {
+  const fetchProductionProducts = async (page,limit,supplier,category) => {
 
     try {
       const response = await axios.get(
-        `${backednUrl}/api/24hour/get-products?page=${page ||1}&limit=${limit||25}`,
+        `${backednUrl}/api/24hour/get-products?page=${page ||1}&limit=${limit||25}${supplier && `&supplier=${supplier}`}${category && `&product_type_ids=${category}`}`,
       )
       const pages = Math.ceil(response.data.item_count/limit)
       setTotalApiPages(pages)

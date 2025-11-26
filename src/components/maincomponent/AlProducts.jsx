@@ -38,21 +38,18 @@ const AlProducts = () => {
     searchLoading,
     fetchTrendingProduct,
     fetchAustraliaProducts,
-    trendingProducts,
     fetchProductionProducts,
     fetchCategories,
     fetchParamProducts,
     totalApiPages,
   } = useContext(AdminContext);
-  const [categoryProducts, setCategoryProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [supplier, setSupplier] = useState(null);
   const [localIgnoredIds, setLocalIgnoredIds] = useState(new Set());
-  const [lastPage, setLastPage] = useState(false);
-  const [page, setPage] = useState(1);
   const [editingProductId, setEditingProductId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [customNames, setCustomNames] = useState({});
@@ -68,6 +65,74 @@ const AlProducts = () => {
   const [bulkMode, setBulkMode] = useState(null);
   const [australiaCount, setAustraliaCount] = useState(0);
   const [trendingCount, setTrendingCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [productionIds, setProductionIds] = useState(new Set());
+  const ITEMS_PER_PAGE = 25;
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchCategories();
+      setCategories(data.data);
+      setPageLoading(true);
+      const resp = await fetch(`${backednUrl}/api/products-count`);
+      const data2 = await resp.json();
+      setCategories(data.data);
+      setTrendingCount(data2.trendingCount);
+      setAustraliaCount(data2.australiaCount);
+      try {
+        let data;
+        
+        // Handle search mode first
+
+        if (searchTerm && isSearching) {
+          data = await fetchSearchedProduct(
+            searchTerm,
+            sortOption,
+            supplier !== "all"? supplier : null,
+            selectedCategory !== "all" ? selectedCategory : null,
+            currentPage,
+            ITEMS_PER_PAGE
+          );
+          setProducts(data.data);
+          return;
+        }
+        
+
+        // Handle different sort options
+        switch (sortOption) {
+          case "trending":
+            setSelectedCategory("all")
+            setSupplier("all")
+            data = await fetchTrendingProduct(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+            setProducts(data.data);
+            break;
+            case "australia":
+            setSelectedCategory("all")
+            data = await fetchAustraliaProducts(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+            setProducts(data.data);
+            break;
+            case "24hrProducts":
+            setSelectedCategory("all")
+            data = await fetchProductionProducts(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+            setProducts(data.data);
+            break;
+          case "all":
+          default:
+            data = await fetchProducts(currentPage, ITEMS_PER_PAGE, supplier, selectedCategory !== "all" ? selectedCategory : null);
+            setProducts(data.data);
+            break;
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        toast.error("Failed to load products");
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentPage, sortOption, selectedCategory, supplier, localSearch  ]);
 
   // Bulk selection handlers
   const handleBulkSelect = (productId) => {
@@ -157,153 +222,12 @@ const AlProducts = () => {
     }
   };
 
-  // Search state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [productionIds, setProductionIds] = useState(new Set());
-  useEffect(() => {
-    const loadData = async () => {
-      const data = await fetchCategories();
-      const resp = await fetch(`${backednUrl}/api/products-count`);
-      const data2 = await resp.json();
-      setCategories(data.data);
-      setTrendingCount(data2.trendingCount);
-      setAustraliaCount(data2.australiaCount);
-    };
-    loadData();
-  }, []);
-  useEffect(() => {
-    const loadData = async () => {
-      // If no category or "all" selected -> clear categoryProducts and reset page
-      if (!selectedCategory || selectedCategory === "all") {
-        setCategoryProducts([]);
-        setCurrentPage(1);
-        return;
-      }
-
-      // Fetch server-paginated products for the selected category
-      setPageLoading(true);
-      try {
-        const data = await fetchParamProducts(
-          selectedCategory,
-          currentPage,
-          selectedSupplier || null
-        );
-        setCategoryProducts(data?.data || []);
-      } catch (err) {
-        console.error("Error fetching category products:", err);
-        setCategoryProducts([]);
-      } finally {
-        setPageLoading(false);
-      }
-    };
-
-    loadData();
-  }, [selectedCategory, selectedSupplier]);
-
-  const itemsPerPage = searchTerm ? 50 : 25;
-  const isCategoryMode = selectedCategory && selectedCategory !== "all";
-  // Get current products based on search state
-  const getCurrentProducts = () => {
-    return isSearching ? searchedProducts?.data || [] : products || [];
-  };
-
-  const currentProductList = getCurrentProducts();
-  const filteredProducts = selectedSupplier
-    ? currentProductList.filter(
-        (product) => product.supplier?.supplier === selectedSupplier
-      )
-    : currentProductList;
   const paginationTotal = useMemo(() => {
-    if (isCategoryMode) {
-      return totalApiPages || 1;
-    }
-    if (sortOption === "australia" || sortOption === "24hrProducts") {
-      return totalApiPages || 1;
-    }
-    if (sortOption === "all") {
-      return Math.ceil(prodLength / itemsPerPage);
-    }
-    return Math.ceil(filteredProducts.length / itemsPerPage);
-  }, [
-    isCategoryMode,
-    sortOption,
-    totalApiPages,
-    prodLength,
-    filteredProducts.length,
-    itemsPerPage,
-  ]);
-  const processedProductsRef = useRef(new Set());
+  return totalApiPages || 1;
+}, [totalApiPages]);
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
 
-  useEffect(() => {
-    const fetchNextBatch = async () => {
-      if (lastPage && sortOption === "all") {
-        setPageLoading(true);
-        try {
-          await fetchProducts(page + 1);
-          setPage(page + 1);
-          setLastPage(false);
-        } catch (error) {
-          console.error("Error fetching next batch:", error);
-        } finally {
-          setPageLoading(false);
-        }
-      }
-    };
-
-    fetchNextBatch();
-  }, [lastPage, sortOption]);
-  const sortOptionRef = useRef(sortOption);
-  useEffect(() => {
-    const search = async () => {
-      setLoadingProducts(true);
-
-      try {
-        let productData = [];
-        setCurrentPage(1);
-        if (searchTerm && sortOption !== "all") {
-          setIsSearching(true);
-          setCurrentPage(1);
-          setSelectedCategory("all");
-          productData = await fetchSearchedProduct(searchTerm, sortOption);
-          setProducts(productData.data);
-          setSearchTerm("")
-          return;
-        }
-        setIsSearching(false);
-        switch (sortOption) {
-          case "trending":
-            productData = await fetchTrendingProduct();
-            break;
-          case "australia":
-            const data = await fetchAustraliaProducts(1, 25);
-            productData = data.data;
-            break;
-          case "24hrProducts":
-            const data2 = await fetchProductionProducts(1, 25);
-            productData = data2.data;
-            break;
-          case "all":
-            productData = await fetchProducts();
-            break;
-          default:
-            // await fetchProducts();
-            productData = products;
-            break;
-        }
-
-        setProducts(productData);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-
-    search();
-  }, [sortOption, isSearching]);
   const getIgnored = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
@@ -352,54 +276,24 @@ const AlProducts = () => {
       setLocalIgnoredIds(new Set(ignoredProductIds));
     }
   }, []);
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProducts = useMemo(() => {
-    // Server-paginated modes: use data as-is without slicing
-    if (selectedCategory && selectedCategory !== "all") {
-      return categoryProducts;
-    }
-
-    if (sortOption === "australia" || sortOption === "24hrProducts") {
-      return products || []; // Use products directly from API
-    }
-
-    // Client-side pagination for other modes
-    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-  }, [
-    selectedCategory,
-    categoryProducts,
-    sortOption,
-    products,
-    filteredProducts,
-    startIndex,
-    itemsPerPage,
-  ]);
+    return products || [];
+  }, [selectedCategory, products]);
 
   // Handle search
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
-      // If search term is empty, load all products
       setIsSearching(false);
       setCurrentPage(1);
       return;
     }
-
-    try {
-      setIsSearching(true);
-      setCurrentPage(1);
-      setSelectedCategory("all");
-      if(sortOption == "all"){
-        await fetchSearchedProduct(searchTerm.trim(), sortOption);
-      }
-    } catch (error) {
-      console.error("Search error:", error);
-      toast.error("Failed to search products");
-    }
+    setLocalSearch(searchTerm);
+    setIsSearching(true);
+    setCurrentPage(1);
   };
 
-  // Clear search
+  // Update clearSearch:
   const clearSearch = () => {
     setSearchTerm("");
     setIsSearching(false);
@@ -609,84 +503,12 @@ const AlProducts = () => {
       </div>
     );
 
-  const uniqueSuppliers = [
-    ...new Set(
-      currentProductList?.map(
-        (product) => product.supplier?.supplier || "Unknown"
-      )
-    ),
-  ];
   const prevDisabled = currentPage === 1;
   const nextDisabled = currentPage >= paginationTotal;
 
-  const handlePageChange = async (newPage) => {
-    if (newPage < 1) return;
-    if (selectedCategory && selectedCategory !== "all") {
-      if (totalApiPages && newPage > totalApiPages) return;
-
-      setCurrentPage(newPage);
-      try {
-        setPageLoading(true);
-        const data = await fetchParamProducts(
-          selectedCategory,
-          newPage,
-          selectedSupplier || null
-        );
-        setCategoryProducts(data?.data || []);
-      } catch (err) {
-        console.error("Error changing category page:", err);
-      } finally {
-        setPageLoading(false);
-      }
-      return;
-    }
-    if (sortOption === "australia") {
-      if (totalApiPages && newPage > totalApiPages) return;
-
-      setCurrentPage(newPage);
-      try {
-        setPageLoading(true);
-        const data = await fetchAustraliaProducts(newPage, 25);
-        console.log(data);
-        setProducts(data.data);
-      } catch (err) {
-        console.error("Error changing australia page:", err);
-      } finally {
-        setPageLoading(false);
-      }
-      return;
-    }
-
-    // Handle 24hr Production mode
-    if (sortOption === "24hrProducts") {
-      if (totalApiPages && newPage > totalApiPages) return;
-
-      setCurrentPage(newPage);
-      try {
-        setPageLoading(true);
-        const data2 = await fetchProductionProducts(newPage, 25);
-        setProducts(data2.data);
-      } catch (err) {
-        console.error("Error changing 24hr production page:", err);
-      } finally {
-        setPageLoading(false);
-      }
-      return;
-    }
-
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > paginationTotal) return;
     setCurrentPage(newPage);
-
-    if (
-      sortOption === "all" &&
-      newPage === Math.ceil(filteredProducts.length / itemsPerPage)
-    ) {
-      setLastPage(true);
-    }
-  };
-
-  const handleSupplierChange = (e) => {
-    setSelectedSupplier(e.target.value);
-    setCurrentPage(1);
   };
 
   const handleViewProduct = (product) => {
@@ -865,7 +687,6 @@ const AlProducts = () => {
         onClearSearch={clearSearch}
         selectedCategory={selectedCategory || "all"}
         onCategoryChange={(val) => {
-          clearSearch();
           setSelectedCategory(val);
           setCurrentPage(1);
         }}
@@ -873,7 +694,9 @@ const AlProducts = () => {
         sortOption={sortOption}
         onSortChange={setSortOption}
         isSearching={isSearching}
-        searchResultsCount={isSearching ? currentProductList?.length : null}
+        searchResultsCount={isSearching ? currentProducts.length : null}
+        supplier={supplier}
+        onSupplierChange={setSupplier}
       />
 
       {searchLoading || pageLoading ? (
@@ -1224,7 +1047,7 @@ const AlProducts = () => {
           </div>
 
           {/* Pagination */}
-          {!isSearching && paginationTotal > 1 && (
+          { paginationTotal > 1 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
                 <button
