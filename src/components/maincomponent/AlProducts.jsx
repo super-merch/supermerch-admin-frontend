@@ -297,6 +297,7 @@ const AlProducts = () => {
   const clearSearch = () => {
     setSearchTerm("");
     setIsSearching(false);
+    setLocalSearch("");
     setCurrentPage(1);
   };
 
@@ -738,8 +739,11 @@ const AlProducts = () => {
                     <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
                       Image
                     </th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-[200px]">
                       Product Name
+                    </th>
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-[200px]">
+                      SKU
                     </th>
                     <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                       Status
@@ -904,6 +908,11 @@ const AlProducts = () => {
                                 </>
                               )}
                             </div>
+                          </td>
+
+                          {/* SKU */}
+                          <td className="px-3 py-3 text-sm whitespace-nowrap text-center">
+                            {product?.overview?.sku_number || "N/A"}
                           </td>
 
                           {/* Status */}

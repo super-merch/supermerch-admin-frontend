@@ -19,6 +19,8 @@ import {
   FolderTree,
   Plus,
   Trash2,
+  Pen,
+  Package,
 } from "lucide-react";
 import axios from "axios";
 import ActionButton from "../ui/ActionButton";
@@ -46,6 +48,8 @@ const AlSuppliers = () => {
   const [mySearch, setMySearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [tagFilters, setTagFilters] = useState([]);
+  const [selectedTagFilter, setSelectedTagFilter] = useState(null);
   const fetchSupplierDiscounts = async () => {
     try {
       const response = await fetch(
@@ -109,6 +113,13 @@ const AlSuppliers = () => {
     };
     search();
   }, [searchTerm]);
+  useEffect(() => {
+    if (selectedTagFilter && selectedTagFilter !== "all") {
+      console.log(selectedTagFilter);
+      fetchSuppliers(1,100,selectedTagFilter)
+      return;
+    }
+  }, [selectedTagFilter]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -117,9 +128,131 @@ const AlSuppliers = () => {
     setCurrentPage(1);
     fetchSuppliers(1);
   };
+  const [supplierData, setSupplierData] = useState([]);
+  const [editingTags, setEditingTags] = useState({});
+  const [newTags, setNewTags] = useState({});
+  const fetchSupplierData = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/supplier/get-all-supplier`,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          setSupplierData(data.data);
+          let tags = [];
+          data.data.map((item) => {
+            if (item.tags.length > 0) {
+              item.tags.map((tag) => {
+                if (tags.includes(tag.tag)) {
+                } else {
+                  tags.push(tag.tag);
+                }
+              });
+            }
+          });
+          console.log(data.data)
+          setTagFilters(tags);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching supplier data:", error);
+    }
+  };
+  const handleAddTag = async (supplierId, tag) => {
+    if (!tag.trim()) {
+      toast.error("Please enter a valid tag");
+      return;
+    }
+
+    const supplierInfo = supplierData.find(
+      (item) => Number(item.supplierId) === supplierId
+    );
+    const existingTags = supplierInfo?.tags || [];
+
+    // Check if tag already exists
+    if (existingTags.some((t) => t.tag === tag.trim())) {
+      toast.error("Tag already exists");
+      return;
+    }
+
+    const updatedTags = [...existingTags, { tag: tag.trim() }];
+
+    try {
+      const supplier = currentSuppliers.find((s) => s.id === supplierId);
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/supplier/create-supplier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supplierId: supplierId,
+            supplierName: supplier.name,
+            email: supplierInfo?.email || "",
+            password: supplierInfo?.password || "",
+            notes: supplierInfo?.notes || "",
+            tags: updatedTags,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Tag added successfully");
+        fetchSupplierData();
+        setNewTags((prev) => ({ ...prev, [supplierId]: "" }));
+      } else {
+        toast.error("Failed to add tag");
+      }
+    } catch (error) {
+      console.error("Error adding tag:", error);
+      toast.error("Error adding tag");
+    }
+  };
+
+  const handleRemoveTag = async (supplierId, tagToRemove) => {
+    const supplierInfo = supplierData.find(
+      (item) => Number(item.supplierId) === supplierId
+    );
+    const updatedTags =
+      supplierInfo?.tags.filter((t) => t.tag !== tagToRemove) || [];
+
+    try {
+      setLoading(true);
+      const supplier = currentSuppliers.find((s) => s.id === supplierId);
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/supplier/create-supplier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supplierId: supplierId,
+            supplierName: supplier.name,
+            email: supplierInfo?.email || "",
+            password: supplierInfo?.password || "",
+            notes: supplierInfo?.notes || "",
+            tags: updatedTags,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Tag removed successfully");
+        fetchSupplierData();
+      } else {
+        toast.error("Failed to remove tag");
+      }
+    } catch (error) {
+      console.error("Error removing tag:", error);
+      toast.error("Error removing tag");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // fetchSuppliers(1);
+    fetchSupplierData();
     fetchSupplierMargins();
     fetchSupplierDiscounts();
   }, []);
@@ -623,13 +756,30 @@ const AlSuppliers = () => {
             </button>
           )}
         </div>
-        <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
-          Showing{" "}
-          <span className="font-semibold">{currentSuppliers.length}</span> of{" "}
-          <span className="font-semibold">{totalSuppliers}</span> suppliers
-          {isSearchMode && searchTerm && (
-            <span className="ml-1 text-blue-600">(search: "{searchTerm}")</span>
-          )}
+        <div className="flex justify-between items-center">
+          <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
+            Showing{" "}
+            <span className="font-semibold">{currentSuppliers.length}</span> of{" "}
+            <span className="font-semibold">{totalSuppliers}</span> suppliers
+            {isSearchMode && searchTerm && (
+              <span className="ml-1 text-blue-600">
+                (search: "{searchTerm}")
+              </span>
+            )}
+          </div>
+          <select
+            name=""
+            onChange={(e) => setSelectedTagFilter(e.target.value)}
+            className="w-48 border-2 p-1 border-black"
+            id=""
+          >
+            <option value="all">All</option>
+            {tagFilters?.map((tag, index) => (
+              <option key={index} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       {/* Suppliers Table */}
@@ -652,8 +802,11 @@ const AlSuppliers = () => {
             <table className="w-full">
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[150px]">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-[150px]">
                     Supplier
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-[150px]">
+                    SKU
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Country
@@ -664,11 +817,17 @@ const AlSuppliers = () => {
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Created
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-[200px] max-w-[220px]">
                     Margin %
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-[200px] max-w-[220px] ">
                     Discount %
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Note
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Tags
                   </th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Actions
@@ -687,6 +846,9 @@ const AlSuppliers = () => {
                     supplierMargins[sup.id] !== undefined;
                   const hasExistingDiscount =
                     supplierDiscounts[sup.id] !== undefined;
+                  const note = supplierData?.find(
+                    (item) => Number(item.supplierId) === sup.id
+                  )?.notes;
 
                   return (
                     <tr
@@ -707,6 +869,14 @@ const AlSuppliers = () => {
                           >
                             {sup.name || "N/A"}
                           </span>
+                        </div>
+                      </td>
+
+                      {/* SKU */}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                          <Package className="w-3.5 h-3.5 text-gray-400" />
+                          <span>SM-{sup.id || "N/A"}</span>
                         </div>
                       </td>
 
@@ -745,49 +915,55 @@ const AlSuppliers = () => {
                       <td className="px-3 py-3">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <Percent className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                            <div className="relative flex flex-col gap-2">
+                              <Percent
+                                className={`absolute left-2 ${
+                                  hasExistingMargin ? "top-4" : "top-1/2"
+                                }   -translate-y-1/2 w-3.5 h-3.5 text-gray-400`}
+                              />
                               <input
                                 type="number"
-                                className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                placeholder="Margin %"
+                                className="sm:w-24 w-20 pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="Margin"
                                 value={margins[sup.id] || ""}
                                 onChange={(e) =>
                                   handleMarginChange(sup.id, e.target.value)
                                 }
                                 disabled={loadingSuppliers[sup.id]}
                               />
+                              {hasExistingMargin && (
+                                <div className="text-xs text-gray-600">
+                                  Current:{" "}
+                                  <span className="font-semibold">
+                                    {supplierMargins[sup.id]}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <ActionButton
-                              icon={hasExistingMargin ? Plus : Plus}
-                              label={hasExistingMargin ? "Update" : "Add"}
-                              onClick={() => handleAddMargin(sup)}
-                              disabled={loadingSuppliers[sup.id]}
-                              loading={loadingSuppliers[sup.id] === "adding"}
-                              variant="primary"
-                              size="sm"
-                            />
-                            {hasExistingMargin && (
+                            <div className="flex flex-col gap-2">
                               <ActionButton
-                                icon={Trash2}
-                                onClick={() => handleDeleteMargin(sup)}
+                                icon={hasExistingMargin ? Pen : Plus}
+                                label={hasExistingMargin ? "" : ""}
+                                onClick={() => handleAddMargin(sup)}
                                 disabled={loadingSuppliers[sup.id]}
-                                loading={
-                                  loadingSuppliers[sup.id] === "deleting"
-                                }
-                                variant="danger"
+                                loading={loadingSuppliers[sup.id] === "adding"}
+                                variant="primary"
                                 size="sm"
                               />
-                            )}
-                          </div>
-                          {hasExistingMargin && (
-                            <div className="text-xs text-gray-600">
-                              Current:{" "}
-                              <span className="font-semibold">
-                                {supplierMargins[sup.id]}%
-                              </span>
+                              {hasExistingMargin && (
+                                <ActionButton
+                                  icon={Trash2}
+                                  onClick={() => handleDeleteMargin(sup)}
+                                  disabled={loadingSuppliers[sup.id]}
+                                  loading={
+                                    loadingSuppliers[sup.id] === "deleting"
+                                  }
+                                  variant="danger"
+                                  size="sm"
+                                />
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </td>
 
@@ -795,49 +971,133 @@ const AlSuppliers = () => {
                       <td className="px-3 py-3">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <Percent className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                            <div className="relative flex flex-col gap-2">
+                              <Percent
+                                className={`absolute ${
+                                  hasExistingDiscount ? "top-4" : "top-1/2"
+                                } left-2  -translate-y-1/2 w-3.5 h-3.5 text-gray-400`}
+                              />
                               <input
                                 type="number"
-                                className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                placeholder="Discount %"
+                                className="sm:w-24 w-20 pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="Discount"
                                 value={discounts[sup.id] || ""}
                                 onChange={(e) =>
                                   handleDiscountChange(sup.id, e.target.value)
                                 }
                                 disabled={loadingSuppliers[sup.id]}
                               />
+                              {hasExistingDiscount && (
+                                <div className="text-xs text-gray-600">
+                                  Current:{" "}
+                                  <span className="font-semibold">
+                                    {supplierDiscounts[sup.id]}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
+                            <div className="flex flex-col gap-2">
+                              <ActionButton
+                                icon={hasExistingDiscount ? Pen : Plus}
+                                label={hasExistingDiscount ? "" : ""}
+                                onClick={() => handleAddDiscount(sup)}
+                                disabled={loadingSuppliers[sup.id]}
+                                loading={loadingSuppliers[sup.id] === "adding"}
+                                variant="primary"
+                                size="sm"
+                              />
+                              {hasExistingDiscount && (
+                                <ActionButton
+                                  icon={Trash2}
+                                  onClick={() => handleDeleteDiscount(sup)}
+                                  disabled={loadingSuppliers[sup.id]}
+                                  loading={
+                                    loadingSuppliers[sup.id] === "deleting"
+                                  }
+                                  variant="danger"
+                                  size="sm"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td
+                        className={`px-3 py-3 whitespace-nowrap text-left ${
+                          note ? "text-gray-900" : "text-gray-500"
+                        } text-sm`}
+                      >
+                        {note?.length > 15
+                          ? `${note.slice(0, 15)}...`
+                          : note || "No notes"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="space-y-2">
+                          {/* Tags Display */}
+                          <div className="flex flex-wrap gap-1 min-h-[24px]">
+                            {supplierData
+                              ?.find(
+                                (item) => Number(item.supplierId) === sup.id
+                              )
+                              ?.tags?.slice(0, 2)
+                              .map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                >
+                                  {tag.tag}
+                                  <button
+                                    onClick={() =>
+                                      handleRemoveTag(sup.id, tag.tag)
+                                    }
+                                    className="hover:text-blue-600"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            {supplierData?.find(
+                              (item) => Number(item.supplierId) === sup.id
+                            )?.tags?.length > 2 && (
+                              <span className="text-xs text-gray-500">
+                                +
+                                {supplierData.find(
+                                  (item) => Number(item.supplierId) === sup.id
+                                ).tags.length - 2}{" "}
+                                more
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Add Tag Input */}
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              className="w-24 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              placeholder="Add tag"
+                              value={newTags[sup.id] || ""}
+                              onChange={(e) =>
+                                setNewTags((prev) => ({
+                                  ...prev,
+                                  [sup.id]: e.target.value,
+                                }))
+                              }
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  handleAddTag(sup.id, newTags[sup.id]);
+                                }
+                              }}
+                            />
                             <ActionButton
-                              icon={hasExistingDiscount ? Plus : Plus}
-                              label={hasExistingDiscount ? "Update" : "Add"}
-                              onClick={() => handleAddDiscount(sup)}
-                              disabled={loadingSuppliers[sup.id]}
-                              loading={loadingSuppliers[sup.id] === "adding"}
+                              icon={Plus}
+                              onClick={() =>
+                                handleAddTag(sup.id, newTags[sup.id])
+                              }
                               variant="primary"
                               size="sm"
                             />
-                            {hasExistingDiscount && (
-                              <ActionButton
-                                icon={Trash2}
-                                onClick={() => handleDeleteDiscount(sup)}
-                                disabled={loadingSuppliers[sup.id]}
-                                loading={
-                                  loadingSuppliers[sup.id] === "deleting"
-                                }
-                                variant="danger"
-                                size="sm"
-                              />
-                            )}
                           </div>
-                          {hasExistingDiscount && (
-                            <div className="text-xs text-gray-600">
-                              Current:{" "}
-                              <span className="font-semibold">
-                                {supplierDiscounts[sup.id]}%
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </td>
 

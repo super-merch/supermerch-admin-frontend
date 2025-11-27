@@ -122,7 +122,6 @@ const AlProductDetail = () => {
       setUpdatingName(false);
     }
   };
-
   // keyboard handler for name input: Enter = save, Escape = cancel
   const onNameKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -600,11 +599,11 @@ const AlProductDetail = () => {
                       <Hash className="w-4 h-4 text-gray-500" />
                     </div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product ID
+                      Product SKU
                     </span>
                   </div>
                   <span className="text-base font-bold text-gray-900 font-mono">
-                    {product?.meta?.id || "N/A"}
+                    {product?.overview?.sku_number || "N/A"}
                   </span>
                 </div>
 

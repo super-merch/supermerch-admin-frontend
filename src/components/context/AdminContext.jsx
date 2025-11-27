@@ -16,11 +16,11 @@ const AdminContextProvider = (props) => {
   const [allProductLoading, setAllProductLoading] = useState(true);
   const [unseenMessages, setUnseenMessages] = useState(0);
   const [userOrders, setUserOrders] = useState([]);
-
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [prodLength, setProdLength] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
+  const [orderCount, setOrderCount] = useState({});
 
   const [aToken, setAToken] = useState(
     localStorage.getItem("aToken") ? localStorage.getItem("aToken") : false
@@ -163,12 +163,12 @@ const AdminContextProvider = (props) => {
   const [suppliersPagination, setSuppliersPagination] = useState(null);
   const [supplierCount, setSupplierCount] = useState(0);
 
-  const fetchSuppliers = async (page = 1,limit) => {
+  const fetchSuppliers = async (page = 1,limit,tag) => {
     setSupplierLoading(true);
 
     try {
       const response = await fetch(
-        `${backednUrl}/api/supplier-products?page=${page}&limit=${limit||15}`
+        `${backednUrl}/api/supplier-products?page=${page}&limit=${limit||15}${tag ? `&tag=${tag}` : ""}`
       );
       if (!response.ok) throw new Error("Failed to fetch Suppliers");
 
@@ -316,7 +316,7 @@ const AdminContextProvider = (props) => {
         ? {}
         : {
             page,
-            limit: limit || 15,
+            limit: 10,
             search: filters.searchTerm || "",
             status: filters.filterStatus || "All",
             date: filters.filterDate || "",
@@ -330,6 +330,12 @@ const AdminContextProvider = (props) => {
       });
 
       setOrders(response.data.data);
+      setOrderCount({
+        total: response.data.pagination.totalOrders,
+        pending: response.data.pendingOrders,
+        cancelled: response.data.cancelledOrders,
+        delivered: response.data.deliveredOrders,
+      })
       
       setPagination(response.data.pagination || null);
       setLoading(false);
@@ -835,6 +841,8 @@ const fetchSearchedProduct = async (searchTerm, sortOption, supplier,category, p
     setQuoteLoading,
     updateOrder,
     fetchTrendingProduct,
+    setOrderCount,
+    orderCount,
     trendingProducts,
     fetchBestSellerProduct,
     bestSellerProducts,

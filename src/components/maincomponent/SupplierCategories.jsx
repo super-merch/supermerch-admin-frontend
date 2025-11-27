@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from "react";
+import { Eye, EyeOff, Plus, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Table,
@@ -25,6 +26,43 @@ export default function SupplierCategories() {
   const [margins, setMargins] = useState({}); // Track margin input per category
   const [categoryMargins, setCategoryMargins] = useState({}); // Track existing margins from DB
   const [itemCount, setItemCount] = useState(0);
+  const [supplierData, setSupplierData] = useState({
+    email: "",
+    password: "",
+    notes: "",
+    tags: [],
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const [isEditingSupplierData, setIsEditingSupplierData] = useState(false);
+  const [supplierDataLoading, setSupplierDataLoading] = useState(false);
+  const fetchSupplierData = async () => {
+    try {
+      setSupplierDataLoading(true);
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/supplier/get-supplier?supplierId=${supplier.id}`,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          setSupplierData({
+            email: data.data.email || "",
+            password: data.data.password || "",
+            notes: data.data.notes || "",
+            tags: data.data.tags || [],
+          });
+          console.log(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching supplier data:", error);
+    } finally {
+      setSupplierDataLoading(false);
+    }
+  };
   useEffect(() => {
     fetchSupplierProductNumber(supplier.id).then((count) => {
       setItemCount(count);
@@ -42,11 +80,60 @@ export default function SupplierCategories() {
         loadAllAvailableCategories(),
         loadDeactivatedCategories(),
         fetchCategoryMargins(),
+        fetchSupplierData(),
       ]);
     } finally {
       setLoading(false);
     }
   }
+  const handleSaveSupplierData = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/supplier/create-supplier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+            ...supplierData,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Supplier data saved successfully");
+        setIsEditingSupplierData(false);
+        fetchSupplierData();
+      } else {
+        toast.error("Failed to save supplier data");
+      }
+    } catch (error) {
+      console.error("Error saving supplier data:", error);
+      toast.error("Error saving supplier data");
+    }
+  };
+
+  const handleAddTag = () => {
+    if (
+      newTag.trim() &&
+      !supplierData.tags.some((t) => t.tag === newTag.trim())
+    ) {
+      setSupplierData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, { tag: newTag.trim() }],
+      }));
+      setNewTag("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setSupplierData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t.tag !== tagToRemove),
+    }));
+  };
 
   // Fetch category margins from API
   const fetchCategoryMargins = async () => {
@@ -312,6 +399,160 @@ export default function SupplierCategories() {
 
   return (
     <div className="px-6 py-4">
+      {/* Supplier Data Section */}
+      <div className="mb-6 p-4 relative bg-white border rounded-lg shadow-sm">
+        {supplierDataLoading && (
+          <div className="absolute w-full h-full bg-black/10 backdrop-blur-sm top-0 left-0 flex justify-center items-center">
+            Loading...
+          </div>
+        )}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Supplier Information</h2>
+          <Button
+            onClick={() => setIsEditingSupplierData(!isEditingSupplierData)}
+            variant="outline"
+            size="sm"
+          >
+            {isEditingSupplierData ? "Cancel" : "Edit"}
+          </Button>
+        </div>
+
+        {isEditingSupplierData ? (
+          <div className="space-y-4">
+            {/* Email Input */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                className="w-full p-2 border rounded"
+                placeholder="Enter email"
+                value={supplierData.email}
+                onChange={(e) =>
+                  setSupplierData((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="w-full p-2 border rounded pr-10"
+                  placeholder="Enter password"
+                  value={supplierData.password}
+                  onChange={(e) =>
+                    setSupplierData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Notes Input */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Note</label>
+              <textarea
+                className="w-full p-2 border rounded"
+                placeholder="Enter notes"
+                rows="3"
+                value={supplierData.notes}
+                onChange={(e) =>
+                  setSupplierData((prev) => ({
+                    ...prev,
+                    notes: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Save Button */}
+            <Button onClick={handleSaveSupplierData} className="w-full">
+              Save Supplier Data
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3 grid grid-cols-2 ">
+            {/* Display Mode */}
+            {supplierData.email && (
+              <div>
+                <span className="text-base font-medium text-gray-600">
+                  Email:{" "}
+                </span>
+                <span className="text-base">{supplierData.email}</span>
+              </div>
+            )}
+            {supplierData.password && (
+              <div>
+                <span className="text-base font-medium text-gray-600">
+                  Password:{" "}
+                </span>
+                <span className="text-base inline-flex items-center gap-2">
+                  {showPassword ? supplierData.password : "••••••••"}
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </span>
+              </div>
+            )}
+            {supplierData.notes && (
+              <div>
+                <span className="text-base font-medium text-gray-600">
+                  Note:{" "}
+                </span>
+                <p className="text-base mt-1 inline text-gray-700">
+                  {supplierData.notes}
+                </p>
+              </div>
+            )}
+            {supplierData.tags.length>0 && (
+              <div>
+                <span className="text-base font-medium text-gray-600">
+                  Tags:{" "}
+                </span>
+                <div className="flex gap-2" >
+
+                {supplierData.tags.map((tag) => (
+                  <p className="bg-blue-300 px-3 inline rounded-2xl py-1">{tag.tag}</p>
+                ))}
+                </div>
+              </div>
+            )}
+            {!supplierData.email &&
+              !supplierData.password &&
+              !supplierData.notes &&
+              supplierData.tags.length === 0 && (
+                <p className="text-base text-gray-500">
+                  No supplier information added yet. Click Edit to add details.
+                </p>
+              )}
+          </div>
+        )}
+      </div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">
           Supplier Categories - {supplier?.name || "Unknown Supplier"}
