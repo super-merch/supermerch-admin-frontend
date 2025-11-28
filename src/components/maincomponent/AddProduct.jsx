@@ -813,14 +813,6 @@ const removePrintMethod = (groupIndex) => {
     </button>
   </div>
 
-  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-    <p className="text-sm text-blue-800">
-      <strong>How Print Methods Work:</strong>
-      <br />• Each print method is a separate price group
-      <br />• First group (index 0) is the base unbranded pricing
-      <br />• Additional groups contain decoration options with their pricing
-    </p>
-  </div>
 
   <div className="space-y-6">
     {formData.product.prices.price_groups.map((group, groupIndex) => {
