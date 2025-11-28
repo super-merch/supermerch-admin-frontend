@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
@@ -70,8 +70,11 @@ const AlSuppliers = () => {
       console.error("Error fetching supplier discounts:", err);
     }
   };
+  const isSearchUpdating = useRef(false);
+  const isFilterUpdating = useRef(false);
+
   useEffect(() => {
-    if (!searchTerm) {
+    if (!searchTerm && (!selectedTagFilter || selectedTagFilter === "all")) {
       // If search is cleared, fetch regular suppliers
       setIsSearchMode(false);
       fetchSuppliers(1);
@@ -80,8 +83,15 @@ const AlSuppliers = () => {
     }
 
     const search = async () => {
+      // Clear tag filter only if it's not "all"
+      if (selectedTagFilter && selectedTagFilter !== "all") {
+        isSearchUpdating.current = true;
+        setSelectedTagFilter("all");
+      }
+
       setLoading(true);
       setIsSearchMode(true);
+
       try {
         const response = await axios.post(
           `${
@@ -94,29 +104,48 @@ const AlSuppliers = () => {
             },
           }
         );
+
         if (response.status === 200) {
           setSuppliers(response.data.data);
-          setLoading(false);
-          setMySearch("");
-          return;
-        } else {
-          setLoading(false);
-          setMySearch("");
-          return;
         }
       } catch (error) {
         console.log(error);
+      } finally {
         setLoading(false);
         setMySearch("");
-        return;
+        isSearchUpdating.current = false;
       }
     };
+
     search();
   }, [searchTerm]);
+
   useEffect(() => {
+    // Skip if this change was triggered by search
+    if (isSearchUpdating.current) {
+      return;
+    }
+
     if (selectedTagFilter && selectedTagFilter !== "all") {
+      // Clear search term when filter is applied
+      if (searchTerm) {
+        isFilterUpdating.current = true;
+        setSearchTerm("");
+      }
+
       console.log(selectedTagFilter);
-      fetchSuppliers(1,100,selectedTagFilter)
+      fetchSuppliers(1, 100, selectedTagFilter);
+      isFilterUpdating.current = false;
+      return;
+    } else if (selectedTagFilter === "all") {
+      // Clear search term when "all" is selected
+      if (searchTerm) {
+        isFilterUpdating.current = true;
+        setSearchTerm("");
+      }
+
+      fetchSuppliers(1);
+      isFilterUpdating.current = false;
       return;
     }
   }, [selectedTagFilter]);
@@ -152,7 +181,7 @@ const AlSuppliers = () => {
               });
             }
           });
-          console.log(data.data)
+          console.log(data.data);
           setTagFilters(tags);
         }
       }
@@ -680,19 +709,30 @@ const AlSuppliers = () => {
         <div className="flex flex-col md:flex-row gap-2 mb-2">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search suppliers by name..."
-              value={mySearch}
-              onChange={(e) => setMySearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setSearchTerm(mySearch);
-                }
-              }}
-              className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            />
+            <div className="flex items-center gap-3" >
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search suppliers by name..."
+                value={mySearch}
+                onChange={(e) => setMySearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setSearchTerm(mySearch);
+                  }
+                }}
+                className="w-64 pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+            </div>
             {mySearch && (
               <button
                 onClick={() => {
@@ -746,15 +786,6 @@ const AlSuppliers = () => {
           </div>
 
           {/* Clear Search */}
-          {searchTerm && (
-            <button
-              onClick={clearSearch}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Clear
-            </button>
-          )}
         </div>
         <div className="flex justify-between items-center">
           <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
@@ -772,6 +803,7 @@ const AlSuppliers = () => {
             onChange={(e) => setSelectedTagFilter(e.target.value)}
             className="w-48 border-2 p-1 border-black"
             id=""
+            value={selectedTagFilter}
           >
             <option value="all">All</option>
             {tagFilters?.map((tag, index) => (
@@ -831,9 +863,6 @@ const AlSuppliers = () => {
                   </th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Actions
-                  </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                    Categories
                   </th>
                 </tr>
               </thead>
@@ -1120,19 +1149,6 @@ const AlSuppliers = () => {
                             size="sm"
                           />
                         )}
-                      </td>
-
-                      {/* View Categories */}
-                      <td className="px-3 py-3 whitespace-nowrap text-center">
-                        <ActionButton
-                          icon={FolderTree}
-                          label="View"
-                          onClick={() =>
-                            handleViewCategories(sup, supplierMargins[sup.id])
-                          }
-                          variant="primary"
-                          size="sm"
-                        />
                       </td>
                     </tr>
                   );

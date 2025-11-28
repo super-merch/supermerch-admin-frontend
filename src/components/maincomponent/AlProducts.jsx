@@ -565,18 +565,9 @@ const AlProducts = () => {
               Manage and track all products
             </p>
           </div>
-          <ActionButton
-            icon={RefreshCw}
-            label="Refresh"
-            onClick={() => {
-              if (isSearching) {
-                clearSearch();
-              } else {
-                setCurrentPage(1);
-              }
-            }}
-            variant="secondary"
-          />
+          <button onClick={()=>navigate("/add-product")} className="bg-blue-600 rounded-lg px-4 text-white py-2" >
+            + Add Product
+          </button>
         </div>
 
         {/* Stats Cards */}
@@ -894,7 +885,7 @@ const AlProducts = () => {
                                 </div>
                               ) : (
                                 <>
-                                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">
+                                  <span onClick={()=>handleViewProduct(product)} className="text-sm font-medium cursor-pointer text-gray-900 flex-1 truncate">
                                     {displayName}
                                   </span>
                                   <ActionButton

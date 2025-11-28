@@ -592,14 +592,14 @@ const AlProductDetail = () => {
               </div>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-1.5 bg-gray-100 rounded-lg">
                       <Hash className="w-4 h-4 text-gray-500" />
                     </div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product SKU
+                      Website product SKU
                     </span>
                   </div>
                   <span className="text-base font-bold text-gray-900 font-mono">
@@ -613,7 +613,7 @@ const AlProductDetail = () => {
                       <Hash className="w-4 h-4 text-gray-500" />
                     </div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product Code
+                      Supplier Code
                     </span>
                   </div>
                   <span className="text-base font-bold text-gray-900 font-mono">
@@ -621,7 +621,7 @@ const AlProductDetail = () => {
                   </span>
                 </div>
 
-                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all md:col-span-2">
+                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-1.5 bg-gray-100 rounded-lg">
                       <Building className="w-4 h-4 text-gray-500" />
@@ -920,7 +920,7 @@ const AlProductDetail = () => {
                       </p>
                     </div>
                     <span className="text-sm font-bold text-gray-900">
-                     - ${newBasePrice * (additionalDiscount / 100)}
+                     - ${(newBasePrice * (additionalDiscount / 100)).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -937,7 +937,7 @@ const AlProductDetail = () => {
                       </p>
                     </div>
                     <span className="text-sm font-bold text-gray-900">
-                     + ${(discountPrice - (discountMethod !== "product" && (newBasePrice * (additionalDiscount / 100)) )) * (additionalMargin / 100)}
+                     + ${((discountPrice - (discountMethod !== "product" && (newBasePrice * (additionalDiscount / 100)) )) * (additionalMargin / 100)).toFixed(2)}
                     </span>
                   </div>
                 </div>
