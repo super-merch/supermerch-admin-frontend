@@ -47,6 +47,18 @@ const User = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [mySearch, setMySearch] = useState("");
+  const initialAdvancedFilters = {
+    orderMonth: "",
+    orderYear: "",
+    orderAmountMin: "",
+    orderAmountMax: "",
+    orderCountMin: "",
+    orderCountMax: "",
+  };
+  const [advancedFilters, setAdvancedFilters] = useState(
+    initialAdvancedFilters
+  );
+  const [appliedFilters, setAppliedFilters] = useState(initialAdvancedFilters);
 
   useEffect(() => {
     fetchUsers();
@@ -56,14 +68,17 @@ const User = () => {
   useEffect(() => {
     const filters = {
       searchTerm,
+      ...Object.fromEntries(
+        Object.entries(appliedFilters).filter(([, value]) => value !== "")
+      ),
     };
     fetchUsers(currentPage, filters);
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm, appliedFilters]);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, appliedFilters]);
 
   const navigate = useNavigate();
 
@@ -153,19 +168,46 @@ const User = () => {
   };
 
   const getUserStatus = (user) => {
-    if (typeof user?.isActive === "boolean") {
-      return user.isActive ? "active" : "inactive";
+    if (user) {
+      return user.orderStats?.totalOrders > 0 ? "active" : "inactive";
     }
-    if (typeof user?.active === "boolean") {
-      return user.active ? "active" : "inactive";
-    }
-    if (typeof user?.status === "string") {
-      return user.status.toLowerCase();
-    }
+
     return null;
   };
 
   const totalUsers = usersPagination?.totalUsers ?? users.length ?? 0;
+  const handleAdvancedFilterChange = (name, value) => {
+    setAdvancedFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const applyAdvancedFilters = () => {
+    setAppliedFilters(advancedFilters);
+  };
+
+  const clearAdvancedFilters = () => {
+    setAdvancedFilters(initialAdvancedFilters);
+    setAppliedFilters(initialAdvancedFilters);
+  };
+
+  const monthOptions = [
+    { label: "All", value: "" },
+    { label: "January", value: "1" },
+    { label: "February", value: "2" },
+    { label: "March", value: "3" },
+    { label: "April", value: "4" },
+    { label: "May", value: "5" },
+    { label: "June", value: "6" },
+    { label: "July", value: "7" },
+    { label: "August", value: "8" },
+    { label: "September", value: "9" },
+    { label: "October", value: "10" },
+    { label: "November", value: "11" },
+    { label: "December", value: "12" },
+  ];
+
   const activeUsers =
     usersPagination?.activeUsers ??
     users.filter((user) => getUserStatus(user) === "active").length;
@@ -291,27 +333,76 @@ const User = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Users Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and view all registered users
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={RefreshCw}
-            label="Refresh"
             onClick={() => fetchUsers(currentPage, { searchTerm })}
             variant="outline"
+            size="sm"
+            ariaLabel="Refresh users"
+            className="!px-2 !py-1"
           />
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3">
+          {/* Filters Section */}
+          <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
+            <div className="flex flex-col md:flex-row gap-2 mb-2">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or phone number..."
+                  value={mySearch}
+                  onChange={(e) => setMySearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setSearchTerm(mySearch);
+                    }
+                  }}
+                  className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+                {mySearch && (
+                  <button
+                    onClick={() => {
+                      setMySearch("");
+                      setSearchTerm("");
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Clear Search */}
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setMySearch("");
+                  }}
+                  className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
+              Showing <span className="font-semibold">{users.length}</span> of{" "}
+              <span className="font-semibold">
+                {usersPagination?.totalUsers || 0}
+              </span>{" "}
+              users
+              {searchTerm && (
+                <span className="ml-1 text-blue-600">(filtered)</span>
+              )}
+            </div>
+          </div>
           <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
@@ -350,60 +441,118 @@ const User = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Filters Section */}
-      <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
-        <div className="flex flex-col md:flex-row gap-2 mb-2">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone number..."
-              value={mySearch}
-              onChange={(e) => setMySearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setSearchTerm(mySearch);
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Month
+              </label>
+              <select
+                value={advancedFilters.orderMonth}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderMonth", e.target.value)
                 }
-              }}
-              className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            />
-            {mySearch && (
-              <button
-                onClick={() => {
-                  setMySearch("");
-                  setSearchTerm("");
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+                {monthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Year
+              </label>
+              <input
+                type="number"
+                min="2000"
+                max="9999"
+                value={advancedFilters.orderYear}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderYear", e.target.value)
+                }
+                placeholder="e.g., 2024"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Count (Min)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={advancedFilters.orderCountMin}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderCountMin", e.target.value)
+                }
+                placeholder="0"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
 
-          {/* Clear Search */}
-          {searchTerm && (
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setMySearch("");
-              }}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Clear
-            </button>
-          )}
-        </div>
-        <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
-          Showing <span className="font-semibold">{users.length}</span> of{" "}
-          <span className="font-semibold">
-            {usersPagination?.totalUsers || 0}
-          </span>{" "}
-          users
-          {searchTerm && <span className="ml-1 text-blue-600">(filtered)</span>}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Count (Max)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={advancedFilters.orderCountMax}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderCountMax", e.target.value)
+                }
+                placeholder="100"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Amount (Min)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={advancedFilters.orderAmountMin}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderAmountMin", e.target.value)
+                }
+                placeholder="0"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Order Amount (Max)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={advancedFilters.orderAmountMax}
+                onChange={(e) =>
+                  handleAdvancedFilterChange("orderAmountMax", e.target.value)
+                }
+                placeholder="10000"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <ActionButton
+              label="Apply Filters"
+              onClick={applyAdvancedFilters}
+              variant="primary"
+              size="sm"
+            />
+            <ActionButton
+              label="Reset Filters"
+              onClick={clearAdvancedFilters}
+              variant="outline"
+              size="sm"
+            />
+          </div>
         </div>
       </div>
 
@@ -428,14 +577,23 @@ const User = () => {
                   <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
                     #
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[150px]">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider ">
                     User
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider ">
                     Contact
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Location
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Orders
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Pending Orders
+                  </th>{" "}
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Completed Orders
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Joined
@@ -452,7 +610,7 @@ const User = () => {
                     className="group hover:bg-teal-50/30 transition-colors border-b border-gray-100"
                   >
                     {/* Serial Number */}
-                    <td className="px-3 py-3 whitespace-nowrap text-center">
+                    <td className="px-3 py-3 whitespace-nowrap text-center ">
                       <span className="text-sm font-medium text-gray-600">
                         {(currentPage - 1) * 15 + index + 1}
                       </span>
@@ -460,11 +618,14 @@ const User = () => {
 
                     {/* User Name */}
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                      <div
+                        className="flex items-center gap-2 hover:cursor-pointer"
+                        onClick={() => handleViewDetails(user)}
+                      >
                         <div className="p-1.5 bg-gray-100 rounded-lg">
                           <UserIcon className="w-3.5 h-3.5 text-gray-500" />
                         </div>
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span className="text-sm font-semibold text-gray-900 hover:underline">
                           {user.name || "N/A"}
                         </span>
                       </div>
@@ -498,6 +659,21 @@ const User = () => {
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="text-xs text-">
+                        {user?.orderStats?.totalOrders || 0}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="text-xs text-yellow-600">
+                        {user?.orderStats?.totalPending || 0}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="text-xs text-green-600">
+                        {user?.orderStats?.totalCompleted || 0}
+                      </span>
                     </td>
 
                     {/* Joined Date */}

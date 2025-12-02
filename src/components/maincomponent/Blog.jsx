@@ -139,22 +139,14 @@ const Blog = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Blogs Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and view all blog posts
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={Plus}
             label="Add Blog"
             onClick={() => navigate("/add-blog")}
             variant="primary"
+            size="sm"
           />
         </div>
 

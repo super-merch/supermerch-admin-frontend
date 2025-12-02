@@ -43,25 +43,30 @@ export default function Notifications() {
     setSelectAll(false);
     setSelectedNotifications([]);
   }, [page]);
-  const showConfirmModal = (message, onConfirm, confirmText = "Confirm", variant = "danger") => {
-  setConfirmModal({
-    isOpen: true,
+  const showConfirmModal = (
     message,
     onConfirm,
-    confirmText,
-    variant
-  });
-};
+    confirmText = "Confirm",
+    variant = "danger"
+  ) => {
+    setConfirmModal({
+      isOpen: true,
+      message,
+      onConfirm,
+      confirmText,
+      variant,
+    });
+  };
 
-const closeConfirmModal = () => {
-  setConfirmModal({
-    isOpen: false,
-    message: "",
-    onConfirm: () => {},
-    confirmText: "Confirm",
-    variant: "danger"
-  });
-};
+  const closeConfirmModal = () => {
+    setConfirmModal({
+      isOpen: false,
+      message: "",
+      onConfirm: () => {},
+      confirmText: "Confirm",
+      variant: "danger",
+    });
+  };
 
   // Sync selectAll state with selectedNotifications
   useEffect(() => {
@@ -104,8 +109,8 @@ const closeConfirmModal = () => {
     );
   };
 
-  const markNotificationSeen = async (id,dontShowModel) => {
-    if(dontShowModel){
+  const markNotificationSeen = async (id, dontShowModel) => {
+    if (dontShowModel) {
       try {
         await axios.post(
           `${
@@ -120,7 +125,7 @@ const closeConfirmModal = () => {
         console.error("Error marking notifications as seen:", error);
         toast.error("Failed to mark notification as read");
       }
-      return
+      return;
     }
     showConfirmModal(
       "Are you sure you want to mark this notification as read?",
@@ -303,7 +308,7 @@ const closeConfirmModal = () => {
   };
 
   const notificationNavigate = (type, id, notiId) => {
-    markNotificationSeen(id,true);
+    markNotificationSeen(id, true);
     if (!type) return;
     if (type === "order") {
       navigate("/order-details/" + notiId);

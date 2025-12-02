@@ -72,20 +72,10 @@ export default function Categories() {
           background: #94a3b8;
         }
       `}</style>
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Categories Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and view all product categories and subcategories
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={RefreshCw}
-            label="Refresh"
             onClick={async () => {
               setLoading(true);
               const data = await fetchCategories();
@@ -93,6 +83,9 @@ export default function Categories() {
               setLoading(false);
             }}
             variant="outline"
+            size="sm"
+            ariaLabel="Refresh categories"
+            className="!px-2 !py-1"
           />
         </div>
 

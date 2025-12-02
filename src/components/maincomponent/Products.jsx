@@ -345,15 +345,14 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Order Details</h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Order ID: {checkout.orderId || checkout._id}
-            </p>
-          </div>
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <p className="text-xs font-semibold text-gray-600">
+            Order ID:{" "}
+            <span className="font-mono text-gray-900">
+              {checkout.orderId || checkout._id}
+            </span>
+          </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.history.back()}

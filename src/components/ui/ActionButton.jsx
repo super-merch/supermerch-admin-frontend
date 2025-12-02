@@ -10,6 +10,7 @@ const ActionButton = ({
   loading = false,
   className = "",
   type = "button",
+  ariaLabel,
 }) => {
   const variants = {
     primary: "bg-teal-600 hover:bg-teal-700 text-white",
@@ -31,6 +32,7 @@ const ActionButton = ({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-label={ariaLabel || label}
       className={`flex items-center gap-1.5 font-medium rounded-lg transition-colors ${
         variants[variant]
       } ${sizes[size]} ${

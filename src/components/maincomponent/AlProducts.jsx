@@ -82,14 +82,14 @@ const AlProducts = () => {
       setAustraliaCount(data2.australiaCount);
       try {
         let data;
-        
+
         // Handle search mode first
 
         if (searchTerm && isSearching) {
           data = await fetchSearchedProduct(
             searchTerm,
             sortOption,
-            supplier !== "all"? supplier : null,
+            supplier !== "all" ? supplier : null,
             selectedCategory !== "all" ? selectedCategory : null,
             currentPage,
             ITEMS_PER_PAGE
@@ -97,29 +97,45 @@ const AlProducts = () => {
           setProducts(data.data);
           return;
         }
-        
 
         // Handle different sort options
         switch (sortOption) {
           case "trending":
-            setSelectedCategory("all")
-            setSupplier("all")
-            data = await fetchTrendingProduct(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+            setSelectedCategory("all");
+            setSupplier("all");
+            data = await fetchTrendingProduct(
+              currentPage,
+              ITEMS_PER_PAGE,
+              supplier !== "all" ? supplier : null
+            );
             setProducts(data.data);
             break;
-            case "australia":
-            setSelectedCategory("all")
-            data = await fetchAustraliaProducts(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+          case "australia":
+            setSelectedCategory("all");
+            data = await fetchAustraliaProducts(
+              currentPage,
+              ITEMS_PER_PAGE,
+              supplier !== "all" ? supplier : null
+            );
             setProducts(data.data);
             break;
-            case "24hrProducts":
-            setSelectedCategory("all")
-            data = await fetchProductionProducts(currentPage, ITEMS_PER_PAGE, supplier !== "all"? supplier : null);
+          case "24hrProducts":
+            setSelectedCategory("all");
+            data = await fetchProductionProducts(
+              currentPage,
+              ITEMS_PER_PAGE,
+              supplier !== "all" ? supplier : null
+            );
             setProducts(data.data);
             break;
           case "all":
           default:
-            data = await fetchProducts(currentPage, ITEMS_PER_PAGE, supplier, selectedCategory !== "all" ? selectedCategory : null);
+            data = await fetchProducts(
+              currentPage,
+              ITEMS_PER_PAGE,
+              supplier,
+              selectedCategory !== "all" ? selectedCategory : null
+            );
             setProducts(data.data);
             break;
         }
@@ -132,7 +148,7 @@ const AlProducts = () => {
     };
 
     fetchData();
-  }, [currentPage, sortOption, selectedCategory, supplier, localSearch  ]);
+  }, [currentPage, sortOption, selectedCategory, supplier, localSearch]);
 
   // Bulk selection handlers
   const handleBulkSelect = (productId) => {
@@ -223,8 +239,8 @@ const AlProducts = () => {
   };
 
   const paginationTotal = useMemo(() => {
-  return totalApiPages || 1;
-}, [totalApiPages]);
+    return totalApiPages || 1;
+  }, [totalApiPages]);
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
 
@@ -554,20 +570,22 @@ const AlProducts = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Products Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and track all products
-            </p>
-          </div>
-          <button onClick={()=>navigate("/add-product")} className="bg-blue-600 rounded-lg px-4 text-white py-2" >
-            + Add Product
-          </button>
+        <div className="flex justify-end mb-2">
+          <ActionButton
+            icon={RefreshCw}
+            onClick={() => {
+              if (isSearching) {
+                clearSearch();
+              } else {
+                setCurrentPage(1);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            ariaLabel="Refresh products"
+            className="!px-2 !py-1"
+          />
         </div>
 
         {/* Stats Cards */}
@@ -843,7 +861,10 @@ const AlProducts = () => {
 
                           {/* Product Name */}
                           <td className="px-3 py-3">
-                            <div className="flex items-center gap-2 min-w-[200px]">
+                            <div
+                              className="flex items-center gap-2 min-w-[200px] hover:cursor-pointer hover:underline"
+                              onClick={() => handleViewProduct(product)}
+                            >
                               {isEditing ? (
                                 <div className="flex items-center gap-2 flex-1">
                                   <input
@@ -885,7 +906,10 @@ const AlProducts = () => {
                                 </div>
                               ) : (
                                 <>
-                                  <span onClick={()=>handleViewProduct(product)} className="text-sm font-medium cursor-pointer text-gray-900 flex-1 truncate">
+                                  <span
+                                    onClick={() => handleViewProduct(product)}
+                                    className="text-sm font-medium cursor-pointer text-gray-900 flex-1 truncate"
+                                  >
                                     {displayName}
                                   </span>
                                   <ActionButton
@@ -1047,7 +1071,7 @@ const AlProducts = () => {
           </div>
 
           {/* Pagination */}
-          { paginationTotal > 1 && (
+          {paginationTotal > 1 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
                 <button
