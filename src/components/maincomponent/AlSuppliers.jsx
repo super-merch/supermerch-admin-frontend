@@ -473,20 +473,10 @@ const AlSuppliers = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Suppliers Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage suppliers, margins, and discounts
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={RefreshCw}
-            label="Refresh"
             onClick={() => {
               if (ignored) {
                 fetchIgnoredSuppliers();
@@ -495,6 +485,9 @@ const AlSuppliers = () => {
               }
             }}
             variant="outline"
+            size="sm"
+            ariaLabel="Refresh suppliers"
+            className="!px-2 !py-1"
           />
         </div>
 

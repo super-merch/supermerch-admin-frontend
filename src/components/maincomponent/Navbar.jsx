@@ -1,11 +1,219 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import dummy from "../../assets/dummy.webp";
 import { useState, useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { Bell, LogOut, Settings, ChevronDown, User } from "lucide-react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { IoMdNotificationsOutline } from "react-icons/io";
+import { useNavigate, useLocation } from "react-router-dom";
+import Title from "../ui/Title";
+
+const TITLE_CONFIG = [
+  {
+    pattern: /^\/$/,
+    title: "Dashboard Overview",
+    subtitle: "Unified performance snapshot",
+  },
+  {
+    pattern: /^\/orders$/,
+    title: "Orders Management",
+    subtitle: "Track and fulfill every order",
+  },
+  {
+    pattern: /^\/order-details\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "Order Details",
+      subtitle: `Order #${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/user-orders\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "User Orders",
+      subtitle: `Customer ID ${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/all-users$/,
+    title: "All Users",
+    subtitle: "Complete customer roster",
+  },
+  {
+    pattern: /^\/users$/,
+    title: "Users Management",
+    subtitle: "Manage and view all registered users",
+  },
+  {
+    pattern: /^\/products$/,
+    title: "Products Catalog",
+    subtitle: "Manage every SKU in one place",
+  },
+  {
+    pattern: /^\/product\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "Product Details",
+      subtitle: `Product ID ${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/suppliers$/,
+    title: "Suppliers",
+    subtitle: "Manage vendor relationships",
+  },
+  {
+    pattern: /^\/supplier-categories$/,
+    title: "Supplier Categories",
+    subtitle: "Organize vendor catalog",
+  },
+  {
+    pattern: /^\/admin-quotes$/,
+    title: "Admin Quotes",
+    subtitle: "Manage customer quotations",
+  },
+  {
+    pattern: /^\/admin-quote-detail\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "Quote Details",
+      subtitle: `Quote #${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/add-admin-quote$/,
+    title: "Create Quote",
+    subtitle: "Build a new admin quote",
+  },
+  {
+    pattern: /^\/global-discount$/,
+    title: "Global Discount",
+    subtitle: "Manage storefront discounts",
+  },
+  {
+    pattern: /^\/global-margin$/,
+    title: "Global Margin",
+    subtitle: "Control store-wide margins",
+  },
+  {
+    pattern: /^\/shipping$/,
+    title: "Shipping Charges",
+    subtitle: "Configure logistics pricing",
+  },
+  {
+    pattern: /^\/add-coupen$/,
+    title: "Coupon Manager",
+    subtitle: "Create and monitor coupons",
+  },
+  {
+    pattern: /^\/quote$/,
+    title: "Quotes",
+    subtitle: "Manage quote requests",
+  },
+  {
+    pattern: /^\/quote-detail/,
+    title: "Quote Details",
+    subtitle: "Review request specifics",
+  },
+  {
+    pattern: /^\/reports$/,
+    title: "Reports",
+    subtitle: "Insights and analytics",
+  },
+  {
+    pattern: /^\/user-queries$/,
+    title: "User Queries",
+    subtitle: "Respond to customer questions",
+  },
+  {
+    pattern: /^\/user-query\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "Query Details",
+      subtitle: `Ticket #${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/blogs$/,
+    title: "Blog Manager",
+    subtitle: "Publish and curate content",
+  },
+  {
+    pattern: /^\/add-blog$/,
+    title: "Create Blog",
+    subtitle: "Draft a new article",
+  },
+  {
+    pattern: /^\/edit-blog\/([^/]+)/,
+    resolver: ([, id]) => ({
+      title: "Edit Blog",
+      subtitle: `Post ID ${formatId(id)}`,
+    }),
+  },
+  {
+    pattern: /^\/categories$/,
+    title: "Categories",
+    subtitle: "Organize catalog taxonomy",
+  },
+  {
+    pattern: /^\/category-detail/,
+    title: "Category Details",
+    subtitle: "View category structure",
+  },
+  {
+    pattern: /^\/notifications$/,
+    title: "Notifications",
+    subtitle: "Review system alerts",
+  },
+  {
+    pattern: /^\/settings$/,
+    title: "Settings",
+    subtitle: "Manage your profile",
+  },
+  {
+    pattern: /^\/change-pass$/,
+    title: "Change Password",
+    subtitle: "Secure your account",
+  },
+  {
+    pattern: /^\/analytics$/,
+    title: "Analytics",
+    subtitle: "Visualize performance",
+  },
+  {
+    pattern: /^\/user-orders$/,
+    title: "User Orders",
+    subtitle: "Order history for this customer",
+  },
+];
+
+const DEFAULT_TITLE = {
+  title: "SuperMerch Dashboard",
+  subtitle: "Unified admin workspace",
+};
+
+const formatId = (id = "") => id.slice(-6).toUpperCase() || "N/A";
+
+const toTitleCase = (text = "") =>
+  text.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getPageTitle = (pathname) => {
+  for (const config of TITLE_CONFIG) {
+    const match = pathname.match(config.pattern);
+    if (match) {
+      if (config.resolver) {
+        return config.resolver(match);
+      }
+      return { title: config.title, subtitle: config.subtitle };
+    }
+  }
+
+  const segments = pathname.split("/").filter(Boolean);
+  if (!segments.length) {
+    return DEFAULT_TITLE;
+  }
+
+  const fallbackTitle = toTitleCase(segments[segments.length - 1]);
+  return {
+    title: fallbackTitle || DEFAULT_TITLE.title,
+    subtitle: DEFAULT_TITLE.subtitle,
+  };
+};
 
 const Navbar = () => {
   const { setShowPopup, setUnseenMessages, unseenMessages } =
@@ -14,6 +222,7 @@ const Navbar = () => {
   const aToken = localStorage.getItem("aToken");
   const [isSeen, setIsSeen] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
 
@@ -40,11 +249,20 @@ const Navbar = () => {
     getNotificationStatus();
   }, []);
 
+  const { title: pageTitle, subtitle: pageSubtitle } = useMemo(
+    () => getPageTitle(location.pathname),
+    [location.pathname]
+  );
+
   return (
-    <header className="bg-white shadow p-4 flex items-center justify-between">
-      <h1 className="text-lg font-semibold text-gray-700">
-        SuperMerch Dashboard
-      </h1>
+    <header className="bg-white shadow p-1 px-4 flex items-center justify-between">
+      <Title
+        title={pageTitle}
+        subtitle={pageSubtitle}
+        className="max-w-xl"
+        titleClass="text-xl font-bold text-gray-900"
+        subtitleClass="text-xs text-gray-500"
+      />
       <div className="flex justify-center gap-4 items-center">
         <div className="relative">
           <div

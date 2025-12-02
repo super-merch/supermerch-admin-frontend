@@ -179,20 +179,15 @@ const UserQueries = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Queries</h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and respond to customer inquiries
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={RefreshCw}
-            label="Refresh"
             onClick={fetchQueries}
             variant="outline"
+            size="sm"
+            ariaLabel="Refresh queries"
+            className="!px-2 !py-1"
           />
         </div>
 
@@ -321,7 +316,10 @@ const UserQueries = () => {
 
                     {/* Name */}
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                      <div
+                        className="flex items-center gap-2 hover:cursor-pointer hover:underline"
+                        onClick={() => handleViewMore(query._id)}
+                      >
                         <div className="p-1.5 bg-gray-100 rounded-lg">
                           <User className="w-3.5 h-3.5 text-gray-500" />
                         </div>

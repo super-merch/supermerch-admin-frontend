@@ -136,19 +136,9 @@ const Charts = ({ isOpen }) => {
   return (
     <div
       className={`${
-        isOpen ? "max-w-[95%]" : "max-w-full"
+        isOpen ? "" : "max-w-full"
       } lg:px-6 md:px-4 px-3 w-full mx-auto py-6 bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 min-h-screen`}
     >
-      {/* Header Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Dashboard Overview
-        </h1>
-        <p className="text-gray-600">
-          Welcome back! Here's what's happening with your business today.
-        </p>
-      </div>
-
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-8">
         {statCards.map((stat, index) => {

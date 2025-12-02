@@ -248,31 +248,15 @@ const Orders = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {!allUsers.length > 0 ? "Orders Management" : "All Users"}
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and track all orders
-            </p>
-          </div>
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-2">
             <button
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
               onClick={() => navigate("/all-users")}
             >
               <Users className="w-4 h-4" />
               User Orders
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
-              onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
             </button>
             <button
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -282,6 +266,13 @@ const Orders = () => {
               Templates
             </button>
           </div>
+          <button
+            className="p-2 text-gray-600 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+            onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
+            title="Refresh orders"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

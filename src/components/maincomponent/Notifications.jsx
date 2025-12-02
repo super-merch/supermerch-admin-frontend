@@ -334,22 +334,15 @@ export default function Notifications() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
         <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Notifications
-              </h1>
-              <p className="text-sm text-gray-600 mt-0.5">
-                Manage and track all your system notifications
-              </p>
-            </div>
+          <div className="flex justify-end mb-2">
             <ActionButton
               icon={RefreshCw}
-              label="Refresh"
               onClick={() => fetchNotifications(page)}
               variant="outline"
+              size="sm"
+              ariaLabel="Refresh notifications"
+              className="!px-2 !py-1"
             />
           </div>
 

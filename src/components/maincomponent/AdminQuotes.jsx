@@ -271,7 +271,12 @@ export default function AdminQuotes() {
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {quote.quoteNumber}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <td
+                        className="px-4 py-4 whitespace-nowrap text-sm text-gray-700 hover:cursor-pointer hover:underline"
+                        onClick={() =>
+                          navigate(`/admin-quote-detail/${quote._id}`)
+                        }
+                      >
                         {quote.customer.name}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">

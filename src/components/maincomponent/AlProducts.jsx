@@ -1100,20 +1100,10 @@ const AlProducts = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Products Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and track all products
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <ActionButton
             icon={RefreshCw}
-            label="Refresh"
             onClick={() => {
               if (isSearching) {
                 clearSearch();
@@ -1121,7 +1111,10 @@ const AlProducts = () => {
                 setCurrentPage(1);
               }
             }}
-            variant="secondary"
+            variant="outline"
+            size="sm"
+            ariaLabel="Refresh products"
+            className="!px-2 !py-1"
           />
         </div>
 
@@ -1407,7 +1400,10 @@ const AlProducts = () => {
 
                           {/* Product Name */}
                           <td className="px-3 py-3">
-                            <div className="flex items-center gap-2 min-w-[200px]">
+                            <div
+                              className="flex items-center gap-2 min-w-[200px] hover:cursor-pointer hover:underline"
+                              onClick={() => handleViewProduct(product)}
+                            >
                               {isEditing ? (
                                 <div className="flex items-center gap-2 flex-1">
                                   <input

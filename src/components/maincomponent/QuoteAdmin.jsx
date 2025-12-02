@@ -102,25 +102,16 @@ const QuoteAdmin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
-      {/* Header */}
       <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Quotes Management
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Manage and track all customer quotes
-            </p>
-          </div>
+        <div className="flex justify-end mb-2">
           <button
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+            className="p-2 text-gray-600 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
             onClick={() => {
               listQuotes(currentPage, { searchTerm });
             }}
+            title="Refresh quotes"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh
           </button>
         </div>
       </div>
