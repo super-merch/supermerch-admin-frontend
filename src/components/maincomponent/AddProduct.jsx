@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Upload, X, Plus, Trash2, Save } from "lucide-react";
+import React, { useState, useEffect, useRef  } from "react";
+import { Upload, X, Plus, Trash2, Save, Search  } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AddProduct = () => {
@@ -54,7 +54,51 @@ const AddProduct = () => {
       },
     },
   });
+  const [categorySearch, setCategorySearch] = useState("");
+const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+const [filteredCategories, setFilteredCategories] = useState([]);
+const categoryDropdownRef = useRef(null);
 
+// Add this useEffect for debounced search
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (categorySearch.trim() === "") {
+      setFilteredCategories(categories);
+    } else {
+      const searchLower = categorySearch.toLowerCase();
+      const filtered = categories
+        .map((category) => ({
+          ...category,
+          subTypes: category.subTypes?.filter((sub) =>
+            sub.name.toLowerCase().includes(searchLower) ||
+            category.name.toLowerCase().includes(searchLower)
+          ),
+        }))
+        .filter((category) => category.subTypes && category.subTypes.length > 0);
+      setFilteredCategories(filtered);
+    }
+  }, 300); // 300ms debounce
+
+  return () => clearTimeout(timer);
+}, [categorySearch, categories]);
+
+// Add this useEffect to initialize filtered categories
+useEffect(() => {
+  setFilteredCategories(categories);
+}, [categories]);
+
+// Add this useEffect to handle click outside
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+      setShowCategoryDropdown(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+ 
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -136,30 +180,31 @@ const AddProduct = () => {
     }
   };
 
-  const handleCategoryChange = (e) => {
-    const [groupId, typeId] = e.target.value.split("|");
-    const category = categories.find((cat) => cat.id === groupId);
-    const subType = category?.subTypes.find((sub) => sub.id === typeId);
+  const handleCategoryChange = (groupId, typeId, categoryName, subTypeName) => {
+  const category = categories.find((cat) => cat.id === groupId);
+  const subType = category?.subTypes.find((sub) => sub.id === typeId);
 
-    if (category && subType) {
-      setFormData((prev) => ({
-        ...prev,
-        product: {
-          ...prev.product,
-          categorisation: {
-            ...prev.product.categorisation,
-            promodata_product_type: {
-              type_id: subType.id,
-              type_name: subType.name,
-              type_group_id: category.id,
-              type_name_text: `${category.name} > ${subType.name}`,
-              type_group_name: category.name,
-            },
+  if (category && subType) {
+    setFormData((prev) => ({
+      ...prev,
+      product: {
+        ...prev.product,
+        categorisation: {
+          ...prev.product.categorisation,
+          promodata_product_type: {
+            type_id: subType.id,
+            type_name: subType.name,
+            type_group_id: category.id,
+            type_name_text: `${category.name} > ${subType.name}`,
+            type_group_name: category.name,
           },
         },
-      }));
-    }
-  };
+      },
+    }));
+    setCategorySearch(`${categoryName} > ${subTypeName}`);
+    setShowCategoryDropdown(false);
+  }
+};
 
   const addDetail = () => {
     setFormData((prev) => ({
@@ -514,43 +559,71 @@ const removePrintMethod = (groupIndex) => {
 
             {/* Category Selection */}
             <section className="border-b pb-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                Category
-              </h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Category *
-                </label>
-                <select
-                  onChange={handleCategoryChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">-- Select Category --</option>
-                  {categories.map((category) => (
-                    <optgroup key={category.id} label={category.name}>
-                      {category.subTypes?.map((subType) => (
-                        <option
-                          key={subType.id}
-                          value={`${category.id}|${subType.id}`}
-                        >
-                          {subType.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                {formData.product.categorisation.promodata_product_type
-                  .type_name_text && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    Selected:{" "}
-                    {
-                      formData.product.categorisation.promodata_product_type
-                        .type_name_text
-                    }
-                  </p>
-                )}
+  <h2 className="text-xl font-semibold text-gray-700 mb-4">
+    Category
+  </h2>
+  <div ref={categoryDropdownRef} className="relative">
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      Select Category *
+    </label>
+    <div className="relative">
+      <input
+        type="text"
+        value={categorySearch}
+        onChange={(e) => {
+          setCategorySearch(e.target.value);
+          setShowCategoryDropdown(true);
+        }}
+        onFocus={() => setShowCategoryDropdown(true)}
+        placeholder="Search categories..."
+        className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+    </div>
+    
+    {showCategoryDropdown && (
+      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map((category) => (
+            <div key={category.id}>
+              <div className="px-4 py-2 bg-gray-100 font-medium text-gray-700 text-sm">
+                {category.name}
               </div>
-            </section>
+              {category.subTypes?.map((subType) => (
+                <button
+                  key={subType.id}
+                  type="button"
+                  onClick={() =>
+                    handleCategoryChange(
+                      category.id,
+                      subType.id,
+                      category.name,
+                      subType.name
+                    )
+                  }
+                  className="w-full text-left px-6 py-2 hover:bg-blue-50 transition-colors"
+                >
+                  {subType.name}
+                </button>
+              ))}
+            </div>
+          ))
+        ) : (
+          <div className="px-4 py-3 text-gray-500 text-center">
+            No categories found
+          </div>
+        )}
+      </div>
+    )}
+    
+    {formData.product.categorisation.promodata_product_type.type_name_text && (
+      <p className="mt-2 text-sm text-gray-600">
+        Selected:{" "}
+        {formData.product.categorisation.promodata_product_type.type_name_text}
+      </p>
+    )}
+  </div>
+</section>
 
             {/* Images */}
             <section className="border-b pb-6">

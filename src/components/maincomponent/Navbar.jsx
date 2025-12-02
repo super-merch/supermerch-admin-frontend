@@ -15,7 +15,23 @@ const Navbar = () => {
   const [isSeen, setIsSeen] = useState(true);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
-  const notificationRef = useRef(null);
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target)
+    ) {
+      setProfileDropDown(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   const getNotificationStatus = async () => {
     try {
