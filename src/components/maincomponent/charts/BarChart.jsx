@@ -3,21 +3,25 @@ import Chart from 'react-apexcharts';
 import { AdminContext } from '../../context/AdminContext';
 
 const BarChart = () => {
-    const { users, orders, orderCompleted } = useContext(AdminContext);
+    const { users, orders, orderCompleted,orderCount } = useContext(AdminContext);
 
     const chartData = {
         series: [
             {
-                name: 'Users',
-                data: [users.length || 0, 0, 0]
-            },
-            {
                 name: 'Orders',
-                data: [0, orders.length || 0, 0]
+                data: [ orderCount.total || 0, 0,0]
             },
             {
                 name: 'Complete Order',
-                data: [0, 0, orderCompleted.length || 0]
+                data: [0, orderCount.delivered || 0,0]
+            },
+            {
+                name: 'Pending Order',
+                data: [0, 0, orderCount.pending || 0]
+            },
+            {
+                name: 'Cancelled Order',
+                data: [0, 0,0, orderCount.cancelled ]
             }
         ],
         options: {
@@ -28,7 +32,7 @@ const BarChart = () => {
                     show: true
                 }
             },
-            colors: ['#008FFB', '#00E396', '#FF4560'],
+            colors: ['#008FFB', '#FEB019', '#00E396', '#775DD0',"#FF4560"],
             plotOptions: {
                 bar: {
                     columnWidth: '45%',
@@ -43,7 +47,7 @@ const BarChart = () => {
                 position: 'bottom'
             },
             xaxis: {
-                categories: ['Users', 'Orders', 'Complete Order'],
+                categories: [ 'Total Orders', 'Complete Order','Pending Order','Cancelled Order'],
                 labels: {
                     style: {
                         fontSize: '14px'

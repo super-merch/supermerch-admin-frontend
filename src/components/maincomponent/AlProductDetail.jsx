@@ -24,23 +24,12 @@ import {
 import ActionButton from "../ui/ActionButton";
 
 const AlProductDetail = () => {
-  const { state: product } = useLocation();
+  const id = useLocation().pathname.split("/")[2];
+  const [product,setProduct]= useState({});
   const { aToken, backednUrl } = useContext(AdminContext);
   const [productDesc, setProductDesc] = useState("");
   const [prodName, setProdName] = useState("");
   const [loading, setLoading] = useState(false);
-  const getProductDesc = async () => {
-    setLoading(true);
-    const res = await axios.get(
-      `${backednUrl}/api/single-product/${product.meta.id}`
-    );
-    setProductDesc(res.data.data.product.description);
-    setProdName(res.data.data.overview.name);
-    setLoading(false);
-  };
-  useEffect(() => {
-    getProductDesc();
-  }, []);
 
   // track initial page loading only
   const [initialLoading, setInitialLoading] = useState(true);
@@ -133,7 +122,6 @@ const AlProductDetail = () => {
       setUpdatingName(false);
     }
   };
-
   // keyboard handler for name input: Enter = save, Escape = cancel
   const onNameKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -223,7 +211,7 @@ const AlProductDetail = () => {
   const getBasePrice = async () => {
     try {
       const response = await fetch(
-        `${backednUrl}/api/client-products/single/getPrice?productId=${product?.meta?.id}`
+        `${backednUrl}/api/client-products/single/getPrice?productId=${id}`
       );
       const data = await response.json();
       setNewBasePrice(data);
@@ -246,22 +234,42 @@ const AlProductDetail = () => {
 
     return results;
   };
+  const [additionalMargin, setAdditionalMargin] = useState(0);
+  const [additionalDiscount, setAdditionalDiscount] = useState(0);
+  const [discountMethod, setDiscountMethod] = useState("");
+  const [marginMethod, setMarginMethod] = useState("");
   const fetchInitialData = async () => {
-    if (product?.meta?.id && price > 0) {
+    if (id) {
       try {
+        const res = await fetch(
+          `${backednUrl}/api/single-product/${id}`
+        )
+        const data = await res.json();
+        setProduct(data.data);
         // Fetch discount and margin data
-        const [discountData, marginData] = await Promise.all([
-          fetchDiscount(product.meta.id, true),
-          fetchMargin(product.meta.id, true),
-        ]);
+        const discountData = {
+          discount:  data?.data?.discountInfo?.type == "product" && data?.data?.discountInfo?.discount ||0,
+        };
+        const marginData = {
+          margin: data?.data?.marginInfo?.appliedType == "product" && data?.data?.marginInfo?.productMargin || 0,
+        };
+        setDiscountMethod("product");
+        setMarginMethod("product");
+        setDiscountPercent(discountData.discount);
+        setMarginPercent(marginData.margin);
+        if(data?.data?.discountInfo?.type !== "product"){
+          setDiscountMethod(data?.data?.discountInfo?.type);
+          setAdditionalDiscount(data?.data?.discountInfo?.discount);
+        }
+        if(data?.data?.marginInfo?.appliedType !== "product"){
+          setMarginMethod(data?.data?.marginInfo?.appliedType);
+          setAdditionalMargin(data?.data?.marginInfo?.totalMargin);
+        }
+
 
         let calculatedTrueBasePrice = newBasePrice;
-        // if (discountData && discountData.discount > 0) {
-        //   calculatedTrueBasePrice = price / (1 - discountData.discount / 100);
-        // }
         setTrueBasePrice(newBasePrice);
 
-        // Now calculate discounted price from the true base price
         let calculatedDiscountPrice = newBasePrice;
         if (discountData && discountData.discount > 0) {
           calculatedDiscountPrice =
@@ -269,7 +277,6 @@ const AlProductDetail = () => {
         }
         setDiscountPrice(calculatedDiscountPrice);
 
-        // Calculate and set margined price
         let calculatedMarginPrice = calculatedDiscountPrice;
         if (marginData && marginData.margin > 0) {
           calculatedMarginPrice =
@@ -290,192 +297,10 @@ const AlProductDetail = () => {
   };
 
   useEffect(() => {
-    if (product?.meta?.id && newBasePrice) {
+    if (id && newBasePrice) {
       fetchInitialData();
     }
-  }, [product?.meta?.id, newBasePrice]);
-
-  // Enhanced fetchDiscount function to handle both single IDs and arrays
-  const fetchDiscount = async (id, isInitial = false) => {
-    try {
-      // If it's a single ID, process normally
-      if (typeof id === "string" || typeof id === "number") {
-        const res = await axios.get(
-          `${backednUrl}/api/add-discount/discounts/${id}`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
-        // Check if discount data exists in response
-        if (res.data.data) {
-          const { discount, discountPrice } = res.data.data;
-          setDiscountPercent(discount);
-          if (!isInitial) {
-            setDiscountPrice(discountPrice);
-          }
-          return { discount, discountPrice };
-        } else {
-          // No discount found - response has only message property
-          setDiscountPercent("");
-          if (!isInitial) {
-            setDiscountPrice(null);
-          }
-          return { discount: 0, discountPrice: 0 };
-        }
-      } else if (Array.isArray(id)) {
-        // If it's an array of IDs, process in batches
-        const discountPromises = id.map((productId) =>
-          axios
-            .get(`${backednUrl}/api/add-discount/discounts/${productId}`, {
-              headers: { Authorization: `Bearer ${aToken}` },
-            })
-            .then((res) => {
-              // Handle successful response - check if data exists
-              if (res.data.data) {
-                return res;
-              } else {
-                // No discount found
-                return { data: { data: { discount: 0, discountPrice: 0 } } };
-              }
-            })
-            .catch((e) => {
-              if (e.response?.status === 404) {
-                return { data: { data: { discount: 0, discountPrice: 0 } } };
-              }
-              throw e;
-            })
-        );
-
-        // Process in batches of 10 concurrent requests
-        const discountResults = await batchPromises(discountPromises, 10);
-
-        // Return results for further processing if needed
-        return discountResults.map((result) => result.data.data);
-      }
-    } catch (e) {
-      if (e.response?.status === 404) {
-        setDiscountPercent("");
-        if (!isInitial) {
-          setDiscountPrice(null);
-        }
-        return { discount: 0, discountPrice: 0 };
-      } else {
-        console.error("Error fetching discount:", e);
-        return { discount: 0, discountPrice: 0 };
-      }
-    }
-  };
-
-  // Enhanced fetchMargin function to handle both single IDs and arrays
-  const fetchMargin = async (id, isInitial = false) => {
-    try {
-      // If it's a single ID, process normally
-      if (typeof id === "string" || typeof id === "number") {
-        const res = await axios.get(
-          `${backednUrl}/api/product-margin/margin/${id}`,
-          { headers: { Authorization: `Bearer ${aToken}` } }
-        );
-        // Check if margin data exists in response
-        if (res.data.data) {
-          const { margin, marginPrice } = res.data.data;
-          setMarginPercent(margin);
-          if (!isInitial) {
-            setMarginPrice(marginPrice);
-          }
-          return { margin, marginPrice };
-        } else {
-          // No margin found - response has only message property
-          setMarginPercent("");
-          if (!isInitial) {
-            setMarginPrice(null);
-          }
-          return { margin: 0, marginPrice: 0 };
-        }
-      } else if (Array.isArray(id)) {
-        // If it's an array of IDs, process in batches
-        const marginPromises = id.map((productId) =>
-          axios
-            .get(`${backednUrl}/api/product-margin/margin/${productId}`, {
-              headers: { Authorization: `Bearer ${aToken}` },
-            })
-            .then((res) => {
-              // Handle successful response - check if data exists
-              if (res.data.data) {
-                return res;
-              } else {
-                // No margin found
-                return { data: { data: { margin: 0, marginPrice: 0 } } };
-              }
-            })
-            .catch((e) => {
-              if (e.response?.status === 404) {
-                return { data: { data: { margin: 0, marginPrice: 0 } } };
-              }
-              throw e;
-            })
-        );
-
-        // Process in batches of 10 concurrent requests
-        const marginResults = await batchPromises(marginPromises, 10);
-
-        // Return results for further processing if needed
-        return marginResults.map((result) => result.data.data);
-      }
-    } catch (e) {
-      if (e.response?.status === 404) {
-        setMarginPercent("");
-        if (!isInitial) {
-          setMarginPrice(null);
-        }
-        return { margin: 0, marginPrice: 0 };
-      } else {
-        console.error("Error fetching margin:", e);
-        return { margin: 0, marginPrice: 0 };
-      }
-    }
-  };
-
-  // Enhanced batch processing function for discounts
-  const processBatchDiscounts = async (productIds, discountPercent, prices) => {
-    const batchSize = 10;
-    const results = [];
-
-    for (let i = 0; i < productIds.length; i += batchSize) {
-      const batch = productIds.slice(i, i + batchSize);
-      const batchPromises = batch.map((productId, index) =>
-        addDiscount(productId, discountPercent, prices[i + index])
-      );
-
-      try {
-        const batchResults = await Promise.all(batchPromises);
-        results.push(...batchResults);
-      } catch (error) {
-        console.error("Error in batch discount processing:", error);
-      }
-    }
-
-    return results;
-  };
-
-  // Enhanced batch processing function for margins
-  const processBatchMargins = async (productIds, marginPercent, prices) => {
-    const batchSize = 10;
-    const results = [];
-
-    for (let i = 0; i < productIds.length; i += batchSize) {
-      const batch = productIds.slice(i, i + batchSize);
-      const batchPromises = batch.map((productId, index) =>
-        addMarginApi(productId, marginPercent, prices[i + index])
-      );
-
-      try {
-        const batchResults = await Promise.all(batchPromises);
-        results.push(...batchResults);
-      } catch (error) {
-        console.error("Error in batch margin processing:", error);
-      }
-    }
-
-    return results;
-  };
+  }, [id, newBasePrice,discountPrice,marginPrice]);
 
   const handleAddDiscount = async (e, triggered = false) => {
     if (!triggered && e?.preventDefault) e.preventDefault();
@@ -499,8 +324,6 @@ const AlProductDetail = () => {
       toast.success(res.data.message || "Discount applied successfully!");
 
       // After applying discount, refresh the data
-      await fetchDiscount(product.meta.id);
-
       // Recalculate prices
       const newDiscountPrice = basePrice - (basePrice * p) / 100;
       setDiscountPrice(newDiscountPrice);
@@ -514,6 +337,7 @@ const AlProductDetail = () => {
       } else {
         setMarginPrice(newDiscountPrice);
       }
+      fetchInitialData();
     } catch (error) {
       const errorMsg = "Failed to add discount.";
       setDiscountMessage(errorMsg);
@@ -521,14 +345,6 @@ const AlProductDetail = () => {
       console.error("Error adding discount:", error);
     } finally {
       setIsDiscountLoading(false);
-    }
-  };
-
-  const getDiscounts = async () => {
-    try {
-      const res = await getDiscount();
-    } catch (error) {
-      toast.error(error || "Failed to get discounts");
     }
   };
 
@@ -565,7 +381,6 @@ const AlProductDetail = () => {
       setMarginPrice(newMarginPrice);
 
       // Refresh margin data
-      await fetchMargin(product.meta.id);
 
       fetchInitialData();
     } catch (error) {
@@ -777,18 +592,18 @@ const AlProductDetail = () => {
               </div>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-1.5 bg-gray-100 rounded-lg">
                       <Hash className="w-4 h-4 text-gray-500" />
                     </div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product ID
+                      Website product SKU
                     </span>
                   </div>
                   <span className="text-base font-bold text-gray-900 font-mono">
-                    {product?.meta?.id || "N/A"}
+                    {product?.overview?.sku_number || "N/A"}
                   </span>
                 </div>
 
@@ -798,7 +613,7 @@ const AlProductDetail = () => {
                       <Hash className="w-4 h-4 text-gray-500" />
                     </div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Product Code
+                      Supplier Code
                     </span>
                   </div>
                   <span className="text-base font-bold text-gray-900 font-mono">
@@ -806,7 +621,7 @@ const AlProductDetail = () => {
                   </span>
                 </div>
 
-                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all md:col-span-2">
+                <div className="group p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50 hover:border-gray-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-1.5 bg-gray-100 rounded-lg">
                       <Building className="w-4 h-4 text-gray-500" />
@@ -1042,7 +857,7 @@ const AlProductDetail = () => {
               </div>
 
               {/* Discount Row */}
-              {discountPercent !== "" && (
+              {(discountPercent !== 0)  && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-red-50 to-red-50/50 rounded-lg border border-red-200/50">
                     <div className="space-y-0.5">
@@ -1053,12 +868,12 @@ const AlProductDetail = () => {
                     <span className="text-base font-bold text-red-900">
                       -$
                       {(
-                        (newBasePrice * parseFloat(discountPercent)) /
+                        (newBasePrice * (discountPercent && parseFloat(discountPercent))) /
                         100
                       ).toFixed(2)}
                     </span>
                   </div>
-                  {discountPrice !== null && (
+                  {/* {discountPrice !== null && (
                     <div className="flex items-center justify-between p-3 bg-gradient-to-br from-green-50 to-green-50/50 rounded-lg border border-green-200/50">
                       <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">
                         After Discount
@@ -1067,12 +882,12 @@ const AlProductDetail = () => {
                         ${discountPrice?.toFixed(2)}
                       </span>
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
 
               {/* Margin Row */}
-              {marginPercent !== "" && (
+              {marginPercent !== 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 bg-gradient-to-br from-yellow-50 to-yellow-50/50 rounded-lg border border-yellow-200/50">
                     <div className="space-y-0.5">
@@ -1084,7 +899,7 @@ const AlProductDetail = () => {
                       +$
                       {(
                         ((discountPrice || newBasePrice) *
-                          parseFloat(marginPercent)) /
+                          ( marginPercent && parseFloat(marginPercent))) /
                         100
                       ).toFixed(2)}
                     </span>
@@ -1092,7 +907,58 @@ const AlProductDetail = () => {
                 </div>
               )}
 
-              {/* Final Price - Highlighted */}
+
+              {(discountMethod !== "product" && discountMethod !== "none"  )&& (
+                <div className="pt-4 mt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
+                    <div>
+                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
+                        Additional Discount ({discountMethod})
+                      </span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {additionalDiscount} %
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">
+                     - ${(newBasePrice * (additionalDiscount / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {(marginMethod !== "product"&& marginMethod !== "none") && (
+                <div className="pt-4 mt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
+                    <div>
+                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
+                        Additional Margin ({marginMethod})
+                      </span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {additionalMargin} %
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">
+                     + ${((discountPrice - (discountMethod !== "product" && (newBasePrice * (additionalDiscount / 100)) )) * (additionalMargin / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Original Price Reference */}
+              {/* <div className="pt-4 mt-2 border-t border-gray-200">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
+                      Original Price
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">For Website</p>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    $
+                    {product?.product?.prices?.price_groups[0]?.base_price
+                      ?.price_breaks[0]?.price || "N/A"}
+                  </span>
+                </div>
+              </div> */}
               {marginPrice !== null && (
                 <div className="pt-4 mt-2 border-t-2 border-gray-200">
                   <div className="flex items-center justify-between p-5 bg-gradient-to-br from-purple-100 via-purple-50 to-purple-50/50 rounded-xl border-2 border-purple-300">
@@ -1105,28 +971,12 @@ const AlProductDetail = () => {
                       </p>
                     </div>
                     <span className="text-3xl font-bold text-purple-900">
-                      ${marginPrice?.toFixed(2)}
+                      ${product?.product?.prices?.price_groups[0]?.base_price
+                      ?.price_breaks[0]?.price.toFixed(2) || "N/A"}
                     </span>
                   </div>
                 </div>
               )}
-
-              {/* Original Price Reference */}
-              <div className="pt-4 mt-2 border-t border-gray-200">
-                <div className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-lg border border-gray-200/50">
-                  <div>
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider block">
-                      Original Price
-                    </span>
-                    <p className="text-xs text-gray-500 mt-0.5">From API</p>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">
-                    $
-                    {product?.product?.prices?.price_groups[0]?.base_price
-                      ?.price_breaks[0]?.price || "N/A"}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>

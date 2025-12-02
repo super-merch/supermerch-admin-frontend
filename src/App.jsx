@@ -36,6 +36,7 @@ import AdminQuoteDetails from "./components/maincomponent/AdminQuoteDetails";
 import AddAdminQuote from "./components/maincomponent/AddAdminQuote";
 import Notifications from "./components/maincomponent/Notifications";
 import Settings from "./components/maincomponent/Settings";
+import AddProduct from "./components/maincomponent/AddProduct";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -94,13 +95,14 @@ const App = () => {
                 <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
                 <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
                 <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
-                <Route path="/quote-detail" element={<PrivateRoute element={<QuoteDetail />} />} /> 
+                <Route path="/quote-detail/:id" element={<PrivateRoute element={<QuoteDetail />} />} /> 
                 <Route path="/global-margin" element={<PrivateRoute element={<GlobalMargin />} />} /> 
                 <Route path="/categories" element={<PrivateRoute element={<Categories />} />} /> 
                 <Route path="/edit-blog/:id" element={<EditBlog />} />
                 <Route path="/category-detail" element={<PrivateRoute element={<CategoryDetails />} />} /> 
                 <Route path="/notifications" element={<PrivateRoute element={<Notifications />} />} /> 
                 <Route path="/settings" element={<PrivateRoute element={<Settings />} />} /> 
+                <Route path="/add-product" element={<PrivateRoute element={<AddProduct />} />} /> 
                 <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
