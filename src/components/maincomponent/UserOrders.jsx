@@ -162,7 +162,7 @@ export default function UserOrders() {
         />
       )}
 
-      {activeTab === "notes" && <NotesSection userId={id} />}
+      {activeTab === "notes" && <NotesSection userId={id} userOrders={userOrders} />}
     </div>
   );
 }
