@@ -494,7 +494,12 @@ const Orders = () => {
                         key={order._id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-3 py-2 whitespace-nowrap">
+                        <td
+                          className="px-3 py-2 whitespace-nowrap cursor-pointer hover:underline"
+                          onClick={() =>
+                            navigate(`/order-details/${order._id}`)
+                          }
+                        >
                           <span className="text-sm font-medium text-gray-900">
                             {order.orderId || order._id.slice(-8)}
                           </span>
@@ -516,27 +521,27 @@ const Orders = () => {
                             value={order.status}
                             onChange={(e) => {
                               handleStatusChange(order._id, e.target.value);
-                              if(order.status === "Delivered"){
-                                if(e.target.value === "Pending"){
+                              if (order.status === "Delivered") {
+                                if (e.target.value === "Pending") {
                                   setPendingOrders(pendingOrders + 1);
                                   setDeliveredOrders(deliveredOrders - 1);
-                                }else if(e.target.value === "Cancelled"){
+                                } else if (e.target.value === "Cancelled") {
                                   setCancelledOrders(cancelledOrders + 1);
                                   setDeliveredOrders(deliveredOrders - 1);
                                 }
-                              }else if(order.status === "Pending"){
-                                if(e.target.value === "Delivered"){
+                              } else if (order.status === "Pending") {
+                                if (e.target.value === "Delivered") {
                                   setDeliveredOrders(deliveredOrders + 1);
                                   setPendingOrders(pendingOrders - 1);
-                                }else if(e.target.value === "Cancelled"){
+                                } else if (e.target.value === "Cancelled") {
                                   setCancelledOrders(cancelledOrders + 1);
                                   setPendingOrders(pendingOrders - 1);
                                 }
-                              }else if(order.status === "Cancelled"){
-                                if(e.target.value === "Delivered"){
+                              } else if (order.status === "Cancelled") {
+                                if (e.target.value === "Delivered") {
                                   setDeliveredOrders(deliveredOrders + 1);
                                   setCancelledOrders(cancelledOrders - 1);
-                                }else if(e.target.value === "Pending"){
+                                } else if (e.target.value === "Pending") {
                                   setCancelledOrders(cancelledOrders - 1);
                                   setPendingOrders(pendingOrders + 1);
                                 }
@@ -592,7 +597,7 @@ const Orders = () => {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
+                            {/* <button
                               className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                               onClick={() =>
                                 navigate(`/order-details/${order._id}`)
@@ -600,7 +605,7 @@ const Orders = () => {
                             >
                               <Eye className="w-3 h-3" />
                               View
-                            </button>
+                            </button> */}
                             <button
                               className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               onClick={() => {

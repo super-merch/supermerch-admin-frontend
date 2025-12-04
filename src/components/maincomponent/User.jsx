@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ActionButton from "../ui/ActionButton";
+import UserOrdersPerUserChart from "./charts/UserOrdersPerUserChart";
+import UserAvgTransactionChart from "./charts/UserAvgTransactionChart";
 
 const User = () => {
   const {
@@ -335,13 +337,63 @@ const User = () => {
 
       <div className="bg-gray-200 p-2 rounded-lg mb-3">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3 ">
           {/* Filters Section */}
-          <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
-            <div className="flex flex-col md:flex-row gap-2 mb-2">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex items-center  gap-1 w-full">
+                <p className="text-xs text-gray-500 mb-1">Total Users</p>
+                <p className="text-xl font-bold text-gray-900 ml-4">
+                  {totalUsers}
+                </p>
+              </div>
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <Users className="w-5 h-5 text-teal-600" />
+              </div>
+            </div>
+            <div className="text-xs text-gray-600">
+              Total Active Users:{" "}
+              <span className="font-semibold text-green-600">
+                {activeUsers}
+              </span>
+            </div>
+            <div className="text-xs text-gray-600">
+              Total Inactive Users:{" "}
+              <span className="font-semibold text-red-600">
+                {inactiveUsers}
+              </span>
+            </div>
+          </div>
+          <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-900">
+                Avg transaction value
+              </p>
+              <p className="text-[11px] text-gray-500">Current page</p>
+            </div>
+
+            <UserAvgTransactionChart height={300} />
+          </div>{" "}
+          <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-900">
+                Orders per user
+              </p>
+              <p className="text-[11px] text-gray-500">Current page</p>
+            </div>
+
+            <UserOrdersPerUserChart height={300} />
+          </div>
+        </div>
+        <div className="mt-3 space-y-3">
+          <div className="w-full flex items-end gap-2">
+            <div className="col-span-1">
+              <div className="flex flex-col">
+                {/* Search */}
+                <label className="block text-xs text-gray-600 mb-1">
+                  Search
+                </label>
+
                 <input
                   type="text"
                   placeholder="Search by name, email, or phone number..."
@@ -352,7 +404,7 @@ const User = () => {
                       setSearchTerm(mySearch);
                     }
                   }}
-                  className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
                 {mySearch && (
                   <button
@@ -365,73 +417,22 @@ const User = () => {
                     <X className="w-4 h-4" />
                   </button>
                 )}
-              </div>
 
-              {/* Clear Search */}
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setMySearch("");
-                  }}
-                  className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="text-xs text-gray-600 pt-2 border-t border-gray-100">
-              Showing <span className="font-semibold">{users.length}</span> of{" "}
-              <span className="font-semibold">
-                {usersPagination?.totalUsers || 0}
-              </span>{" "}
-              users
-              {searchTerm && (
-                <span className="ml-1 text-blue-600">(filtered)</span>
-              )}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Total Users</p>
-                <p className="text-xl font-bold text-gray-900">{totalUsers}</p>
-              </div>
-              <div className="p-2 bg-teal-100 rounded-lg">
-                <Users className="w-5 h-5 text-teal-600" />
+                {/* Clear Search */}
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setMySearch("");
+                    }}
+                    className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Active</p>
-                <p className="text-xl font-bold text-green-600">
-                  {activeUsers}
-                </p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <UserCheck className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Inactive</p>
-                <p className="text-xl font-bold text-red-600">
-                  {inactiveUsers}
-                </p>
-              </div>
-              <div className="p-2 bg-red-100 rounded-lg">
-                <UserX className="w-5 h-5 text-red-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-7 items-end gap-2">
             <div className="flex items-end gap-2">
               <div className="flex flex-col flex-1">
                 <label className="block text-xs text-gray-600 mb-1">
@@ -452,7 +453,7 @@ const User = () => {
                 </select>
               </div>
             </div>
-            <div>
+            <div className="min-w-[120px]">
               <label className="block text-xs text-gray-600 mb-1">
                 Order Year
               </label>
@@ -529,7 +530,7 @@ const User = () => {
                 className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex  gap-2">
               <ActionButton
                 label="Apply Filters"
                 onClick={applyAdvancedFilters}
@@ -541,15 +542,6 @@ const User = () => {
                 onClick={clearAdvancedFilters}
                 variant="outline"
                 size="sm"
-              />
-
-              <ActionButton
-                icon={RefreshCw}
-                onClick={() => fetchUsers(currentPage, { searchTerm })}
-                variant="outline"
-                size="sm"
-                ariaLabel="Refresh users"
-                className="!px-2 !py-1"
               />
             </div>
           </div>

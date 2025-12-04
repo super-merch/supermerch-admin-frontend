@@ -23,7 +23,6 @@ export default function CustomerDetailsSection({
   onSendResetPassword,
 }) {
   const [sendingReset, setSendingReset] = useState(false);
-
   if (!user) return null;
 
   return (
@@ -88,7 +87,7 @@ export default function CustomerDetailsSection({
           <UserIcon className="w-4 h-4 text-teal-600" />
           Customer Details
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           <div className="flex items-center gap-1.5">
             <UserIcon className="w-3.5 h-3.5 text-gray-400" />
             <div>
@@ -116,66 +115,7 @@ export default function CustomerDetailsSection({
               </p>
             </div>
           </div>
-          {user?.defaultShippingAddress?.phone && (
-            <div className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-gray-400" />
-              <div>
-                <p className="text-xs text-gray-500">Phone</p>
-                <p className="text-xs font-semibold text-gray-900">
-                  {user.defaultShippingAddress.phone}
-                </p>
-              </div>
-            </div>
-          )}
-          {user?.defaultShippingAddress?.city && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-gray-400" />
-              <div>
-                <p className="text-xs text-gray-500">City</p>
-                <p className="text-xs font-semibold text-gray-900">
-                  {user.defaultShippingAddress.city}
-                </p>
-              </div>
-            </div>
-          )}
-          {user?.defaultShippingAddress?.state && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-gray-400" />
-              <div>
-                <p className="text-xs text-gray-500">State</p>
-                <p className="text-xs font-semibold text-gray-900">
-                  {user.defaultShippingAddress.state}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
-        {(user?.defaultShippingAddress?.addressLine ||
-          user?.defaultShippingAddress?.companyName ||
-          user?.defaultShippingAddress?.postalCode) && (
-          <div className="mt-2 pt-2 border-t border-gray-100">
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              {user?.defaultShippingAddress?.companyName && (
-                <div className="flex items-center gap-1.5">
-                  <Building className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-900">
-                    {user.defaultShippingAddress.companyName}
-                  </span>
-                </div>
-              )}
-              {user?.defaultShippingAddress?.addressLine && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-900">
-                    {user.defaultShippingAddress.addressLine}
-                    {user.defaultShippingAddress.postalCode &&
-                      `, ${user.defaultShippingAddress.postalCode}`}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Reset Password Section */}
         <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
@@ -206,7 +146,6 @@ export default function CustomerDetailsSection({
                   setSendingReset(false);
                 }
               }}
-              //   disabled={!user.email || !onSendResetPassword || sendingReset}
               loading={sendingReset}
               variant="outline"
               size="sm"
@@ -214,6 +153,86 @@ export default function CustomerDetailsSection({
           </div>
         </div>
       </div>
+
+      {/* Shipping Address Section */}
+      {user?.defaultShippingAddress && (
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-teal-600" />
+            Shipping Address
+          </h2>
+          <div className="space-y-2">
+            {user.defaultShippingAddress.companyName && (
+              <div className="flex items-start gap-2">
+                <Building className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">Company</p>
+                  <p className="text-xs font-semibold text-gray-900">
+                    {user.defaultShippingAddress.companyName}
+                  </p>
+                </div>
+              </div>
+            )}
+            {user.defaultShippingAddress.addressLine && (
+              <div className="flex items-start gap-2">
+                <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">Address</p>
+                  <p className="text-xs font-semibold text-gray-900">
+                    {user.defaultShippingAddress.addressLine}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {user.defaultShippingAddress.city && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">City</p>
+                    <p className="text-xs font-semibold text-gray-900">
+                      {user.defaultShippingAddress.city}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {user.defaultShippingAddress.state && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">State</p>
+                    <p className="text-xs font-semibold text-gray-900">
+                      {user.defaultShippingAddress.state}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {user.defaultShippingAddress.postalCode && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Postal Code</p>
+                    <p className="text-xs font-semibold text-gray-900">
+                      {user.defaultShippingAddress.postalCode}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {user.defaultShippingAddress.phone && (
+                <div className="flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="text-xs font-semibold text-gray-900">
+                      {user.defaultShippingAddress.phone}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

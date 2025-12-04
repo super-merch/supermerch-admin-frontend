@@ -10,6 +10,7 @@ export default function OrdersTableSection({
   navigate,
   formatDate,
 }) {
+  console.log(userOrders);
   if (!user) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 mt-3">
@@ -52,12 +53,21 @@ export default function OrdersTableSection({
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Status
               </th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                Products
+              </th>
               <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Total
               </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
-                Actions
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                Payment Status
               </th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                Order Status
+              </th>
+              {/* <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
+                Actions
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -75,7 +85,7 @@ export default function OrdersTableSection({
 
                 {/* Order ID */}
                 <td
-                  className="px-3 py-3 cursor-pointer"
+                  className="px-3 py-3 cursor-pointer hover:underline"
                   onClick={() => navigate(`/order-details/${order._id}`)}
                 >
                   <div className="flex items-center gap-2">
@@ -112,7 +122,9 @@ export default function OrdersTableSection({
                     <option value="Complete">Complete</option>
                   </select>
                 </td>
-
+                <td className="px-3 py-3 whitespace-nowrap text-right">
+                  {order?.products?.length || 0}
+                </td>
                 {/* Total */}
                 <td className="px-3 py-3 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-1 text-sm font-bold text-gray-900">
@@ -121,15 +133,27 @@ export default function OrdersTableSection({
                   </div>
                 </td>
 
+                {/* Payment Status */}
+                <td className="px-3 py-3 whitespace-nowrap text-right">
+                  <span className="text-xs text-gray-600">
+                    {order.paymentStatus || "N/A"}
+                  </span>
+                </td>
+                {/* Payment Status */}
+                <td className="px-3 py-3 whitespace-nowrap text-right">
+                  <span className="text-xs text-gray-600">
+                    {order.status || "N/A"}
+                  </span>
+                </td>
                 {/* Actions */}
-                <td className="px-3 py-3 whitespace-nowrap text-center">
+                {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                   <ActionButton
                     icon={Eye}
                     onClick={() => navigate(`/order-details/${order._id}`)}
                     variant="outline"
                     size="sm"
                   />
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
