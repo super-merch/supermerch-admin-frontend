@@ -7,15 +7,23 @@ import {
   Paperclip,
 } from "lucide-react";
 
-const tabs = [
-  { id: "customer", label: "Customer Details", icon: UserIcon },
-  { id: "orders", label: "Orders", icon: ShoppingBag },
-  { id: "attachments", label: "Attachments", icon: Paperclip },
+export default function TabsHeader({ activeTab, onTabChange, user }) {
+  const tabs = [
+    { id: "customer", label: "Customer Details", icon: UserIcon },
+    { id: "orders", label: "Orders", icon: ShoppingBag },
+    {
+      id: "attachments",
+      label: `Attachments (${user?.attachments?.length ?? 0})`,
+      icon: Paperclip,
+    },
 
-  { id: "notes", label: "Notes", icon: StickyNote },
-];
+    {
+      id: "notes",
+      label: `Notes (${user?.notes?.length ?? 0})`,
+      icon: StickyNote,
+    },
+  ];
 
-export default function TabsHeader({ activeTab, onTabChange }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-3">
       <div className="flex border-b border-gray-100 px-2 overflow-x-auto">

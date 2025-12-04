@@ -129,7 +129,11 @@ export default function UserOrders() {
       </div>
 
       {/* Tabs */}
-      <TabsHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      <TabsHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        user={user}
+      />
 
       {/* Tab Content */}
       {activeTab === "customer" && (
@@ -159,10 +163,13 @@ export default function UserOrders() {
           user={user}
           userOrders={userOrders}
           formatDate={formatDate}
+          userId={id}
         />
       )}
 
-      {activeTab === "notes" && <NotesSection userId={id} userOrders={userOrders} />}
+      {activeTab === "notes" && (
+        <NotesSection userId={id} userOrders={userOrders} />
+      )}
     </div>
   );
 }

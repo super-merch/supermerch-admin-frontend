@@ -3,9 +3,9 @@ import { StickyNote, Paperclip, Clock, Trash2, Edit2 } from "lucide-react";
 import ActionButton from "../../ui/ActionButton";
 import { toast } from "react-toastify";
 
-export default function NotesSection({ userId,userOrders  }) {
+export default function NotesSection({ userId, userOrders }) {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState(userId);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [noteText, setNoteText] = useState("");
@@ -13,12 +13,12 @@ export default function NotesSection({ userId,userOrders  }) {
   const [loading, setLoading] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState({});
+  const [editingNote, setEditingNote] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editFiles, setEditFiles] = useState([]);
+  const [editFileInputKey, setEditFileInputKey] = useState(0);
+  const [updateLoading, setUpdateLoading] = useState(false);
 
-  useEffect(() => {
-    if (userOrders && userOrders.length > 0 && !selectedOrderId) {
-      setSelectedOrderId(userOrders[0]._id);
-    }
-  }, [userOrders])
   // Fetch notes on mount
   useEffect(() => {
     if (selectedOrderId) {
@@ -28,11 +28,11 @@ export default function NotesSection({ userId,userOrders  }) {
 
   const fetchNotes = async () => {
     if (!selectedOrderId) return;
-    
+
     setLoading(true);
     try {
       const response = await fetch(
-        `${backendUrl}/api/user-orders/get-order-notes/${selectedOrderId}`  // Changed endpoint
+        `${backendUrl}/api/user-orders/get-order-notes/${selectedOrderId}` // Changed endpoint
       );
       const data = await response.json();
 
@@ -76,11 +76,12 @@ export default function NotesSection({ userId,userOrders  }) {
             return new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.readAsDataURL(file);
-              reader.onload = () => resolve({
-                name: file.name,
-                data: reader.result,
-                size: file.size,
-              });
+              reader.onload = () =>
+                resolve({
+                  name: file.name,
+                  data: reader.result,
+                  size: file.size,
+                });
               reader.onerror = reject;
             });
           })
@@ -88,7 +89,7 @@ export default function NotesSection({ userId,userOrders  }) {
       }
 
       const response = await fetch(
-        `${backendUrl}/api/user-orders/add-order-note/${selectedOrderId}`,  // Changed endpoint
+        `${backendUrl}/api/user-orders/add-order-note/${selectedOrderId}`, // Changed endpoint
         {
           method: "POST",
           headers: {
@@ -123,11 +124,13 @@ export default function NotesSection({ userId,userOrders  }) {
 
   const handleDeleteNote = async (noteId) => {
     if (!selectedOrderId) return;
-    
-    setDeleteLoading(prev => ({ ...prev, [noteId]: true }));
+    if (!window.confirm("Are you sure you want to delete this note?")) {
+      return;
+    }
+    setDeleteLoading((prev) => ({ ...prev, [noteId]: true }));
     try {
       const response = await fetch(
-        `${backendUrl}/api/user-orders/delete-order-note/${selectedOrderId}/${noteId}`,  // Changed endpoint
+        `${backendUrl}/api/user-orders/delete-order-note/${selectedOrderId}/${noteId}`,
         {
           method: "DELETE",
         }
@@ -137,7 +140,7 @@ export default function NotesSection({ userId,userOrders  }) {
 
       if (response.ok) {
         toast.success("Note deleted successfully");
-        setNotesHistory(prev => prev.filter(note => note._id !== noteId));
+        setNotesHistory((prev) => prev.filter((note) => note._id !== noteId));
       } else {
         toast.error(data.message || "Failed to delete note");
       }
@@ -145,7 +148,92 @@ export default function NotesSection({ userId,userOrders  }) {
       console.error("Error deleting note:", error);
       toast.error("Failed to delete note");
     } finally {
-      setDeleteLoading(prev => ({ ...prev, [noteId]: false }));
+      setDeleteLoading((prev) => ({ ...prev, [noteId]: false }));
+    }
+  };
+
+  const handleStartEdit = (note) => {
+    setEditingNote(note._id);
+    setEditText(note.text || "");
+    setEditFiles([]);
+    setEditFileInputKey((prev) => prev + 1);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNote(null);
+    setEditText("");
+    setEditFiles([]);
+  };
+
+  const handleEditFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setEditFiles(files);
+  };
+
+  const handleUpdateNote = async () => {
+    if (!editingNote || !selectedOrderId) return;
+
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      toast.error("Note cannot be empty");
+      return;
+    }
+
+    setUpdateLoading(true);
+    try {
+      let attachmentsData = [];
+      if (editFiles.length > 0) {
+        attachmentsData = await Promise.all(
+          editFiles.map((file) => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () =>
+                resolve({
+                  name: file.name,
+                  data: reader.result,
+                  size: file.size,
+                });
+              reader.onerror = reject;
+            });
+          })
+        );
+      }
+
+      // Get existing attachments if no new files added
+      const currentNote = notesHistory.find((n) => n._id === editingNote);
+      if (editFiles.length === 0 && currentNote?.attachments) {
+        attachmentsData = currentNote.attachments;
+      }
+
+      const response = await fetch(
+        `${backendUrl}/api/user-orders/update-order-note/${selectedOrderId}/${editingNote}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: trimmed,
+            attachments: JSON.stringify(attachmentsData),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Note updated successfully");
+        handleCancelEdit();
+        await fetchNotes();
+      } else {
+        toast.error(data.message || "Failed to update note");
+      }
+    } catch (error) {
+      console.error("Error updating note:", error);
+      toast.error("Failed to update note");
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -193,7 +281,7 @@ export default function NotesSection({ userId,userOrders  }) {
           disabled={addLoading}
         />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <label className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
               <Paperclip className="w-3.5 h-3.5 text-gray-500" />
               <span>Attach files</span>
@@ -212,7 +300,7 @@ export default function NotesSection({ userId,userOrders  }) {
                 {selectedFiles.length > 1 ? "s" : ""} selected
               </p>
             )}
-          </div>
+          </div> */}
           <ActionButton
             label={addLoading ? "Adding..." : "Add Note"}
             onClick={onAddNote}
@@ -256,7 +344,7 @@ export default function NotesSection({ userId,userOrders  }) {
             </p>
           )}
         </div>
-        
+
         {loading ? (
           <div className="flex flex-col items-center gap-2 py-6">
             <div className="w-8 h-8 border-3 border-yellow-200 border-t-yellow-600 rounded-full animate-spin"></div>
@@ -273,41 +361,127 @@ export default function NotesSection({ userId,userOrders  }) {
                 key={note._id}
                 className="border border-gray-100 rounded-md px-2.5 py-2 bg-gray-50/60 relative group"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[11px] font-medium text-gray-700">
-                    {formatTime(note.createdAt)} • {note.addedBy || "Admin"}
-                  </p>
-                  <button
-                    onClick={() => handleDeleteNote(note._id)}
-                    disabled={deleteLoading[note._id]}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity disabled:opacity-50"
-                  >
-                    {deleteLoading[note._id] ? (
-                      <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin"></div>
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-                {note.text && (
-                  <p className="text-xs text-gray-800 whitespace-pre-line mb-1">
-                    {note.text}
-                  </p>
-                )}
-                {note.attachments && note.attachments.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {note.attachments.map((file, idx) => (
-                      <span
-                        key={file.name + idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-gray-200 text-[11px] text-gray-700"
-                      >
+                {editingNote === note._id ? (
+                  // Edit mode
+                  <div className="space-y-2">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={3}
+                      placeholder="Edit note..."
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                      disabled={updateLoading}
+                    />
+                    {/* <div className="flex items-center gap-2 flex-wrap">
+                      <label className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-100">
                         <Paperclip className="w-3 h-3 text-gray-500" />
-                        <span className="truncate max-w-[120px]">
-                          {file.name}
+                        <span>Attach files</span>
+                        <input
+                          key={editFileInputKey}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={handleEditFileChange}
+                          disabled={updateLoading}
+                        />
+                      </label>
+                      {editFiles.length > 0 && (
+                        <span className="text-[11px] text-gray-500">
+                          {editFiles.length} new file(s) (will replace existing)
                         </span>
-                      </span>
-                    ))}
+                      )}
+                      {editFiles.length === 0 &&
+                        notesHistory.find((n) => n._id === editingNote)
+                          ?.attachments?.length > 0 && (
+                          <span className="text-[11px] text-gray-500">
+                            Existing attachments will be kept
+                          </span>
+                        )}
+                    </div> */}
+                    {/* {editFiles.length > 0 && (
+                      <div className="rounded-md bg-white border border-gray-100 p-1.5">
+                        <p className="text-[11px] font-medium text-gray-600 mb-1">
+                          New attachments:
+                        </p>
+                        <ul className="space-y-0.5 max-h-16 overflow-auto">
+                          {editFiles.map((file) => (
+                            <li
+                              key={file.name + file.size}
+                              className="text-[11px] text-gray-700 flex items-center gap-1.5"
+                            >
+                              <Paperclip className="w-3 h-3 text-gray-400" />
+                              <span className="truncate">{file.name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )} */}
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={updateLoading}
+                        className="px-2 py-1 text-[11px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <ActionButton
+                        label={updateLoading ? "Updating..." : "Update"}
+                        onClick={handleUpdateNote}
+                        variant="primary"
+                        size="sm"
+                        disabled={updateLoading || !editText.trim()}
+                        loading={updateLoading}
+                      />
+                    </div>
                   </div>
+                ) : (
+                  // View mode
+                  <>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[11px] font-medium text-gray-700">
+                        {formatTime(note.createdAt)} • {note.addedBy || "Admin"}
+                      </p>
+                      <div className="flex items-center gap-1  transition-opacity">
+                        <button
+                          onClick={() => handleStartEdit(note)}
+                          className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(note._id)}
+                          disabled={deleteLoading[note._id]}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-opacity disabled:opacity-50"
+                        >
+                          {deleteLoading[note._id] ? (
+                            <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin"></div>
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    {note.text && (
+                      <p className="text-xs text-gray-800 whitespace-pre-line mb-1">
+                        {note.text}
+                      </p>
+                    )}
+                    {note.attachments && note.attachments.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {note.attachments.map((file, idx) => (
+                          <span
+                            key={file.name + idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-gray-200 text-[11px] text-gray-700"
+                          >
+                            <Paperclip className="w-3 h-3 text-gray-500" />
+                            <span className="truncate max-w-[120px]">
+                              {file.name}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}

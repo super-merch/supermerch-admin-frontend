@@ -333,18 +333,7 @@ const User = () => {
         </div>
       )}
 
-      <div className="mb-3">
-        <div className="flex justify-end mb-2">
-          <ActionButton
-            icon={RefreshCw}
-            onClick={() => fetchUsers(currentPage, { searchTerm })}
-            variant="outline"
-            size="sm"
-            ariaLabel="Refresh users"
-            className="!px-2 !py-1"
-          />
-        </div>
-
+      <div className="bg-gray-200 p-2 rounded-lg mb-3">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3">
           {/* Filters Section */}
@@ -442,24 +431,26 @@ const User = () => {
           </div>
         </div>
         <div className="mt-3 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">
-                Order Month
-              </label>
-              <select
-                value={advancedFilters.orderMonth}
-                onChange={(e) =>
-                  handleAdvancedFilterChange("orderMonth", e.target.value)
-                }
-                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                {monthOptions.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </select>
+          <div className="grid grid-cols-1 md:grid-cols-7 items-end gap-2">
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col flex-1">
+                <label className="block text-xs text-gray-600 mb-1">
+                  Order Month
+                </label>
+                <select
+                  value={advancedFilters.orderMonth}
+                  onChange={(e) =>
+                    handleAdvancedFilterChange("orderMonth", e.target.value)
+                  }
+                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                >
+                  {monthOptions.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">
@@ -538,20 +529,29 @@ const User = () => {
                 className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <ActionButton
-              label="Apply Filters"
-              onClick={applyAdvancedFilters}
-              variant="primary"
-              size="sm"
-            />
-            <ActionButton
-              label="Reset Filters"
-              onClick={clearAdvancedFilters}
-              variant="outline"
-              size="sm"
-            />
+            <div className="flex flex-wrap gap-2">
+              <ActionButton
+                label="Apply Filters"
+                onClick={applyAdvancedFilters}
+                variant="primary"
+                size="sm"
+              />
+              <ActionButton
+                label="Reset"
+                onClick={clearAdvancedFilters}
+                variant="outline"
+                size="sm"
+              />
+
+              <ActionButton
+                icon={RefreshCw}
+                onClick={() => fetchUsers(currentPage, { searchTerm })}
+                variant="outline"
+                size="sm"
+                ariaLabel="Refresh users"
+                className="!px-2 !py-1"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -594,6 +594,12 @@ const User = () => {
                   </th>{" "}
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Completed Orders
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Notes
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                    Attachments
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Joined
@@ -675,7 +681,16 @@ const User = () => {
                         {user?.orderStats?.totalCompleted || 0}
                       </span>
                     </td>
-
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="text-xs text-">
+                        {user?.notes?.length || 0}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="text-xs text-">
+                        {user?.attachments?.length || 0}
+                      </span>
+                    </td>
                     {/* Joined Date */}
                     <td className="px-3 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -691,12 +706,6 @@ const User = () => {
                     {/* Actions */}
                     <td className="px-3 py-3 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <ActionButton
-                          icon={Eye}
-                          onClick={() => handleViewDetails(user)}
-                          variant="outline"
-                          size="sm"
-                        />
                         <ActionButton
                           icon={Edit}
                           onClick={() => handleEdit(user)}
