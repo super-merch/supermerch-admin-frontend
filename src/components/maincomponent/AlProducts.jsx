@@ -571,7 +571,13 @@ const AlProducts = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
       <div className="mb-3">
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-2 gap-4">
+          <button
+            onClick={() => navigate("/add-product")}
+            className="bg-teal-600 rounded-lg px-4 text-white py-2"
+          >
+            + Add Product
+          </button>
           <ActionButton
             icon={RefreshCw}
             onClick={() => {

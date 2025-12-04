@@ -79,6 +79,15 @@ export default function UserAvgTransactionChart({ height = 300 }) {
           colors: Array(buckets.length).fill("#6b7280"),
         },
       },
+      title: {
+        text: "Average transaction value",
+        style: {
+          fontSize: "11px",
+          fontWeight: 500,
+          color: "#4b5563",
+        },
+        offsetY: 6,
+      },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
@@ -89,6 +98,15 @@ export default function UserAvgTransactionChart({ height = 300 }) {
           fontSize: "10px",
           colors: ["#9ca3af"],
         },
+      },
+      title: {
+        text: "Number of transactions",
+        style: {
+          fontSize: "11px",
+          fontWeight: 500,
+          color: "#4b5563",
+        },
+        offsetY: 6,
       },
       min: 0,
       forceNiceScale: true,

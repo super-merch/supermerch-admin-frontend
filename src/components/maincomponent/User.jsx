@@ -217,6 +217,14 @@ const User = () => {
     usersPagination?.inactiveUsers ??
     users.filter((user) => getUserStatus(user) === "inactive").length;
 
+  const getLastOrderDate = (order) => {
+    if (order?.orders?.length === 0) return "-";
+    const sortedOrders = order?.orders?.sort(
+      (a, b) => new Date(a?.orderDate) - new Date(b?.orderDate)
+    );
+    return new Date(sortedOrders[0]?.orderDate).toLocaleDateString();
+  };
+
   if (loading)
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
@@ -231,113 +239,9 @@ const User = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
-      {/* Edit Modal */}
-      {editModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
-              <button
-                onClick={() => {
-                  setEditModal(false);
-                  setEditingUser(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={updatedName}
-                  onChange={(e) => setUpdatedName(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter username"
-                  maxLength={20}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Maximum 20 characters
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={updatedEmail}
-                  onChange={(e) => setUpdatedEmail(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter email"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setEditModal(false);
-                  setEditingUser(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <ActionButton
-                label="Save Changes"
-                onClick={handleUpdate}
-                disabled={updateLoading || !updatedName || !updatedEmail}
-                loading={updateLoading}
-                variant="primary"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Delete User</h2>
-              <button
-                onClick={() => setDeleteModal(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-5">
-              Are you sure you want to delete the user "{deleteModal.name}"?
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeleteModal(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <ActionButton
-                label="Delete"
-                onClick={handleDelete}
-                disabled={deleteLoading[deleteModal.id]}
-                loading={deleteLoading[deleteModal.id]}
-                variant="danger"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-gray-200 p-2 rounded-lg mb-3">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3 ">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3 items-start">
           {/* Filters Section */}
           <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between gap-6">
@@ -363,13 +267,13 @@ const User = () => {
                 {inactiveUsers}
               </span>
             </div>
+            <div className="flex items-center justify-start gap-2 mt-4"></div>
           </div>
           <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-900">
                 Avg transaction value
               </p>
-              <p className="text-[11px] text-gray-500">Current page</p>
             </div>
 
             <UserAvgTransactionChart height={300} />
@@ -377,9 +281,8 @@ const User = () => {
           <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-900">
-                Orders per user
+                Orders per customer
               </p>
-              <p className="text-[11px] text-gray-500">Current page</p>
             </div>
 
             <UserOrdersPerUserChart height={300} />
@@ -543,11 +446,18 @@ const User = () => {
                 variant="outline"
                 size="sm"
               />
+              <ActionButton
+                icon={RefreshCw}
+                onClick={() => fetchUsers(currentPage, { searchTerm })}
+                variant="outline"
+                size="sm"
+                ariaLabel="Refresh users"
+                className="!px-2 !py-1"
+              />
             </div>
           </div>
         </div>
       </div>
-
       {/* Users Table */}
       {users.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12">
@@ -588,10 +498,7 @@ const User = () => {
                     Completed Orders
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                    Notes
-                  </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                    Attachments
+                    Last Order
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                     Joined
@@ -675,14 +582,10 @@ const User = () => {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <span className="text-xs text-">
-                        {user?.notes?.length || 0}
+                        {getLastOrderDate(user)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <span className="text-xs text-">
-                        {user?.attachments?.length || 0}
-                      </span>
-                    </td>
+
                     {/* Joined Date */}
                     <td className="px-3 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -726,7 +629,6 @@ const User = () => {
           </div>
         </div>
       )}
-
       {/* Pagination */}
       {usersPagination && usersPagination.totalPages > 1 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
@@ -789,6 +691,108 @@ const User = () => {
                 {usersPagination.totalPages}
               </span>
             </span>
+          </div>
+        </div>
+      )}{" "}
+      {/* Edit Modal */}
+      {editModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
+              <button
+                onClick={() => {
+                  setEditModal(false);
+                  setEditingUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={updatedName}
+                  onChange={(e) => setUpdatedName(e.target.value)}
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Enter username"
+                  maxLength={20}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Maximum 20 characters
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={updatedEmail}
+                  onChange={(e) => setUpdatedEmail(e.target.value)}
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Enter email"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => {
+                  setEditModal(false);
+                  setEditingUser(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <ActionButton
+                label="Save Changes"
+                onClick={handleUpdate}
+                disabled={updateLoading || !updatedName || !updatedEmail}
+                loading={updateLoading}
+                variant="primary"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Delete User</h2>
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-5">
+              Are you sure you want to delete the user "{deleteModal.name}"?
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <ActionButton
+                label="Delete"
+                onClick={handleDelete}
+                disabled={deleteLoading[deleteModal.id]}
+                loading={deleteLoading[deleteModal.id]}
+                variant="danger"
+              />
+            </div>
           </div>
         </div>
       )}

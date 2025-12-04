@@ -19,6 +19,30 @@ export default function UserOrders() {
     useContext(AdminContext);
   const [activeTab, setActiveTab] = useState("customer");
 
+  // Preserve active tab per user across navigation
+  useEffect(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem(`userOrdersTab:${id}`)
+        : null;
+    if (stored) {
+      setActiveTab(stored);
+    } else {
+      setActiveTab("customer");
+    }
+  }, [id]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    try {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(`userOrdersTab:${id}`, tab);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   const handleStatusChange = async (orderId, newStatus) => {
     setStatusLoading((prev) => ({ ...prev, [orderId]: true }));
     try {
@@ -107,14 +131,18 @@ export default function UserOrders() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2">
-          <ActionButton
-            icon={ArrowLeft}
-            onClick={() => navigate(-1)}
-            variant="outline"
-            size="sm"
-            ariaLabel="Go back"
-            className="!px-2 !py-1"
-          />
+          <div className="flex items-center gap-2">
+            {" "}
+            <ActionButton
+              icon={ArrowLeft}
+              onClick={() => navigate(-1)}
+              variant="outline"
+              size="sm"
+              ariaLabel="Go back"
+              className="!px-2 !py-1"
+            />
+            <p className="text-sm font-medium text-gray-600">{user?.name}</p>
+          </div>
           <ActionButton
             icon={RefreshCw}
             onClick={handleRefresh}
@@ -131,7 +159,7 @@ export default function UserOrders() {
       {/* Tabs */}
       <TabsHeader
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         user={user}
       />
 

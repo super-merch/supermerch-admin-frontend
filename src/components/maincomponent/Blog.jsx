@@ -121,7 +121,7 @@ const Blog = () => {
               cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
-              <button
+        <button
                 onClick={() => setDeleteModal(null)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
@@ -144,7 +144,7 @@ const Blog = () => {
           <ActionButton
             icon={Plus}
             label="Add Blog"
-            onClick={() => navigate("/add-blog")}
+          onClick={() => navigate("/add-blog")}
             variant="primary"
             size="sm"
           />
@@ -256,22 +256,22 @@ const Blog = () => {
                     <p className="">Loading ...</p>
                   </div>
                 )}
-                {blogs.map((blog) => (
+          {blogs.map((blog) => (
                   <React.Fragment key={blog._id}>
                     <tr className="group hover:bg-teal-50/30 transition-colors border-b border-gray-100">
                       {/* Image */}
                       <td className="px-3 py-3 whitespace-nowrap">
                         <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 group-hover:border-teal-300 transition-colors shadow-sm">
-                          <img
+                    <img
                             src={blog?.image || "/placeholder-image.jpg"}
-                            alt={blog?.title}
+                      alt={blog?.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.src =
                                 "https://via.placeholder.com/150?text=No+Image";
                             }}
-                          />
-                        </div>
+                    />
+                  </div>
                       </td>
 
                       {/* Title */}
@@ -341,7 +341,7 @@ const Blog = () => {
                             variant="danger"
                             size="sm"
                           />
-                        </div>
+                    </div>
                       </td>
                     </tr>
 
@@ -365,11 +365,11 @@ const Blog = () => {
                             </div>
                             <div
                               className="prose prose-sm max-w-none text-gray-700"
-                              dangerouslySetInnerHTML={{
+                        dangerouslySetInnerHTML={{
                                 __html: blog?.content,
-                              }}
-                            />
-                          </div>
+                        }}
+                      />
+                    </div>
                         </td>
                       </tr>
                     )}
@@ -381,14 +381,14 @@ const Blog = () => {
           {totalPages > 1 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
-                <button
+                      <button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={prevDisabled}
                   className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                      >
                   <ChevronLeft className="w-4 h-4" />
                   Prev
-                </button>
+                      </button>
 
                 <div className="flex gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -427,7 +427,7 @@ const Blog = () => {
                   Next
                   <ChevronRight className="w-4 h-4" />
                 </button>
-              </div>
+                  </div>
 
               <div className="flex items-center gap-3 text-xs text-gray-600">
                 <span>

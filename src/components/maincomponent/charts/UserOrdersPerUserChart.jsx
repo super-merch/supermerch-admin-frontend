@@ -55,6 +55,15 @@ export default function UserOrdersPerUserChart({ height = 300 }) {
     },
     xaxis: {
       categories: buckets.map((b) => b.label),
+      title: {
+        text: "Number of orders per user",
+        style: {
+          fontSize: "11px",
+          fontWeight: 500,
+          color: "#4b5563",
+        },
+        offsetY: 6,
+      },
       labels: {
         show: true,
         style: {
@@ -72,6 +81,15 @@ export default function UserOrdersPerUserChart({ height = 300 }) {
           fontSize: "10px",
           colors: ["#9ca3af"],
         },
+      },
+      title: {
+        text: "Number of customers",
+        style: {
+          fontSize: "11px",
+          fontWeight: 500,
+          color: "#4b5563",
+        },
+        offsetY: 6,
       },
       min: 0,
       forceNiceScale: true,
