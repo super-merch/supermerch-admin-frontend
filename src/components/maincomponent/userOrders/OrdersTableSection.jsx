@@ -13,6 +13,7 @@ export default function OrdersTableSection({
   totalPages,
   onPageChange,
 }) {
+  console.log(userOrders);
   if (!user) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 mt-3">
@@ -38,9 +39,9 @@ export default function OrdersTableSection({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-3">
+    <div className=" rounded-lg border border-gray-100 overflow-hidden mt-3">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w- mx-auto">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
               <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
@@ -55,12 +56,19 @@ export default function OrdersTableSection({
               <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Status
               </th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                Products
+              </th>
               <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                Total
+                Total(inc. GST)
               </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+                Payment Status
+              </th>
+
+              {/* <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -78,7 +86,7 @@ export default function OrdersTableSection({
 
                 {/* Order ID */}
                 <td
-                  className="px-3 py-3 cursor-pointer"
+                  className="px-3 py-3 cursor-pointer hover:underline"
                   onClick={() => navigate(`/order-details/${order._id}`)}
                 >
                   <div className="flex items-center gap-2">
@@ -115,24 +123,33 @@ export default function OrdersTableSection({
                     <option value="Complete">Complete</option>
                   </select>
                 </td>
-
+                <td className="px-3 py-3 whitespace-nowrap text-center">
+                  {order?.products?.length || 0}
+                </td>
                 {/* Total */}
-                <td className="px-3 py-3 whitespace-nowrap text-right">
+                <td className="px-3 py-3 whitespace-nowrap text-center">
                   <div className="flex items-center justify-end gap-1 text-sm font-bold text-gray-900">
                     <DollarSign className="w-3.5 h-3.5 text-gray-400" />
                     <span>{order.total?.toFixed(2) || "0.00"}</span>
                   </div>
                 </td>
 
-                {/* Actions */}
+                {/* Payment Status */}
                 <td className="px-3 py-3 whitespace-nowrap text-center">
+                  <span className="text-xs text-gray-600">
+                    {order.paymentStatus || "N/A"}
+                  </span>
+                </td>
+
+                {/* Actions */}
+                {/* <td className="px-3 py-3 whitespace-nowrap text-center">
                   <ActionButton
                     icon={Eye}
                     onClick={() => navigate(`/order-details/${order._id}`)}
                     variant="outline"
                     size="sm"
                   />
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>

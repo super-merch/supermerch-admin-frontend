@@ -618,8 +618,11 @@ const AlProducts = () => {
         </div>
       )}
       <div className="mb-3">
-        <div className="flex gap-5 justify-end mb-2">
-          <button onClick={()=>navigate("/add-product")} className="bg-blue-600 rounded-lg px-4 text-white py-2" >
+        <div className="flex justify-end mb-2 gap-4">
+          <button
+            onClick={() => navigate("/add-product")}
+            className="bg-teal-600 rounded-lg px-4 text-white py-2"
+          >
             + Add Product
           </button>
           <ActionButton

@@ -347,6 +347,13 @@ const Products = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>{" "}
           <p className="text-xs font-semibold text-gray-600">
             Order ID:{" "}
             <span className="font-mono text-gray-900">
@@ -354,13 +361,6 @@ const Products = () => {
             </span>
           </p>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
             <button
               onClick={handleEditClick}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
