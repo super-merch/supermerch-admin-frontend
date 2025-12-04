@@ -198,6 +198,7 @@ export default function Notifications() {
           headers: { aToken },
         }
       );
+      console.log(response.data)
       setNotifications(response.data.data);
       setPage(response.data.page);
       setTotalPages(response.data.totalPages);

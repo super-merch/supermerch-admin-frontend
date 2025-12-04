@@ -111,7 +111,7 @@ const Products = () => {
     }
 
     setLoadingComments(true);
-    const result = await deleteOrderComment(checkout._id, commentIndex);
+    const result = await deleteOrderComment(checkout._id, commentIndex,orderComments);
 
     if (result.success) {
       setOrderComments(result.data);
