@@ -181,7 +181,6 @@ const AlSuppliers = () => {
               });
             }
           });
-          console.log(data.data);
           setTagFilters(tags);
         }
       }
@@ -434,13 +433,15 @@ const AlSuppliers = () => {
   };
 
   // Calculate stats
-  const totalSuppliers = ignored
-    ? ignoredSuppliers.length
+  const totalSuppliers = suppliersPagination?.ignoredSuppliers
+    ? suppliersPagination?.ignoredSuppliers -
+      suppliersPagination?.totalSuppliers
     : suppliersPagination?.totalSuppliers || suppliers.length || 0;
-  const activeSuppliers = !ignored
-    ? suppliersPagination?.totalSuppliers || suppliers.length || 0
-    : 0;
-  const inactiveSuppliers = ignored ? ignoredSuppliers.length : 0;
+  const activeSuppliers = suppliersPagination?.ignoredSuppliers
+    ? suppliersPagination?.totalSuppliers -
+      suppliersPagination?.ignoredSuppliers
+    : suppliersPagination?.totalSuppliers || suppliers.length || 0;
+  const inactiveSuppliers = suppliersPagination?.ignoredSuppliers || 0;
 
   if (supplierLoading || loading)
     return (
@@ -498,6 +499,7 @@ const AlSuppliers = () => {
     if (response.ok) {
       toast.success("Supplier activated successfully!");
       fetchIgnoredSuppliers();
+      fetchSuppliers();
     } else {
       const errorData = await response.json();
       toast.error(errorData.message);
@@ -1063,41 +1065,48 @@ const AlSuppliers = () => {
                       </td>
                       <td className="px-3 py-3">
                         <div className="space-y-2">
-                          {/* Tags Display */}
-                          <div className="flex flex-wrap gap-1 min-h-[24px]">
-                            {supplierData
-                              ?.find(
-                                (item) => Number(item.supplierId) === sup.id
-                              )
-                              ?.tags?.slice(0, 2)
-                              .map((tag, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
-                                >
-                                  {tag.tag}
-                                  <button
-                                    onClick={() =>
-                                      handleRemoveTag(sup.id, tag.tag)
-                                    }
-                                    className="hover:text-blue-600"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            {supplierData?.find(
+                          {(() => {
+                            const sd = supplierData?.find(
                               (item) => Number(item.supplierId) === sup.id
-                            )?.tags?.length > 2 && (
-                              <span className="text-xs text-gray-500">
-                                +
-                                {supplierData.find(
-                                  (item) => Number(item.supplierId) === sup.id
-                                ).tags.length - 2}{" "}
-                                more
-                              </span>
-                            )}
-                          </div>
+                            );
+                            const tags = sd?.tags || [];
+                            return (
+                              <div className="flex flex-wrap items-center gap-2 min-h-[28px]">
+                                {tags.length > 0 ? (
+                                  tags.map((tagObj, idx) => {
+                                    const tagText =
+                                      tagObj?.tag ?? String(tagObj ?? "");
+                                    return (
+                                      <span
+                                        key={`${sup.id}-tag-${tagText}-${idx}`}
+                                        title={tagText}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 max-w-[220px] sm:max-w-[260px] bg-blue-50 text-blue-800 rounded-full text-xs"
+                                      >
+                                        <span className="block truncate max-w-[160px] sm:max-w-[200px]">
+                                          {tagText}
+                                        </span>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleRemoveTag(sup.id, tagText)
+                                          }
+                                          className="p-0.5 rounded hover:bg-blue-100 active:scale-95"
+                                          aria-label={`Remove tag ${tagText}`}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </span>
+                                    );
+                                  })
+                                ) : (
+                                  <span className="text-xs text-gray-400">
+                                    No tags
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* Add Tag Input */}
                           <div className="flex items-center gap-1">

@@ -196,6 +196,7 @@ const AdminContextProvider = (props) => {
         itemsPerPage: data.items_per_page || 15,
         hasNextPage: data.page < Math.ceil(data.item_count / 15),
         hasPrevPage: data.page > 1,
+        ignoredSuppliers: data.ignored_count,
       });
 
       return data.data;

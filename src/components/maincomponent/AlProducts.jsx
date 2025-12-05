@@ -245,7 +245,7 @@ const AlProducts = () => {
   }, [totalApiPages]);
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
-
+  const [deactivatedProducts, setDeactivatedProducts] = useState(0);
   const getIgnored = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
@@ -258,6 +258,7 @@ const AlProducts = () => {
             return newSet;
           });
         });
+        setDeactivatedProducts(data.data.length);
         //   const id = data.data.meta.id
         //   setLocalIgnoredIds(new Set(id));
       }
@@ -567,6 +568,7 @@ const AlProducts = () => {
         newSet.delete(product.meta.id);
         return newSet;
       });
+      setDeactivatedProducts((prev) => prev - 1);
     }
   };
 
@@ -585,6 +587,7 @@ const AlProducts = () => {
         newSet.add(product.meta.id);
         return newSet;
       });
+      setDeactivatedProducts((prev) => prev + 1);
     }
   };
 
@@ -658,7 +661,7 @@ const AlProducts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Active</p>
-                <p className="text-xl font-bold text-green-600">{prodLength}</p>
+                <p className="text-xl font-bold text-green-600">{prodLength - deactivatedProducts}</p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
