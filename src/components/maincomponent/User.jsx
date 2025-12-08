@@ -555,7 +555,7 @@ const User = () => {
                     </td>
 
                     {/* Location (City) */}
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3 text-center whitespace-nowrap">
                       {user?.defaultShippingAddress?.city ? (
                         <div className="flex items-center gap-1.5 text-xs text-gray-600">
                           <MapPin className="w-3.5 h-3.5 text-gray-400" />
@@ -580,7 +580,7 @@ const User = () => {
                         {user?.orderStats?.totalCompleted || 0}
                       </span>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3 text-center whitespace-nowrap">
                       <span className="text-xs text-">
                         {getLastOrderDate(user)}
                       </span>

@@ -721,7 +721,7 @@ const AlProducts = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            {/* <div className="flex gap-2">
               <ActionButton
                 icon={Globe}
                 label="Bulk Australia"
@@ -740,7 +740,7 @@ const AlProducts = () => {
                 variant="primary"
                 size="sm"
               />
-            </div>
+            </div> */}
           </div>
         </div>
       )}

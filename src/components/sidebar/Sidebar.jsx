@@ -21,6 +21,7 @@ import {
   X,
   Settings,
 } from "lucide-react";
+import { IoIosPricetags } from "react-icons/io";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { setAToken, showPopup, setShowPopup } = useContext(AdminContext);
@@ -93,7 +94,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       exact: true,
     },
     {
-      icon: Percent,
+      icon: IoIosPricetags,
       label: "Global Margin",
       path: "/global-margin",
       exact: true,
