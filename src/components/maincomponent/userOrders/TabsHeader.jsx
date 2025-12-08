@@ -5,12 +5,14 @@ import {
   FileText,
   StickyNote,
   Paperclip,
+  MessageSquare,
 } from "lucide-react";
 
 export default function TabsHeader({ activeTab, onTabChange, user }) {
   const tabs = [
     { id: "customer", label: "Customer Details", icon: UserIcon },
     { id: "orders", label: "Orders", icon: ShoppingBag },
+    { id: "queries", label: "Queries", icon: MessageSquare },
     {
       id: "attachments",
       label: `Attachments (${user?.attachments?.length ?? 0})`,

@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAllQueries } from "../apis/ContactApi";
 
 export const AdminContext = createContext();
 
@@ -316,6 +317,26 @@ const AdminContextProvider = (props) => {
       toast.error("Not a registered user");
     }
   };
+  const [queries, setQueries] = useState([]);
+  const [queriesLoading, setQueriesLoading] = useState(false);
+
+  const fetchQueries = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllQueries();
+      if (!response) {
+        toast.error("No queries found");
+        return;
+      }
+      setQueries(response?.queries || []);
+    } catch (error) {
+      toast.error("Error fetching queries");
+      console.error("Error fetching queries:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchOrders = async (id = "", page = 1, filters = {}, limit) => {
     setLoading(true);
     try {
@@ -383,7 +404,7 @@ const AdminContextProvider = (props) => {
       return { success: false };
     }
   };
-  const deleteOrderComment = async (orderId, commentIndex,orderComments) => {
+  const deleteOrderComment = async (orderId, commentIndex, orderComments) => {
     try {
       const updatedComments = orderComments?.comments.filter(
         (_, index) => index !== commentIndex
@@ -419,7 +440,7 @@ const AdminContextProvider = (props) => {
           toast.success("Comment deleted successfully");
           return {
             success: true,
-            data: {  comments: updatedComments },
+            data: { comments: updatedComments },
           };
         }
       }
@@ -835,6 +856,7 @@ const AdminContextProvider = (props) => {
       deactivateSuppliers();
       fetchBlogs(1);
       listQuotes();
+      fetchQueries();
     }
   }, [aToken]);
   const value = {
@@ -915,6 +937,10 @@ const AdminContextProvider = (props) => {
     fetchParamProducts,
     setUnseenMessages,
     unseenMessages,
+    queries,
+    queriesLoading,
+    fetchQueries,
+    setQueries,
   };
 
   return (

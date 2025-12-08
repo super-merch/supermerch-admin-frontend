@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
-import { getAllQueries, deleteQuery } from "../apis/ContactApi";
+import { deleteQuery } from "@/components/apis/ContactApi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   MessageSquare,
   Eye,
@@ -17,16 +17,16 @@ import {
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
-import ActionButton from "../ui/ActionButton";
-import { AdminContext } from "../context/AdminContext";
+import ActionButton from "@/components/ui/ActionButton";
+import axios from "axios";
+import { AdminContext } from "@/components/context/AdminContext";
 
-const UserQueries = () => {
-  const {
-    queries,
-    setQueries,
-    queriesLoading: loading,
-    fetchQueries,
-  } = useContext(AdminContext);
+const UserIndividualQueries = ({ user }) => {
+  const { id } = useParams();
+  const [userQueries, setUserQueries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { queries } = useContext(AdminContext);
+  console.log(user);
 
   // Data states
 
@@ -39,10 +39,26 @@ const UserQueries = () => {
   const [mySearch, setMySearch] = useState("");
   const queriesPerPage = 10;
 
+  const fetchUserQueries = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/contact/user-queries/${
+          user?.email
+        }`
+      );
+      setUserQueries(response.data?.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching user queries:", error);
+      setLoading(false);
+    }
+  };
+
   // Fetch all queries on component mount
   useEffect(() => {
-    if (queries.length === 0) {
-      fetchQueries();
+    if (userQueries.length === 0) {
+      fetchUserQueries();
     }
   }, []);
 
@@ -60,7 +76,7 @@ const UserQueries = () => {
 
     try {
       await deleteQuery(queryId);
-      setQueries(queries.filter((query) => query._id !== queryId));
+      setUserQueries(userQueries?.filter((query) => query._id !== queryId));
       toast.success("Query deleted successfully!");
       setDeleteModal(null);
     } catch (error) {
@@ -72,7 +88,7 @@ const UserQueries = () => {
   };
 
   // Search and filter logic
-  const filteredQueries = queries.filter((query) => {
+  const filteredQueries = userQueries.filter((query) => {
     const queryName = (query.name || "").toLowerCase();
     const queryEmail = (query.email || "").toLowerCase();
     const queryTitle = (query.title || "").toLowerCase();
@@ -135,68 +151,6 @@ const UserQueries = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
-      {/* Delete Confirmation Modal */}
-      {deleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Delete Query</h2>
-              <button
-                onClick={() => setDeleteModal(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-5">
-              Are you sure you want to delete the query from "{deleteModal.name}
-              "? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeleteModal(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <ActionButton
-                label="Delete"
-                onClick={handleDelete}
-                disabled={deleteLoading[deleteModal.id]}
-                loading={deleteLoading[deleteModal.id]}
-                variant="danger"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-3">
-        <div className="flex justify-end mb-2">
-          <ActionButton
-            icon={RefreshCw}
-            onClick={fetchQueries}
-            variant="outline"
-            size="sm"
-            ariaLabel="Refresh queries"
-            className="!px-2 !py-1"
-          />
-        </div>
-
-        {/* Stats Card */}
-        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Total Queries</p>
-              <p className="text-xl font-bold text-gray-900">{totalQueries}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Filters Section */}
       <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 mb-3">
         <div className="flex flex-col md:flex-row gap-2 mb-2">
@@ -248,7 +202,6 @@ const UserQueries = () => {
           {searchTerm && <span className="ml-1 text-blue-600">(filtered)</span>}
         </div>
       </div>
-
       {/* Queries Table */}
       {currentQueries.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12">
@@ -403,7 +356,6 @@ const UserQueries = () => {
           </div>
         </div>
       )}
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
@@ -463,9 +415,44 @@ const UserQueries = () => {
             </span>
           </div>
         </div>
+      )}{" "}
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Delete Query</h2>
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-5">
+              Are you sure you want to delete the query from "{deleteModal.name}
+              "? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <ActionButton
+                label="Delete"
+                onClick={handleDelete}
+                disabled={deleteLoading[deleteModal.id]}
+                loading={deleteLoading[deleteModal.id]}
+                variant="danger"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-export default UserQueries;
+export default UserIndividualQueries;
