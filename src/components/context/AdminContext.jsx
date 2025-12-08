@@ -21,6 +21,13 @@ const AdminContextProvider = (props) => {
   const [prodLength, setProdLength] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
   const [orderCount, setOrderCount] = useState({});
+  const [userStats, setUserStats] = useState({
+    deliveredOrders: 0,
+    pendingOrders: 0,
+    totalSpent: 0,
+    totalOrders: 0,
+    pages: 1,
+  });
 
   const [aToken, setAToken] = useState(
     localStorage.getItem("aToken") ? localStorage.getItem("aToken") : false
@@ -189,6 +196,7 @@ const AdminContextProvider = (props) => {
         itemsPerPage: data.items_per_page || 15,
         hasNextPage: data.page < Math.ceil(data.item_count / 15),
         hasPrevPage: data.page > 1,
+        ignoredSuppliers: data.ignored_count,
       });
 
       return data.data;
@@ -286,28 +294,28 @@ const AdminContextProvider = (props) => {
     }
   };
   const [pagination, setPagination] = useState(null);
-  const fetchUserOrders = async (id) => {
+  const fetchUserOrders = async (id, page = 1, limit = 10) => {
     try {
-      // 1) fetch exactly as fetchOrders does
-      const response = await axios.get(`${backednUrl}/api/checkout/products`, {
-        headers: { aToken },
-      });
-
-      // 2) pick out the array, reverse it if you want most‑recent first
-      const all = response.data.data.reverse();
-
-      // 3) filter by the correct key—userId
-      const filtered = all.filter(
-        (order) => String(order.userId) === String(id)
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/checkout/user-order/${id}?page=${page}&limit=${limit}`,
+        { headers: { aToken } }
       );
 
-      setUserOrders(filtered);
+      setUserOrders(response.data.orders);
+      setUserStats({
+        deliveredOrders: response.data.delivered,
+        pendingOrders: response.data.pending,
+        totalSpent: response.data.totalSpent,
+        totalOrders: response.data.total,
+        pages: response.data.pages,
+      });
     } catch (error) {
       console.error("Error fetching user's orders:", error);
       toast.error("Not a registered user");
     }
   };
-
   const fetchOrders = async (id = "", page = 1, filters = {}, limit) => {
     setLoading(true);
     try {
@@ -375,16 +383,9 @@ const AdminContextProvider = (props) => {
       return { success: false };
     }
   };
-  const deleteOrderComment = async (orderId, commentIndex) => {
+  const deleteOrderComment = async (orderId, commentIndex,orderComments) => {
     try {
-      const response = await fetch(
-        `${backednUrl}/api/comments/get-comment/${orderId}`
-      );
-
-      if (!response.ok) return { success: false };
-
-      const data = await response.json();
-      const updatedComments = data.comments.filter(
+      const updatedComments = orderComments?.comments.filter(
         (_, index) => index !== commentIndex
       );
 
@@ -418,7 +419,7 @@ const AdminContextProvider = (props) => {
           toast.success("Comment deleted successfully");
           return {
             success: true,
-            data: { ...data, comments: updatedComments },
+            data: {  comments: updatedComments },
           };
         }
       }
@@ -887,6 +888,7 @@ const AdminContextProvider = (props) => {
     totalBlogs,
     setBlogs,
     fetchBlogs,
+    userStats,
     listQuotes,
     totalApiPages,
     paramLoading,

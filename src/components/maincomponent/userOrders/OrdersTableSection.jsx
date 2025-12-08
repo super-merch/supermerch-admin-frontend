@@ -9,6 +9,9 @@ export default function OrdersTableSection({
   handleStatusChange,
   navigate,
   formatDate,
+  currentPage,
+  totalPages,
+  onPageChange,
 }) {
   console.log(userOrders);
   if (!user) {
@@ -77,7 +80,7 @@ export default function OrdersTableSection({
                 {/* Serial Number */}
                 <td className="px-3 py-3 whitespace-nowrap text-center">
                   <span className="text-sm font-medium text-gray-600">
-                    {index + 1}
+                    {(currentPage - 1) * 10 + index + 1}
                   </span>
                 </td>
 
@@ -151,6 +154,29 @@ export default function OrdersTableSection({
             ))}
           </tbody>
         </table>
+        {totalPages > 1 && (
+      <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+        <p className="text-sm text-gray-600">
+          Page {currentPage} of {totalPages}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    )}
       </div>
     </div>
   );

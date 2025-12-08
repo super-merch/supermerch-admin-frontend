@@ -529,16 +529,17 @@ export default function SupplierCategories() {
                 </p>
               </div>
             )}
-            {supplierData.tags.length>0 && (
+            {supplierData.tags.length > 0 && (
               <div>
                 <span className="text-base font-medium text-gray-600">
                   Tags:{" "}
                 </span>
-                <div className="flex gap-2" >
-
-                {supplierData.tags.map((tag) => (
-                  <p className="bg-blue-300 px-3 inline rounded-2xl py-1">{tag.tag}</p>
-                ))}
+                <div className="flex gap-2">
+                  {supplierData.tags.map((tag) => (
+                    <p className="bg-blue-300 px-3 inline rounded-2xl py-1">
+                      {tag.tag}
+                    </p>
+                  ))}
                 </div>
               </div>
             )}
@@ -582,6 +583,13 @@ export default function SupplierCategories() {
           <div>
             <p>Active Products: {itemCount}</p>
             <p>Available Categories: {allAvailableCategories.length}</p>
+            <p>
+              Active Categories:{" "}
+              {allAvailableCategories.length -
+                deactivatedCategories.filter(
+                  (d) => String(d.supplierId) === String(supplier.id)
+                ).length}
+            </p>
             <p>
               Deactivated Categories:{" "}
               {

@@ -15,9 +15,16 @@ export default function UserOrders() {
   const [statusLoading, setStatusLoading] = useState({});
   const { state: userName } = useLocation();
   const [user, setUser] = useState(null);
-  const { userOrders, fetchUserOrders, updateOrderStatus, getSingleUser } =
-    useContext(AdminContext);
+  const {
+    userOrders,
+    fetchUserOrders,
+    updateOrderStatus,
+    getSingleUser,
+    userStats,
+  } = useContext(AdminContext);
   const [activeTab, setActiveTab] = useState("customer");
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 10;
 
   // Preserve active tab per user across navigation
   useEffect(() => {
@@ -47,7 +54,7 @@ export default function UserOrders() {
     setStatusLoading((prev) => ({ ...prev, [orderId]: true }));
     try {
       await updateOrderStatus(orderId, newStatus);
-      await fetchUserOrders(id);
+      await fetchUserOrders(id, currentPage, limit);
     } catch (error) {
       console.error("Error updating order status:", error);
     } finally {
@@ -58,7 +65,7 @@ export default function UserOrders() {
   const handleRefresh = async () => {
     setLoading(true);
     try {
-      await fetchUserOrders(id);
+      await fetchUserOrders(id, currentPage, limit);
       const data = await getSingleUser(id);
       setUser(data.user);
     } catch (error) {
@@ -72,7 +79,7 @@ export default function UserOrders() {
     const getOrders = async () => {
       setLoading(true);
       try {
-        await fetchUserOrders(id);
+        await fetchUserOrders(id, currentPage, limit);
         const data = await getSingleUser(id);
         setUser(data.user);
       } catch (error) {
@@ -82,22 +89,9 @@ export default function UserOrders() {
       }
     };
     getOrders();
-  }, [id]);
+  }, [id, currentPage]);
 
   const navigate = useNavigate();
-
-  // Calculate stats
-  const totalOrders = userOrders.length;
-  const totalSpent = userOrders.reduce(
-    (sum, order) => sum + (order.total || 0),
-    0
-  );
-  const pendingOrders = userOrders.filter(
-    (order) => order.status === "Pending"
-  ).length;
-  const completedOrders = userOrders.filter(
-    (order) => order.status === "Complete"
-  ).length;
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -167,10 +161,10 @@ export default function UserOrders() {
       {activeTab === "customer" && (
         <CustomerDetailsSection
           user={user}
-          totalOrders={totalOrders}
-          totalSpent={totalSpent}
-          pendingOrders={pendingOrders}
-          completedOrders={completedOrders}
+          totalOrders={userStats?.totalOrders}
+          totalSpent={userStats?.totalSpent}
+          pendingOrders={userStats?.pendingOrders}
+          completedOrders={userStats?.deliveredOrders}
           formatDate={formatDate}
         />
       )}
@@ -183,6 +177,9 @@ export default function UserOrders() {
           handleStatusChange={handleStatusChange}
           navigate={navigate}
           formatDate={formatDate}
+          currentPage={currentPage}
+          totalPages={userStats?.pages || 1}
+          onPageChange={setCurrentPage}
         />
       )}
 

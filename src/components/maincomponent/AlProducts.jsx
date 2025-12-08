@@ -59,6 +59,8 @@ const AlProducts = () => {
   const [trendingIds, setTrendingIds] = useState(new Set());
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [deleteId,setDeleteId]=useState(null)
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
   // Bulk selection state
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -164,7 +166,7 @@ const AlProducts = () => {
   };
 
   const handleSelectAll = () => {
-    setSelectedProducts(new Set(currentProducts.map((p) => String(p.meta.id))));
+    setSelectedProducts(new Set(currentProducts?.map((p) => String(p.meta.id))));
   };
 
   const handleDeselectAll = () => {
@@ -243,7 +245,7 @@ const AlProducts = () => {
   }, [totalApiPages]);
   const navigate = useNavigate();
   const [loadingProducts, setLoadingProducts] = useState(false);
-
+  const [deactivatedProducts, setDeactivatedProducts] = useState(0);
   const getIgnored = async () => {
     try {
       const response = await fetch(`${backednUrl}/api/ignored-products`);
@@ -256,6 +258,7 @@ const AlProducts = () => {
             return newSet;
           });
         });
+        setDeactivatedProducts(data.data.length);
         //   const id = data.data.meta.id
         //   setLocalIgnoredIds(new Set(id));
       }
@@ -295,7 +298,25 @@ const AlProducts = () => {
   const currentProducts = useMemo(() => {
     return products || [];
   }, [selectedCategory, products]);
-
+  const handleDeleteProduct = async()=>{
+    try {
+      setPageLoading(true);
+      const response = await fetch(`${backednUrl}/api/custom-products/delete/${deleteId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success("Product deleted successfully");
+        setSearchTerm("");
+        await fetchProducts();
+      }
+    } catch (error) {
+      console.log(error)
+    }finally{
+      setShowDeletePopup(false);
+      setPageLoading(false);
+      setDeleteId(null)
+    }
+  }
   // Handle search
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -547,6 +568,7 @@ const AlProducts = () => {
         newSet.delete(product.meta.id);
         return newSet;
       });
+      setDeactivatedProducts((prev) => prev - 1);
     }
   };
 
@@ -565,11 +587,39 @@ const AlProducts = () => {
         newSet.add(product.meta.id);
         return newSet;
       });
+      setDeactivatedProducts((prev) => prev + 1);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50/30 p-3">
+    <div className="min-h-screen bg-gradient-to-br relative from-gray-50 to-teal-50/30 p-3">
+      {showDeletePopup && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black/50 z-50" >
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-2">Delete Product</h2>
+            <p className="text-gray-600">
+              Are you sure you want to delete this product?
+            </p>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleDeleteProduct}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg mr-2"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeletePopup(false)
+                  setDeleteId(null)
+                }}
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-3">
         <div className="flex justify-end mb-2 gap-4">
           <button
@@ -611,7 +661,7 @@ const AlProducts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Active</p>
-                <p className="text-xl font-bold text-green-600">{prodLength}</p>
+                <p className="text-xl font-bold text-green-600">{prodLength - deactivatedProducts}</p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -804,7 +854,7 @@ const AlProducts = () => {
                       </td>
                     </tr>
                   ) : (
-                    currentProducts.map((product, index) => {
+                    currentProducts?.map((product, index) => {
                       const priceGroups =
                         product.product?.prices?.price_groups || [];
                       const basePrice =
@@ -869,7 +919,6 @@ const AlProducts = () => {
                           <td className="px-3 py-3">
                             <div
                               className="flex items-center gap-2 min-w-[200px] hover:cursor-pointer hover:underline"
-                              onClick={() => handleViewProduct(product)}
                             >
                               {isEditing ? (
                                 <div className="flex items-center gap-2 flex-1">
@@ -1061,6 +1110,16 @@ const AlProducts = () => {
                                         <Eye className="w-4 h-4" />
                                         View Details
                                       </button>
+                                      {product?.isCustom && <button
+                                        className="w-full text-left px-4 py-2.5 text-sm bg-red-100 hover:bg-red-200 text-red-800 font-medium transition-colors flex items-center gap-2"
+                                        onClick={() => {
+                                          setDeleteId(product._id);
+                                          setShowDeletePopup(true)
+                                        }}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                        Delete Product
+                                      </button>}
                                     </div>
                                   </div>
                                 </>
