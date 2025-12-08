@@ -16,6 +16,7 @@ import {
   TrendingUp,
   ArrowRight,
   Activity,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -35,6 +36,7 @@ const Charts = ({ isOpen }) => {
     supplierCount,
     deactiveSuppliers,
     suppliers,
+    queries,
   } = useContext(AdminContext);
 
   if (allProductLoading) {
@@ -123,13 +125,13 @@ const Charts = ({ isOpen }) => {
       route: "/suppliers",
     },
     {
-      title: "Inactive Suppliers",
-      value: deactiveSuppliers ?? 0,
-      icon: UserX,
+      title: "User Queries",
+      value: queries?.length ?? 0,
+      icon: MessageSquare,
       gradient: "from-red-500 to-red-600",
       bgGradient: "from-red-50 to-red-100",
       iconColor: "text-red-600",
-      route: "/suppliers",
+      route: "/user-queries",
     },
   ];
 

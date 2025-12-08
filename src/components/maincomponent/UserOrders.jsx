@@ -8,6 +8,8 @@ import CustomerDetailsSection from "./userOrders/CustomerDetailsSection";
 import OrdersTableSection from "./userOrders/OrdersTableSection";
 import AttachmentsSection from "./userOrders/AttachmentsSection";
 import NotesSection from "./userOrders/NotesSection";
+import UserQueries from "./UserQueries";
+import UserIndividualQueries from "./userOrders/UserIndividualQueries";
 
 export default function UserOrders() {
   const { id } = useParams();
@@ -182,6 +184,7 @@ export default function UserOrders() {
           onPageChange={setCurrentPage}
         />
       )}
+      {activeTab === "queries" && <UserIndividualQueries user={user} />}
 
       {activeTab === "attachments" && (
         <AttachmentsSection

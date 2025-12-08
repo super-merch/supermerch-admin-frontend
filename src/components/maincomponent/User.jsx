@@ -26,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import ActionButton from "../ui/ActionButton";
 import UserOrdersPerUserChart from "./charts/UserOrdersPerUserChart";
 import UserAvgTransactionChart from "./charts/UserAvgTransactionChart";
+import UserOrderRecencyChart from "./charts/UserOrderRecencyChart";
 
 const User = () => {
   const {
@@ -241,33 +242,18 @@ const User = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
       <div className="bg-gray-200 p-2 rounded-lg mb-3">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-3 items-start">
-          {/* Filters Section */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between gap-6">
-              <div className="flex items-center  gap-1 w-full">
-                <p className="text-xs text-gray-500 mb-1">Total Users</p>
-                <p className="text-xl font-bold text-gray-900 ml-4">
-                  {totalUsers}
-                </p>
-              </div>
-              <div className="p-2 bg-teal-100 rounded-lg">
-                <Users className="w-5 h-5 text-teal-600" />
-              </div>
-            </div>
-            <div className="text-xs text-gray-600">
-              Total Active Users:{" "}
-              <span className="font-semibold text-green-600">
-                {activeUsers}
+        <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 mb-3 items-start">
+          <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-900">
+                Last order recency
+              </p>
+              <span className="text-[11px] text-gray-500">
+                Users by last purchase
               </span>
             </div>
-            <div className="text-xs text-gray-600">
-              Total Inactive Users:{" "}
-              <span className="font-semibold text-red-600">
-                {inactiveUsers}
-              </span>
-            </div>
-            <div className="flex items-center justify-start gap-2 mt-4"></div>
+
+            <UserOrderRecencyChart height={300} />
           </div>
           <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-2">
@@ -277,7 +263,7 @@ const User = () => {
             </div>
 
             <UserAvgTransactionChart height={300} />
-          </div>{" "}
+          </div>
           <div className="col-span-2 bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-900">
