@@ -135,7 +135,7 @@ const AlProducts = () => {
             data = await fetchProducts(
               currentPage,
               ITEMS_PER_PAGE,
-              supplier,
+              supplier !== "all" ? supplier : null,
               selectedCategory !== "all" ? selectedCategory : null
             );
             setProducts(data.data);
