@@ -151,7 +151,7 @@ const AlProducts = () => {
 
     fetchData();
   }, [currentPage, sortOption, selectedCategory, supplier, localSearch]);
-
+  
   // Bulk selection handlers
   const handleBulkSelect = (productId) => {
     setSelectedProducts((prev) => {
