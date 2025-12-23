@@ -35,6 +35,7 @@ const Products = () => {
     updateOrder,
     fetchOrders,
     sendNote,
+    setOrderId,
     getOrderComments,
     updateOrderComment,
     addOrderComment,
@@ -139,6 +140,7 @@ const Products = () => {
 
       if (mounted) {
         setCheckout(found);
+        setOrderId(found.orderId)
         setLoading(false);
         if (found.artworkOption == "upload") {
           const logo = await getLogo(found.logoId);

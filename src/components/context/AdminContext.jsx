@@ -22,6 +22,7 @@ const AdminContextProvider = (props) => {
   const [prodLength, setProdLength] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
   const [orderCount, setOrderCount] = useState({});
+  const [orderId, setOrderId] = useState("");
   const [userStats, setUserStats] = useState({
     deliveredOrders: 0,
     pendingOrders: 0,
@@ -887,6 +888,8 @@ const AdminContextProvider = (props) => {
     fetchSuppliers,
     supplierCount,
     deactiveSuppliers,
+    setOrderId,
+    orderId,
     suppliers,
     deleteOrder,
     setSuppliers,

@@ -216,7 +216,7 @@ const getPageTitle = (pathname) => {
 };
 
 const Navbar = () => {
-  const { setShowPopup, setUnseenMessages, unseenMessages } =
+  const { setShowPopup, setUnseenMessages, unseenMessages,orderId } =
     useContext(AdminContext);
   const [profileDropDown, setProfileDropDown] = useState(false);
   const aToken = localStorage.getItem("aToken");
@@ -274,7 +274,7 @@ const Navbar = () => {
     <header className="bg-white shadow p-1 px-4 flex items-center justify-between">
       <Title
         title={pageTitle}
-        subtitle={pageSubtitle}
+        subtitle={pageTitle == "Order Details" ? orderId : pageSubtitle}
         className="max-w-xl"
         titleClass="text-xl font-bold text-gray-900"
         subtitleClass="text-xs text-gray-500"
