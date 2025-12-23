@@ -22,7 +22,7 @@ const TITLE_CONFIG = [
     pattern: /^\/order-details\/([^/]+)/,
     resolver: ([, id]) => ({
       title: "Order Details",
-      subtitle: `Order #${formatId(id)}`,
+      // subtitle: `Order #${formatId(id)}`,
     }),
   },
   {
