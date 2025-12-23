@@ -282,7 +282,7 @@ export default function NotesSection({ userId, userOrders }) {
         />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           {/* <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
+            <label className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
               <Paperclip className="w-3.5 h-3.5 text-gray-500" />
               <span>Attach files</span>
               <input
@@ -333,7 +333,7 @@ export default function NotesSection({ userId, userOrders }) {
       {/* Previous Notes */}
       <div className="pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-gray-400" />
             Previous Notes
           </p>
@@ -348,7 +348,7 @@ export default function NotesSection({ userId, userOrders }) {
         {loading ? (
           <div className="flex flex-col items-center gap-2 py-6">
             <div className="w-8 h-8 border-3 border-yellow-200 border-t-yellow-600 rounded-full animate-spin"></div>
-            <p className="text-xs text-gray-500">Loading notes...</p>
+            <p className="text-sm text-gray-500">Loading notes...</p>
           </div>
         ) : notesHistory.length === 0 ? (
           <p className="text-[11px] text-gray-500">
@@ -369,7 +369,7 @@ export default function NotesSection({ userId, userOrders }) {
                       onChange={(e) => setEditText(e.target.value)}
                       rows={3}
                       placeholder="Edit note..."
-                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                       disabled={updateLoading}
                     />
                     {/* <div className="flex items-center gap-2 flex-wrap">
@@ -462,7 +462,7 @@ export default function NotesSection({ userId, userOrders }) {
                       </div>
                     </div>
                     {note.text && (
-                      <p className="text-xs text-gray-800 whitespace-pre-line mb-1">
+                      <p className="text-sm text-gray-800 whitespace-pre-line mb-1">
                         {note.text}
                       </p>
                     )}

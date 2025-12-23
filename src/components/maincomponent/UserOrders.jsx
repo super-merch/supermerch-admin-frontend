@@ -137,7 +137,7 @@ export default function UserOrders() {
               ariaLabel="Go back"
               className="!px-2 !py-1"
             />
-            <p className="text-sm font-medium text-gray-600">{user?.name}</p>
+            <p className="text-base font-medium text-gray-600">{user?.name}</p>
           </div>
           <ActionButton
             icon={RefreshCw}

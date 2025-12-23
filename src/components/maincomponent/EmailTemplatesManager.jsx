@@ -72,21 +72,8 @@ const EmailTemplatesManager = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-600" />
-            <h2 className="text-xl font-bold">Email Templates</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="bg-white rounded-lg w-full  mx-auto flex flex-col">
+
 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
@@ -137,13 +124,13 @@ const EmailTemplatesManager = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-4 border-t bg-gray-50">
-          <button
+          {/* <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
             disabled={loading}
           >
             Close
-          </button>
+          </button> */}
           <button
             onClick={saveTemplate}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
@@ -153,7 +140,6 @@ const EmailTemplatesManager = ({ isOpen, onClose }) => {
           </button>
         </div>
       </div>
-    </div>
   );
 };
 
