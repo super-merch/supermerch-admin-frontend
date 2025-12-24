@@ -92,7 +92,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { label: "Payment Integrations", path: "/company-details" },
         { label: "Markup", path: "/global-margin" },
         { label: "Global Discount", path: "/global-discount" },
-        { label: "GST", path: "/company-details" },
+        { label: "GST", path: "/gst" },
         { label: "Blogs", path: "/blogs" },
         { label: "Reports", path: "/reports" },
         { label: "Coupons", path: "/add-coupon" },

@@ -40,6 +40,7 @@ import AddProduct from "./components/maincomponent/AddProduct";
 import AdminProfile from "./components/maincomponent/AdminProfile";
 import EmailTemplates from "./components/maincomponent/EmailTemplates";
 import NotificationManagement from "./components/maincomponent/NotificationManagement";
+import GstCharges from "./components/maincomponent/GstCharges";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -88,6 +89,7 @@ const App = () => {
                 <Route path="/add-admin-quote" element={<PrivateRoute element={<AddAdminQuote />} />} />
                 <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
                 <Route path="/shipping" element={<PrivateRoute element={<ShippingCharges />} />} />
+                <Route path="/gst" element={<PrivateRoute element={<GstCharges />} />} />
                 <Route path="/add-coupon" element={<PrivateRoute element={<AddCoupen />} />} />
                 <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
