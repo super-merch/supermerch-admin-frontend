@@ -42,11 +42,11 @@ export default function CustomerDetailsSection({
   const [companyAddress, setCompanyAddress] = useState("");
   const [updatedLastName, setUpdatedLastName] = useState("");
   const [updatedEmail, setUpdatedEmail] = useState("");
-  const [editModal, setEditModal] = useState(false);
-  const [editCompanyModal, setEditCompanyModal] = useState(false);
   const [editData, setEditData] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
   const handleEdit = (user) => {
     setEditingUser(user._id);
     setUpdatedName(user.name || "");
@@ -73,7 +73,11 @@ export default function CustomerDetailsSection({
       }
 
       setUpdateLoading(true);
-      const updatedData = { name: updatedName, email: updatedEmail, lastName: updatedLastName };
+      const updatedData = {
+        name: updatedName,
+        email: updatedEmail,
+        lastName: updatedLastName,
+      };
       await editUser(editingUser, updatedData);
 
       setUsers((prevUsers) =>
@@ -189,159 +193,6 @@ export default function CustomerDetailsSection({
   };
   return (
     <div className="space-y-3">
-      {editModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
-              <button
-                onClick={() => {
-                  setEditModal(false);
-                  setEditingUser(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={updatedName}
-                  onChange={(e) => setUpdatedName(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter username"
-                  maxLength={20}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Maximum 20 characters
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={updatedLastName}
-                  onChange={(e) => setUpdatedLastName(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter last name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={updatedEmail}
-                  onChange={(e) => setUpdatedEmail(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter email"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setEditModal(false);
-                  setEditingUser(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <ActionButton
-                label="Save Changes"
-                onClick={handleUpdate}
-                disabled={updateLoading || !updatedName || !updatedLastName}
-                loading={updateLoading}
-                variant="primary"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      {editCompanyModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Edit Company</h2>
-              <button
-                onClick={() => {
-                  setEditCompanyModal(false);
-                  setEditingUser(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name *
-                </label>
-                <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter company name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Email
-                </label>
-                <input
-                  type="text"
-                  value={companyEmail}
-                  onChange={(e) => setCompanyEmail(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter company email"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Address
-                </label>
-                <input
-                  type="email"
-                  value={companyAddress}
-                  onChange={(e) => setCompanyAddress(e.target.value)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Enter company address"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setEditCompanyModal(false);
-                  setEditingUser(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <ActionButton
-                label="Save Changes"
-                onClick={handleCompanyUpdate}
-                disabled={updateLoading || !companyName}
-                loading={updateLoading}
-                variant="primary"
-              />
-            </div>
-          </div>
-        </div>
-      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
@@ -402,45 +253,105 @@ export default function CustomerDetailsSection({
 
       {/* User Details Card */}
       <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-6 mb-5">
+        {/* Inside Customer Details Card - replace the header */}
+        <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-teal-600" />
             Customer Details
           </h2>
-          <ActionButton
-            icon={Edit}
-            label="Edit"
-            onClick={() => handleEdit(user)}
-            variant="outline"
-            size="sm"
-          />
+          {!isEditingCustomer ? (
+            <ActionButton
+              icon={Edit}
+              label="Edit"
+              onClick={() => {
+                setIsEditingCustomer(true);
+                handleEdit(user);
+                setUpdatedName(user.name || "");
+                setUpdatedLastName(user.lastName || "");
+                setUpdatedEmail(user.email || "");
+              }}
+              variant="outline"
+              size="sm"
+            />
+          ) : (
+            <div className="flex gap-2">
+              <ActionButton
+                label="Cancel"
+                onClick={() => setIsEditingCustomer(false)}
+                variant="outline"
+                size="sm"
+              />
+              <ActionButton
+                label="Save"
+                onClick={async () => {
+                  await handleUpdate();
+                  setIsEditingCustomer(false);
+                }}
+                loading={updateLoading}
+                variant="primary"
+                size="sm"
+              />
+            </div>
+          )}
         </div>
+
+        {/* Replace the fields grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           <div className="flex items-center gap-1.5">
             <UserIcon className="w-3.5 h-3.5 text-gray-400" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-gray-500">First Name</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.name || "N/A"}
-              </p>
+              {isEditingCustomer ? (
+                <input
+                  type="text"
+                  value={updatedName}
+                  onChange={(e) => setUpdatedName(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  maxLength={20}
+                />
+              ) : (
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user.name || "N/A"}
+                </p>
+              )}
             </div>
           </div>
-          {user.lastName && <div className="flex items-center gap-1.5">
-            <UserIcon className="w-3.5 h-3.5 text-gray-400" />
-            <div>
-              <p className="text-sm text-gray-500">Last Name</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.lastName || "N/A"}
-              </p>
+          {(user.lastName || isEditingCustomer) && (
+            <div className="flex items-center gap-1.5">
+              <UserIcon className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Last Name</p>
+                {isEditingCustomer ? (
+                  <input
+                    type="text"
+                    value={updatedLastName}
+                    onChange={(e) => setUpdatedLastName(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
+                ) : (
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user.lastName || "N/A"}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>}
+          )}
           <div className="flex items-center gap-1.5">
             <Mail className="w-3.5 h-3.5 text-gray-400" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-sm text-gray-500">Email</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.email || "N/A"}
-              </p>
+              {isEditingCustomer ? (
+                <input
+                  type="email"
+                  value={updatedEmail}
+                  onChange={(e) => setUpdatedEmail(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              ) : (
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user.email || "N/A"}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -486,50 +397,109 @@ export default function CustomerDetailsSection({
           </div>
         </div>
       </div>
-      {user.companyName && <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-6 mb-5">
-          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <LandmarkIcon className="w-4 h-4 text-teal-600" />
-            Company Details
-          </h2>
-          <ActionButton
-            icon={Edit}
-            label="Edit"
-            onClick={() => handleEditCompany(user)}
-            variant="outline"
-            size="sm"
-          />
+      {user.companyName && (
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
+          {/* Inside Company Details Card - replace the header */}
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <LandmarkIcon className="w-4 h-4 text-teal-600" />
+              Company Details
+            </h2>
+            {!isEditingCompany ? (
+              <ActionButton
+                icon={Edit}
+                label="Edit"
+                onClick={() => {
+                  handleEditCompany(user)
+                  setIsEditingCompany(true);
+                  setCompanyName(user.companyName || "");
+                  setCompanyEmail(user.companyEmail || "");
+                  setCompanyAddress(user.companyAddress || "");
+                }}
+                variant="outline"
+                size="sm"
+              />
+            ) : (
+              <div className="flex gap-2">
+                <ActionButton
+                  label="Cancel"
+                  onClick={() => setIsEditingCompany(false)}
+                  variant="outline"
+                  size="sm"
+                />
+                <ActionButton
+                  label="Save"
+                  onClick={async () => {
+                    await handleCompanyUpdate();
+                    setIsEditingCompany(false);
+                  }}
+                  loading={updateLoading}
+                  variant="primary"
+                  size="sm"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Replace the fields grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="flex items-center gap-1.5">
+              <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Company Name</p>
+                {isEditingCompany ? (
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
+                ) : (
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user.companyName || "N/A"}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Company Email</p>
+                {isEditingCompany ? (
+                  <input
+                    type="text"
+                    value={companyEmail}
+                    onChange={(e) => setCompanyEmail(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
+                ) : (
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user.companyEmail || "N/A"}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Company Address</p>
+                {isEditingCompany ? (
+                  <input
+                    type="text"
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
+                ) : (
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user.companyAddress || "N/A"}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          <div className="flex items-center gap-1.5">
-            <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
-            <div>
-              <p className="text-sm text-gray-500">Company Name</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.companyName || "N/A"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
-            <div>
-              <p className="text-sm text-gray-500">Company Email</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.companyEmail || "N/A"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <LandmarkIcon className="w-3.5 h-3.5 text-gray-400" />
-            <div>
-              <p className="text-sm text-gray-500">Company Address</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.companyAddress || "N/A"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>}
+      )}
 
       {/* Shipping Address Section */}
       {user?.defaultShippingAddress && (
