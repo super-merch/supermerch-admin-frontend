@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import {
@@ -43,9 +43,14 @@ const AlProducts = () => {
     fetchParamProducts,
     totalApiPages,
   } = useContext(AdminContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const raw = searchParams.get("page");
+    const parsed = Number.parseInt(raw || "1", 10);
+    return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+  });
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [supplier, setSupplier] = useState(null);
@@ -72,6 +77,32 @@ const AlProducts = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [productionIds, setProductionIds] = useState(new Set());
   const ITEMS_PER_PAGE = 25;
+
+  const setUrlPage = (page, { replace = false } = {}) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (!page || page <= 1) {
+          next.delete("page");
+        } else {
+          next.set("page", String(page));
+        }
+        return next;
+      },
+      { replace }
+    );
+  };
+
+  // Keep state in sync with the URL (supports refresh + back/forward navigation)
+  useEffect(() => {
+    const raw = searchParams.get("page");
+    const parsed = Number.parseInt(raw || "1", 10);
+    const urlPage = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+    if (urlPage !== currentPage) {
+      setCurrentPage(urlPage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   useEffect(() => {
     const fetchData = async () => {
       const data = await fetchCategories();
@@ -323,11 +354,13 @@ const AlProducts = () => {
     if (!searchTerm.trim()) {
       setIsSearching(false);
       setCurrentPage(1);
+      setUrlPage(1);
       return;
     }
     setLocalSearch(searchTerm);
     setIsSearching(true);
     setCurrentPage(1);
+    setUrlPage(1);
   };
 
   // Update clearSearch:
@@ -336,6 +369,7 @@ const AlProducts = () => {
     setIsSearching(false);
     setLocalSearch("");
     setCurrentPage(1);
+    setUrlPage(1);
   };
 
   // Fetch trending products from API
@@ -547,7 +581,22 @@ const AlProducts = () => {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > paginationTotal) return;
     setCurrentPage(newPage);
+    setUrlPage(newPage);
   };
+
+  // Clamp invalid URL/state pages once we know the total page count.
+  useEffect(() => {
+    if (!paginationTotal) return;
+    if (currentPage > paginationTotal) {
+      setCurrentPage(paginationTotal);
+      setUrlPage(paginationTotal, { replace: true });
+    }
+    if (currentPage < 1) {
+      setCurrentPage(1);
+      setUrlPage(1, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginationTotal]);
 
   const handleViewProduct = (product) => {
     navigate(`/product/${product.meta.id}`, { state: product });
@@ -635,6 +684,7 @@ const AlProducts = () => {
                 clearSearch();
               } else {
                 setCurrentPage(1);
+                setUrlPage(1);
               }
             }}
             variant="outline"
