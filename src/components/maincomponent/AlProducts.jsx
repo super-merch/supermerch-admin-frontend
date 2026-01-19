@@ -589,19 +589,7 @@ const AlProducts = () => {
     setUrlPage(newPage);
   };
 
-  // Clamp invalid URL/state pages once we know the total page count.
-  useEffect(() => {
-    if (!paginationTotal) return;
-    if (currentPage > paginationTotal) {
-      setCurrentPage(paginationTotal);
-      setUrlPage(paginationTotal, { replace: true });
-    }
-    if (currentPage < 1) {
-      setCurrentPage(1);
-      setUrlPage(1, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginationTotal]);
+
 
   const handleViewProduct = (product) => {
     navigate(`/product/${product.meta.id}`, { state: product });
