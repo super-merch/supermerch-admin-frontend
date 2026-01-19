@@ -87,6 +87,7 @@ const FiltersSection = ({
           className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
         >
           <option value="all">All Suppliers</option>
+          <option value={0}>Ankit's Products</option>
           {supplierList.map((supplier) => (
             <option key={supplier.id} value={supplier.id}>
               {supplier.name}

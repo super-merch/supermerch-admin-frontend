@@ -258,13 +258,13 @@ const Orders = () => {
               <Users className="w-4 h-4" />
               User Orders
             </button>
-            <button
+            {/* <button
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               onClick={() => setShowTemplates(true)}
             >
               <FileText className="w-4 h-4" />
               Templates
-            </button>
+            </button> */}
           </div>
           <button
             className="p-2 text-gray-600 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
@@ -573,7 +573,11 @@ const Orders = () => {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">
-                            ${order.total?.toFixed(2) || "0.00"}
+                            $
+                            {order.total.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }) || "0.00"}
                           </span>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">

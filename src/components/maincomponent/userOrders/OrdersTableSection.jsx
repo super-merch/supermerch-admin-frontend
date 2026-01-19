@@ -44,29 +44,29 @@ export default function OrdersTableSection({
         <table className="w- mx-auto">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             <tr>
-              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">
+              <th className="px-3 py-3 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-16">
                 #
               </th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
+              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider min-w-[200px]">
                 Order ID
               </th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Order Date
               </th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Status
               </th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Products
               </th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+              <th className="px-3 py-3 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Total(inc. GST)
               </th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
+              <th className="px-3 py-3 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider w-32">
                 Payment Status
               </th>
 
-              {/* <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
+              {/* <th className="px-3 py-3 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-40">
                 Actions
               </th> */}
             </tr>
@@ -101,7 +101,7 @@ export default function OrdersTableSection({
 
                 {/* Order Date */}
                 <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600">
                     <Calendar className="w-3.5 h-3.5 text-gray-400" />
                     <span>
                       {order.orderDate ? formatDate(order.orderDate) : "N/A"}
@@ -117,7 +117,7 @@ export default function OrdersTableSection({
                       handleStatusChange(order._id, e.target.value)
                     }
                     disabled={statusLoading[order._id]}
-                    className="text-xs font-medium px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                    className="text-sm font-medium px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Complete">Complete</option>
@@ -136,7 +136,7 @@ export default function OrdersTableSection({
 
                 {/* Payment Status */}
                 <td className="px-3 py-3 whitespace-nowrap text-center">
-                  <span className="text-xs text-gray-600">
+                  <span className="text-sm text-gray-600">
                     {order.paymentStatus || "N/A"}
                   </span>
                 </td>

@@ -191,7 +191,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-gray-900">
@@ -226,7 +226,6 @@ export default function Settings() {
 
           <div className="px-6 py-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {/* Name Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Name
@@ -259,7 +258,6 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email
@@ -292,7 +290,6 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* Phone Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone
@@ -325,7 +322,6 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* Address Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address
@@ -359,7 +355,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Action Buttons */}
             {isEditing && (
               <div className="mt-6 flex items-center justify-end space-x-3">
                 <button
@@ -404,7 +399,7 @@ export default function Settings() {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           {/* Header */}
           <div className="px-6 py-5 border-b border-gray-200">

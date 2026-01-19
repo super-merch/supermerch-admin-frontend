@@ -36,7 +36,7 @@ export default function TabsHeader({ activeTab, onTabChange, user }) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`relative inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`relative inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 isActive
                   ? "border-teal-600 text-teal-700"
                   : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200"

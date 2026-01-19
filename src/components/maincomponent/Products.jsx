@@ -35,6 +35,7 @@ const Products = () => {
     updateOrder,
     fetchOrders,
     sendNote,
+    setOrderId,
     getOrderComments,
     updateOrderComment,
     addOrderComment,
@@ -139,6 +140,7 @@ const Products = () => {
 
       if (mounted) {
         setCheckout(found);
+        setOrderId(found.orderId)
         setLoading(false);
         if (found.artworkOption == "upload") {
           const logo = await getLogo(found.logoId);
@@ -636,7 +638,7 @@ const Products = () => {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">GST (10%)</span>
+                    <span className="text-gray-600">GST ({checkout.gstPercent}%)</span>
                     <span className="font-medium text-gray-900">
                       {formatCurrency(checkout.gst)}
                     </span>

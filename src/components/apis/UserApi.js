@@ -218,7 +218,50 @@ export const addShippingCharges = async (shipping) => {
     throw error;
   }
 };
+export const addGstCharges = async (gst) => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/add-gst`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization headers if needed
+      },
+      body: JSON.stringify({ gst }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to add shipping charges');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const removeGstCharges = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete-gst`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization headers if needed
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to remove shipping charges');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
 export const removeShippingCharges = async () => {
   try {
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete`, {

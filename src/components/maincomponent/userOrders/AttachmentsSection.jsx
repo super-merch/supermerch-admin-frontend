@@ -394,7 +394,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
             <div className="p-3 border-t border-gray-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <ImageIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                <span className="text-xs text-gray-800 truncate">
+                <span className="text-sm text-gray-800 truncate">
                   {fileName}
                 </span>
               </div>
@@ -416,7 +416,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
           <div className="p-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
-              <span className="text-xs text-gray-800 truncate">{fileName}</span>
+              <span className="text-sm text-gray-800 truncate">{fileName}</span>
             </div>
             {showRemove && (
               <button
@@ -461,7 +461,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
               <FileText className="w-4 h-4 text-teal-600" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-900">Attachments</p>
+              <p className="text-sm font-semibold text-gray-900">Attachments</p>
               <p className="text-[11px] text-gray-500">
                 Store files and documents related to this customer.
               </p>
@@ -515,10 +515,10 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
               <tbody className="bg-white divide-y divide-gray-100">
                 {attachments.map((att, index) => (
                   <tr key={att._id || att.id} className="hover:bg-gray-50/60">
-                    <td className="px-3 py-2 text-xs text-gray-600">
+                    <td className="px-3 py-2 text-sm text-gray-600">
                       {index + 1}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-800">
+                    <td className="px-3 py-2 text-sm text-gray-800">
                       <div
                         onClick={() =>
                           setPreviewState({ open: true, attachment: att })
@@ -531,13 +531,13 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-700">
+                    <td className="px-3 py-2 text-sm text-gray-700">
                       {formatSize(att.attachment?.length)}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-700">
+                    <td className="px-3 py-2 text-sm text-gray-700">
                       {formatTime(att.date)}
                     </td>
-                    <td className="px-3 py-2 flex gap-2 text-xs text-gray-700">
+                    <td className="px-3 py-2 flex gap-2 text-sm text-gray-700">
                       <ActionButton
                         label="Update"
                         onClick={() => openModal("edit", att)}
@@ -589,7 +589,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-600 mb-1">
                     File name
                   </label>
                   <input
@@ -610,7 +610,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-600 mb-1">
                     File
                   </label>
 
@@ -661,7 +661,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
                   >
                     <div className="flex flex-col items-center gap-1">
                       <UploadCloud className="w-6 h-6 text-gray-400" />
-                      <p className="text-xs font-medium text-gray-800">
+                      <p className="text-sm font-medium text-gray-800">
                         {modalState.formData.file
                           ? "Replace file (drag & drop or click)"
                           : "Drag & drop your file here"}
@@ -685,7 +685,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={closeModal}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -735,7 +735,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
             <div className="flex justify-end gap-2">
               <button
                 onClick={closeModal}
-                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -803,7 +803,7 @@ export default function AttachmentsSection({ user, userOrders, userId }) {
                 href={previewState.attachment.attachment}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors"
               >
                 Open in New Tab
               </a>

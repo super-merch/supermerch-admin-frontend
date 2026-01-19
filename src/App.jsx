@@ -37,6 +37,10 @@ import AddAdminQuote from "./components/maincomponent/AddAdminQuote";
 import Notifications from "./components/maincomponent/Notifications";
 import Settings from "./components/maincomponent/Settings";
 import AddProduct from "./components/maincomponent/AddProduct";
+import AdminProfile from "./components/maincomponent/AdminProfile";
+import EmailTemplates from "./components/maincomponent/EmailTemplates";
+import NotificationManagement from "./components/maincomponent/NotificationManagement";
+import GstCharges from "./components/maincomponent/GstCharges";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -85,7 +89,8 @@ const App = () => {
                 <Route path="/add-admin-quote" element={<PrivateRoute element={<AddAdminQuote />} />} />
                 <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
                 <Route path="/shipping" element={<PrivateRoute element={<ShippingCharges />} />} />
-                <Route path="/add-coupen" element={<PrivateRoute element={<AddCoupen />} />} />
+                <Route path="/gst" element={<PrivateRoute element={<GstCharges />} />} />
+                <Route path="/add-coupon" element={<PrivateRoute element={<AddCoupen />} />} />
                 <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
                 <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
                 <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />
@@ -101,6 +106,9 @@ const App = () => {
                 <Route path="/edit-blog/:id" element={<EditBlog />} />
                 <Route path="/category-detail" element={<PrivateRoute element={<CategoryDetails />} />} /> 
                 <Route path="/notifications" element={<PrivateRoute element={<Notifications />} />} /> 
+                <Route path="/admin-profile" element={<PrivateRoute element={<AdminProfile />} />} /> 
+                <Route path="/email-templates" element={<PrivateRoute element={<EmailTemplates />} />} /> 
+                <Route path="/email-management" element={<PrivateRoute element={<NotificationManagement />} />} /> 
                 <Route path="/settings" element={<PrivateRoute element={<Settings />} />} /> 
                 <Route path="/add-product" element={<PrivateRoute element={<AddProduct />} />} /> 
                 <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />

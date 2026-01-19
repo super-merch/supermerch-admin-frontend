@@ -298,7 +298,11 @@ export default function AdminQuotes() {
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        ${quote.total.toFixed(2)}
+                        $
+                        {quote?.total.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         {getStatusBadge(quote.status)}
