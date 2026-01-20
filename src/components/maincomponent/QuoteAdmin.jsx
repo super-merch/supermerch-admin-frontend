@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 import noimage from "../../assets/noimage.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   FileText,
@@ -22,14 +22,25 @@ const QuoteAdmin = () => {
     useContext(AdminContext);
 
   // State for pagination and search
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const initialSearch = searchParams.get("search") || "";
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const navigate = useNavigate();
-  const [mySearch, setMySearch] = useState("");
+  const [mySearch, setMySearch] = useState(initialSearch);
 
-  useEffect(() => {
-    listQuotes();
-  }, []);
+  const updateQuoteParams = (nextParams) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
+    setSearchParams(params);
+  };
 
   useEffect(() => {
     const filters = {
@@ -39,8 +50,14 @@ const QuoteAdmin = () => {
   }, [currentPage, searchTerm]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+    const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
+    const urlSearch = searchParams.get("search") || "";
+    if (currentPage !== urlPage) setCurrentPage(urlPage);
+    if (searchTerm !== urlSearch) {
+      setSearchTerm(urlSearch);
+      setMySearch(urlSearch);
+    }
+  }, [searchParams]);
 
   // Calculate pagination
   const totalPages = quotesPagination?.totalPages || 1;
@@ -49,17 +66,22 @@ const QuoteAdmin = () => {
   // Update pagination handlers:
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+    updateQuoteParams({ page: pageNumber });
   };
 
   const handlePrevious = () => {
     if (quotesPagination?.hasPrevPage) {
-      setCurrentPage(currentPage - 1);
+      const prevPage = currentPage - 1;
+      setCurrentPage(prevPage);
+      updateQuoteParams({ page: prevPage });
     }
   };
 
   const handleNext = () => {
     if (quotesPagination?.hasNextPage) {
-      setCurrentPage(currentPage + 1);
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      updateQuoteParams({ page: nextPage });
     }
   };
 
@@ -193,6 +215,7 @@ const QuoteAdmin = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       setSearchTerm(mySearch);
+                      updateQuoteParams({ page: 1, search: mySearch });
                     }
                   }}
                   className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -205,6 +228,7 @@ const QuoteAdmin = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setMySearch("");
+                    updateQuoteParams({ page: 1, search: "" });
                   }}
                   className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
