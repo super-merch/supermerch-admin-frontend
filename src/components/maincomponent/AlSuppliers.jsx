@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import {
@@ -33,7 +33,6 @@ const AlSuppliers = () => {
     supplierLoading,
     suppliersPagination,
   } = useContext(AdminContext);
-  const [currentPage, setCurrentPage] = useState(1);
   const [ignoredSuppliers, setIgnoredSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState({});
   const [discounts, setDiscounts] = useState({}); // input values
@@ -45,11 +44,15 @@ const AlSuppliers = () => {
   const itemsPerPage = 15;
   const [addLoading, setAddLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const initialTag = searchParams.get("tag") || "all";
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [mySearch, setMySearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [tagFilters, setTagFilters] = useState([]);
-  const [selectedTagFilter, setSelectedTagFilter] = useState(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState(initialTag);
   const fetchSupplierDiscounts = async () => {
     try {
       const response = await fetch(
@@ -72,13 +75,30 @@ const AlSuppliers = () => {
   };
   const isSearchUpdating = useRef(false);
   const isFilterUpdating = useRef(false);
+  const updateSupplierParams = (nextParams) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (!value || value === "all") {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
+    setSearchParams(params);
+  };
 
   useEffect(() => {
-    if (!searchTerm && (!selectedTagFilter || selectedTagFilter === "all")) {
-      // If search is cleared, fetch regular suppliers
+    const pageParam = Math.max(1, Number(searchParams.get("page")) || 1);
+    const tagParam = searchParams.get("tag") || "all";
+
+    if (!searchTerm) {
       setIsSearchMode(false);
-      fetchSuppliers(1);
-      setCurrentPage(1);
+      setCurrentPage(pageParam);
+      if (tagParam !== "all") {
+        fetchSuppliers(pageParam, itemsPerPage, tagParam);
+      } else {
+        fetchSuppliers(pageParam);
+      }
       return;
     }
 
@@ -118,11 +138,16 @@ const AlSuppliers = () => {
     };
 
     search();
-  }, [searchTerm]);
+  }, [searchTerm, searchParams]);
 
   useEffect(() => {
     // Skip if this change was triggered by search
     if (isSearchUpdating.current) {
+      return;
+    }
+
+    const tagParam = searchParams.get("tag") || "all";
+    if (selectedTagFilter === tagParam) {
       return;
     }
 
@@ -133,10 +158,7 @@ const AlSuppliers = () => {
         setSearchTerm("");
       }
 
-      console.log(selectedTagFilter);
-      fetchSuppliers(1, 100, selectedTagFilter);
-      isFilterUpdating.current = false;
-      return;
+      updateSupplierParams({ page: 1, tag: selectedTagFilter });
     } else if (selectedTagFilter === "all") {
       // Clear search term when "all" is selected
       if (searchTerm) {
@@ -144,18 +166,23 @@ const AlSuppliers = () => {
         setSearchTerm("");
       }
 
-      fetchSuppliers(1);
-      isFilterUpdating.current = false;
-      return;
+      updateSupplierParams({ page: 1, tag: null });
     }
-  }, [selectedTagFilter]);
+    isFilterUpdating.current = false;
+  }, [selectedTagFilter, searchParams, searchTerm]);
 
   const clearSearch = () => {
     setSearchTerm("");
     setMySearch("");
     setIsSearchMode(false);
     setCurrentPage(1);
-    fetchSuppliers(1);
+    updateSupplierParams({
+      page: 1,
+      tag:
+        selectedTagFilter && selectedTagFilter !== "all"
+          ? selectedTagFilter
+          : null,
+    });
   };
   const [supplierData, setSupplierData] = useState([]);
   const [editingTags, setEditingTags] = useState({});
@@ -457,8 +484,13 @@ const AlSuppliers = () => {
 
   // Pagination logic
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    fetchSuppliers(newPage); // Fetch new page data
+    updateSupplierParams({
+      page: newPage,
+      tag:
+        selectedTagFilter && selectedTagFilter !== "all"
+          ? selectedTagFilter
+          : null,
+    });
   };
 
   const handleViewSupplier = (supplier) => {

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
 import {
@@ -39,9 +39,11 @@ const Orders = () => {
   } = useContext(AdminContext);
   const [byUsers, setByUsers] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [ordersPerPage, setOrdersPerPage] = useState(20);
   const [deleteModel, setDeleteModel] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -52,6 +54,8 @@ const Orders = () => {
   const [filterDate, setFilterDate] = useState("");
   const [sortBy, setSortBy] = useState("orderDate");
   const [sortOrder, setSortOrder] = useState("desc");
+  const filtersKeyRef = useRef("");
+  const ordersPerPageRef = useRef(ordersPerPage);
 
   const [allUsers, setAllUsers] = useState([]);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -88,6 +92,18 @@ const Orders = () => {
   const [pendingOrders, setPendingOrders] = useState(0);
   const [deliveredOrders, setDeliveredOrders] = useState(0);
   const [cancelledOrders, setCancelledOrders] = useState(0);
+
+  const updateOrderParams = (nextParams) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
+    setSearchParams(params);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -159,20 +175,30 @@ const Orders = () => {
     fetchOrders("", currentPage, filters, ordersPerPage);
   }, [currentPage, searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
 
+  useEffect(() => {
+    const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
+    if (currentPage !== urlPage) setCurrentPage(urlPage);
+  }, [searchParams]);
+
   // Update goToPage, goToPreviousPage, goToNextPage functions
   const goToPage = (page) => {
     setCurrentPage(page);
+    updateOrderParams({ page });
   };
 
   const goToPreviousPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      const prevPage = currentPage - 1;
+      setCurrentPage(prevPage);
+      updateOrderParams({ page: prevPage });
     }
   };
 
   const goToNextPage = () => {
     if (pagination && currentPage < pagination.totalPages) {
-      setCurrentPage(currentPage + 1);
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      updateOrderParams({ page: nextPage });
     }
   };
   const handleDeleteOrder = async (_id) => {
@@ -181,8 +207,26 @@ const Orders = () => {
 
   // Reset to first page when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    const nextKey = JSON.stringify({
+      searchTerm,
+      filterStatus,
+      filterDate,
+      sortBy,
+      sortOrder,
+    });
+    if (filtersKeyRef.current && filtersKeyRef.current !== nextKey) {
+      setCurrentPage(1);
+      updateOrderParams({ page: 1 });
+    }
+    filtersKeyRef.current = nextKey;
   }, [searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
+  useEffect(() => {
+    if (ordersPerPageRef.current !== ordersPerPage) {
+      ordersPerPageRef.current = ordersPerPage;
+      setCurrentPage(1);
+      updateOrderParams({ page: 1 });
+    }
+  }, [ordersPerPage]);
   const [mySearch, setMySearch] = useState("");
 
   const getStatusColor = (status) => {
@@ -355,6 +399,7 @@ const Orders = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       setSearchTerm(mySearch);
+                      updateOrderParams({ page: 1 });
                     }
                   }}
                   className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -429,6 +474,7 @@ const Orders = () => {
                     setFilterDate("");
                     setSortBy("orderDate");
                     setSortOrder("desc");
+                    updateOrderParams({ page: 1 });
                   }}
                   className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
