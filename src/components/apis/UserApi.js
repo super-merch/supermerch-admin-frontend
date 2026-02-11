@@ -9,7 +9,7 @@ export const editUser = async (userId, updatedData) => {
       updatedData,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
         },
       },
     );
@@ -27,7 +27,7 @@ export const deleteUser = async (userId) => {
       `${backednUrl}/api/auth/users/${userId}`,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
         },
       },
     );
@@ -45,7 +45,7 @@ export const ProductsApi = async (id = "") => {
       : `${backednUrl}/api/checkout/products`;
     const response = await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${localStorage.getItem("aToken")}`,
       },
     });
     return response.data;
@@ -183,7 +183,7 @@ export const getShippingCharges = async () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
           // Add authorization headers if needed
         },
       },
@@ -209,7 +209,7 @@ export const addShippingCharges = async (shipping) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
           // Add authorization headers if needed
         },
         body: JSON.stringify({ shipping }),
@@ -235,7 +235,7 @@ export const addGstCharges = async (gst) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
           // Add authorization headers if needed
         },
         body: JSON.stringify({ gst }),
@@ -262,7 +262,7 @@ export const removeGstCharges = async () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
           // Add authorization headers if needed
         },
       },
@@ -287,7 +287,7 @@ export const removeShippingCharges = async () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
           // Add authorization headers if needed
         },
       },
