@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Trash2, Edit, Eye, X } from "lucide-react";
 import { IoIosSearch, IoMdSearch } from "react-icons/io";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function AdminQuotes() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const initialSearch = searchParams.get("search") || "";
+  const initialFilter = searchParams.get("filter") || "";
+  const [page, setPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [filter, setFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [filter, setFilter] = useState(initialFilter);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -24,6 +28,29 @@ export default function AdminQuotes() {
     quoteNumber: "",
   });
   const navigate = useNavigate();
+  const updateQuoteParams = (nextParams) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
+    setSearchParams(params);
+  };
+
+  useEffect(() => {
+    const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
+    const urlSearch = searchParams.get("search") || "";
+    const urlFilter = searchParams.get("filter") || "";
+    if (page !== urlPage) setPage(urlPage);
+    if (searchQuery !== urlSearch) {
+      setSearchQuery(urlSearch);
+      setSearchInput(urlSearch);
+    }
+    if (filter !== urlFilter) setFilter(urlFilter);
+  }, [searchParams]);
 
   // Fetch quotes
   const fetchQuotes = async (searchTerm, filter) => {
@@ -174,6 +201,11 @@ export default function AdminQuotes() {
               if (e.key === "Enter") {
                 setPage(1);
                 setSearchQuery(searchInput);
+                updateQuoteParams({
+                  page: 1,
+                  search: searchInput,
+                  filter,
+                });
               }
             }}
             className="w-64 px-4 py-2 border rounded-md focus:outline-none focus:ring-1 transition-all duration-300 focus:ring-blue-500"
@@ -182,6 +214,11 @@ export default function AdminQuotes() {
             onClick={() => {
               setPage(1);
               setSearchQuery(searchInput);
+              updateQuoteParams({
+                page: 1,
+                search: searchInput,
+                filter,
+              });
             }}
             className="text-2xl cursor-pointer hover:text-slate-600"
           />
@@ -193,6 +230,11 @@ export default function AdminQuotes() {
             onChange={(e) => {
               setPage(1);
               setFilter(e.target.value);
+              updateQuoteParams({
+                page: 1,
+                search: searchQuery,
+                filter: e.target.value,
+              });
             }}
           >
             <option value="">All</option>
@@ -211,6 +253,12 @@ export default function AdminQuotes() {
               onClick={() => {
                 setPage(1);
                 setSearchQuery("");
+                setSearchInput("");
+                updateQuoteParams({
+                  page: 1,
+                  search: null,
+                  filter,
+                });
               }}
               className="text-red-500 cursor-pointer"
             >
@@ -357,7 +405,15 @@ export default function AdminQuotes() {
             {totalPages > 1 && (
               <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => {
+                    const nextPage = Math.max(1, page - 1);
+                    setPage(nextPage);
+                    updateQuoteParams({
+                      page: nextPage,
+                      search: searchQuery,
+                      filter,
+                    });
+                  }}
                   disabled={page === 1}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -367,7 +423,15 @@ export default function AdminQuotes() {
                   Page {page} of {totalPages}
                 </span>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => {
+                    const nextPage = Math.min(totalPages, page + 1);
+                    setPage(nextPage);
+                    updateQuoteParams({
+                      page: nextPage,
+                      search: searchQuery,
+                      filter,
+                    });
+                  }}
                   disabled={page === totalPages}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
