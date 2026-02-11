@@ -11,7 +11,7 @@ export const editUser = async (userId, updatedData) => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -29,7 +29,7 @@ export const deleteUser = async (userId) => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -60,8 +60,8 @@ export const addGlobalDiscount = async (discount) => {
     const response = await axios.post(
       `${backednUrl}/api/add-discount/add-global-discount`,
       {
-        discount
-      }
+        discount,
+      },
     );
     return response.data;
   } catch (error) {
@@ -73,7 +73,7 @@ export const addGlobalDiscount = async (discount) => {
 export const getGlobalDiscount = async () => {
   try {
     const response = await axios.get(
-      `${backednUrl}/api/add-discount/global-discount`
+      `${backednUrl}/api/add-discount/global-discount`,
     );
     return response.data;
   } catch (error) {
@@ -85,7 +85,7 @@ export const getGlobalDiscount = async () => {
 export const removeGlobalDiscount = async () => {
   try {
     const response = await axios.delete(
-      `${backednUrl}/api/add-discount/remove-global-discount`
+      `${backednUrl}/api/add-discount/remove-global-discount`,
     );
     return response.data;
   } catch (error) {
@@ -97,8 +97,8 @@ export const addGlobalMargin = async (margin) => {
     const response = await axios.post(
       `${backednUrl}/api/add-margin/add-global-margin`,
       {
-        margin
-      }
+        margin,
+      },
     );
     return response.data;
   } catch (error) {
@@ -110,7 +110,7 @@ export const addGlobalMargin = async (margin) => {
 export const getGlobalMargin = async () => {
   try {
     const response = await axios.get(
-      `${backednUrl}/api/add-margin/global-margin`
+      `${backednUrl}/api/add-margin/global-margin`,
     );
     return response.data;
   } catch (error) {
@@ -122,7 +122,7 @@ export const getGlobalMargin = async () => {
 export const removeGlobalMargin = async () => {
   try {
     const response = await axios.delete(
-      `${backednUrl}/api/add-margin/remove-global-margin`
+      `${backednUrl}/api/add-margin/remove-global-margin`,
     );
     return response.data;
   } catch (error) {
@@ -137,8 +137,8 @@ export const addDiscount = async (productId, discount, price) => {
       {
         productId,
         discount,
-        basePrice: price
-      }
+        basePrice: price,
+      },
     );
     return response.data;
   } catch (error) {
@@ -154,40 +154,45 @@ export const addMargin = async (productId, margin, price) => {
         productId,
         margin,
         basePrice: price,
-      }
+      },
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || 'Something went wrong';
+    throw error.response?.data || "Something went wrong";
   }
 };
 
-export const getDiscount = async()=>{
+export const getDiscount = async () => {
   try {
-    const response = await fetch(`${backednUrl}/api/add-discount/list-discounts`);
+    const response = await fetch(
+      `${backednUrl}/api/add-discount/list-discounts`,
+    );
     const data = await response.json();
-    return data
+    return data;
   } catch (error) {
-    throw error
+    throw error;
   }
-
-}
+};
 // Add these functions to your UserApi.js file
 
 export const getShippingCharges = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/get`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization headers if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/shipping/get`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Add authorization headers if needed
+        },
       },
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch shipping charges');
+      throw new Error(data.message || "Failed to fetch shipping charges");
     }
 
     return { data };
@@ -198,19 +203,23 @@ export const getShippingCharges = async () => {
 
 export const addShippingCharges = async (shipping) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/add`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization headers if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Add authorization headers if needed
+        },
+        body: JSON.stringify({ shipping }),
       },
-      body: JSON.stringify({ shipping }),
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to add shipping charges');
+      throw new Error(data.message || "Failed to add shipping charges");
     }
 
     return data;
@@ -220,19 +229,23 @@ export const addShippingCharges = async (shipping) => {
 };
 export const addGstCharges = async (gst) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/add-gst`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization headers if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add-gst`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Add authorization headers if needed
+        },
+        body: JSON.stringify({ gst }),
       },
-      body: JSON.stringify({ gst }),
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to add shipping charges');
+      throw new Error(data.message || "Failed to add shipping charges");
     }
 
     return data;
@@ -243,18 +256,22 @@ export const addGstCharges = async (gst) => {
 
 export const removeGstCharges = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete-gst`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization headers if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete-gst`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Add authorization headers if needed
+        },
       },
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to remove shipping charges');
+      throw new Error(data.message || "Failed to remove shipping charges");
     }
 
     return data;
@@ -264,18 +281,22 @@ export const removeGstCharges = async () => {
 };
 export const removeShippingCharges = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization headers if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Add authorization headers if needed
+        },
       },
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to remove shipping charges');
+      throw new Error(data.message || "Failed to remove shipping charges");
     }
 
     return data;
