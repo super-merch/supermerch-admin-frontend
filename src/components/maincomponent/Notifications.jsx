@@ -195,7 +195,7 @@ export default function Notifications() {
           import.meta.env.VITE_BACKEND_URL
         }/api/notifications/get-notifications?page=${pageNum}`,
         {
-          headers: { aToken },
+          headers: { atoken },
         },
       );
       console.log(response.data);
