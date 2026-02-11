@@ -8,9 +8,7 @@ export const editUser = async (userId, updatedData) => {
       `${backednUrl}/api/auth/users/${userId}`,
       updatedData,
       {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-        },
+        headers: { aToken, "Content-Type": "application/json" },
       },
     );
     return response.data;
@@ -26,9 +24,7 @@ export const deleteUser = async (userId) => {
     const response = await axios.delete(
       `${backednUrl}/api/auth/users/${userId}`,
       {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-        },
+        headers: { aToken },
       },
     );
     return response.data;
@@ -60,7 +56,7 @@ export const addGlobalDiscount = async (discount) => {
     const response = await axios.post(
       `${backednUrl}/api/add-discount/add-global-discount`,
       {
-        discount,
+        discount, 
       },
     );
     return response.data;
@@ -203,7 +199,7 @@ export const addShippingCharges = async (shipping) => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add`,
       {
         method: "POST",
-        headers: { aToken },
+        headers: { aToken, "Content-Type": "application/json" },
         body: JSON.stringify({ shipping }),
       },
     );
@@ -225,7 +221,7 @@ export const addGstCharges = async (gst) => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add-gst`,
       {
         method: "POST",
-        headers: { aToken },
+        headers: { aToken, "Content-Type": "application/json" },
         body: JSON.stringify({ gst }),
       },
     );
