@@ -30,7 +30,7 @@ export default function Notifications() {
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const navigate = useNavigate();
-  const aToken = localStorage.getItem("aToken");
+  const atoken = localStorage.getItem("aToken");
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     message: "",
@@ -47,7 +47,7 @@ export default function Notifications() {
     message,
     onConfirm,
     confirmText = "Confirm",
-    variant = "danger"
+    variant = "danger",
   ) => {
     setConfirmModal({
       isOpen: true,
@@ -92,7 +92,7 @@ export default function Notifications() {
               import.meta.env.VITE_BACKEND_URL
             }/api/notifications/update-notification`,
             {},
-            { headers: { aToken } }
+            { headers: { atoken } },
           );
           await fetchNotifications(page);
           setUnseenMessages(0);
@@ -105,7 +105,7 @@ export default function Notifications() {
         }
       },
       "Mark All as Read",
-      "success"
+      "success",
     );
   };
 
@@ -117,7 +117,7 @@ export default function Notifications() {
             import.meta.env.VITE_BACKEND_URL
           }/api/notifications/mark-notification-seen/${id}`,
           {},
-          { headers: { aToken } }
+          { headers: { atoken } },
         );
         await fetchNotifications(page);
         setUnseenMessages(Math.max(0, unseenMessages - 1));
@@ -136,7 +136,7 @@ export default function Notifications() {
               import.meta.env.VITE_BACKEND_URL
             }/api/notifications/mark-notification-seen/${id}`,
             {},
-            { headers: { aToken } }
+            { headers: { atoken } },
           );
           await fetchNotifications(page);
           setUnseenMessages(Math.max(0, unseenMessages - 1));
@@ -146,7 +146,7 @@ export default function Notifications() {
         }
       },
       "Mark as Read",
-      "success"
+      "success",
     );
     return null;
   };
@@ -159,7 +159,7 @@ export default function Notifications() {
             `${
               import.meta.env.VITE_BACKEND_URL
             }/api/notifications/delete-notification/${id}`,
-            { headers: { aToken } }
+            { headers: { atoken } },
           );
           if (data.data.data.seen == false) {
             setUnseenMessages(Math.max(0, unseenMessages - 1));
@@ -172,7 +172,7 @@ export default function Notifications() {
           await fetchNotifications(newPage);
           if (selectedNotifications.includes(id)) {
             setSelectedNotifications(
-              selectedNotifications.filter((n) => n !== id)
+              selectedNotifications.filter((n) => n !== id),
             );
           }
           toast.success("Notification deleted successfully!");
@@ -182,7 +182,7 @@ export default function Notifications() {
         }
       },
       "Delete",
-      "danger"
+      "danger",
     );
   };
 
@@ -196,9 +196,9 @@ export default function Notifications() {
         }/api/notifications/get-notifications?page=${pageNum}`,
         {
           headers: { aToken },
-        }
+        },
       );
-      console.log(response.data)
+      console.log(response.data);
       setNotifications(response.data.data);
       setPage(response.data.page);
       setTotalPages(response.data.totalPages);
@@ -238,18 +238,18 @@ export default function Notifications() {
         try {
           setLoading(true);
           const unseenSelected = notifications.filter(
-            (n) => selectedNotifications.includes(n._id) && !n.seen
+            (n) => selectedNotifications.includes(n._id) && !n.seen,
           );
           await axios.post(
             `${
               import.meta.env.VITE_BACKEND_URL
             }/api/notifications/bulk-mark-seen`,
             { ids: selectedNotifications },
-            { headers: { aToken } }
+            { headers: { atoken } },
           );
           await fetchNotifications(page);
           setUnseenMessages(
-            Math.max(0, unseenMessages - unseenSelected.length)
+            Math.max(0, unseenMessages - unseenSelected.length),
           );
           setSelectedNotifications([]);
           setSelectAll(false);
@@ -262,7 +262,7 @@ export default function Notifications() {
         }
       },
       "Mark as Read",
-      "success"
+      "success",
     );
   };
 
@@ -274,12 +274,12 @@ export default function Notifications() {
         try {
           setLoading(true);
           const unseenSelected = notifications.filter(
-            (n) => selectedNotifications.includes(n._id) && !n.seen
+            (n) => selectedNotifications.includes(n._id) && !n.seen,
           );
           await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/api/notifications/bulk-delete`,
             { ids: selectedNotifications },
-            { headers: { aToken } }
+            { headers: { atoken } },
           );
           let newPage = page;
           if (
@@ -291,7 +291,7 @@ export default function Notifications() {
           }
           await fetchNotifications(newPage);
           setUnseenMessages(
-            Math.max(0, unseenMessages - unseenSelected.length)
+            Math.max(0, unseenMessages - unseenSelected.length),
           );
           setSelectedNotifications([]);
           setSelectAll(false);
@@ -304,7 +304,7 @@ export default function Notifications() {
         }
       },
       "Delete Selected",
-      "danger"
+      "danger",
     );
   };
 
@@ -566,7 +566,7 @@ export default function Notifications() {
                           <input
                             type="checkbox"
                             checked={selectedNotifications.includes(
-                              notification._id
+                              notification._id,
                             )}
                             onChange={() =>
                               handleSelectNotification(notification._id)
@@ -579,7 +579,7 @@ export default function Notifications() {
                             notificationNavigate(
                               notification.type,
                               notification._id,
-                              notification.id
+                              notification.id,
                             );
                           }}
                           className="px-3 py-3 cursor-pointer"
@@ -628,7 +628,7 @@ export default function Notifications() {
                             notificationNavigate(
                               notification.type,
                               notification._id,
-                              notification.id
+                              notification.id,
                             );
                           }}
                           className="px-3 py-3 cursor-pointer whitespace-nowrap"

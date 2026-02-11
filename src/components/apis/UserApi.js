@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const backednUrl = import.meta.env.VITE_BACKEND_URL;
-
+const aToken = localStorage.getItem("aToken");
 export const editUser = async (userId, updatedData) => {
   try {
     const response = await axios.put(
@@ -181,11 +181,7 @@ export const getShippingCharges = async () => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/get`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-          // Add authorization headers if needed
-        },
+        headers: { aToken },
       },
     );
 
@@ -207,11 +203,7 @@ export const addShippingCharges = async (shipping) => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-          // Add authorization headers if needed
-        },
+        headers: { aToken },
         body: JSON.stringify({ shipping }),
       },
     );
@@ -233,11 +225,7 @@ export const addGstCharges = async (gst) => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/add-gst`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-          // Add authorization headers if needed
-        },
+        headers: { aToken },
         body: JSON.stringify({ gst }),
       },
     );
@@ -260,11 +248,7 @@ export const removeGstCharges = async () => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete-gst`,
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-          // Add authorization headers if needed
-        },
+        headers: { aToken },
       },
     );
 
@@ -285,11 +269,7 @@ export const removeShippingCharges = async () => {
       `${import.meta.env.VITE_BACKEND_URL}/api/shipping/delete`,
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
-          // Add authorization headers if needed
-        },
+        headers: { aToken },
       },
     );
 
