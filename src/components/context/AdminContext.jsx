@@ -349,7 +349,7 @@ const AdminContextProvider = (props) => {
         ? {}
         : {
             page,
-            limit: 10,
+            limit: limit || 10,
             search: filters.searchTerm || "",
             status: filters.filterStatus || "All",
             date: filters.filterDate || "",

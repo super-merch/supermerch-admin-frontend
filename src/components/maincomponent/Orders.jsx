@@ -44,7 +44,7 @@ const Orders = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [ordersPerPage, setOrdersPerPage] = useState(20);
+  const [ordersPerPage, setOrdersPerPage] = useState(10);
   const [deleteModel, setDeleteModel] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -173,7 +173,7 @@ const Orders = () => {
       sortOrder,
     };
     fetchOrders("", currentPage, filters, ordersPerPage);
-  }, [currentPage, searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
+  }, [currentPage, ordersPerPage, searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
 
   useEffect(() => {
     const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
