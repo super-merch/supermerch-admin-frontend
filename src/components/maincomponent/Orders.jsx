@@ -36,6 +36,7 @@ const Orders = () => {
     pagination,
     deleteOrder,
     deleteLoading,
+    bulkDeleteOrders,
   } = useContext(AdminContext);
   const [byUsers, setByUsers] = useState(false);
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ const Orders = () => {
   const [ordersPerPage, setOrdersPerPage] = useState(20);
   const [deleteModel, setDeleteModel] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [selectedOrders, setSelectedOrders] = useState(new Set());
   const [showTemplates, setShowTemplates] = useState(false);
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -184,6 +186,7 @@ const Orders = () => {
   const goToPage = (page) => {
     setCurrentPage(page);
     updateOrderParams({ page });
+    setSelectedOrders(new Set());
   };
 
   const goToPreviousPage = () => {
@@ -205,6 +208,30 @@ const Orders = () => {
     await deleteOrder(_id);
   };
 
+  const toggleSelectOrder = (id) => {
+    setSelectedOrders((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.size === orders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(orders.map((o) => o._id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const result = await bulkDeleteOrders([...selectedOrders]);
+    if (result?.success) setSelectedOrders(new Set());
+    setDeleteModel(false);
+    setDeleteId(null);
+  };
+
   // Reset to first page when filters change
   useEffect(() => {
     const nextKey = JSON.stringify({
@@ -217,6 +244,7 @@ const Orders = () => {
     if (filtersKeyRef.current && filtersKeyRef.current !== nextKey) {
       setCurrentPage(1);
       updateOrderParams({ page: 1 });
+      setSelectedOrders(new Set());
     }
     filtersKeyRef.current = nextKey;
   }, [searchTerm, filterStatus, filterDate, sortBy, sortOrder]);
@@ -225,6 +253,7 @@ const Orders = () => {
       ordersPerPageRef.current = ordersPerPage;
       setCurrentPage(1);
       updateOrderParams({ page: 1 });
+      setSelectedOrders(new Set());
     }
   }, [ordersPerPage]);
   const [mySearch, setMySearch] = useState("");
@@ -252,10 +281,12 @@ const Orders = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl p-5 max-w-md w-full mx-3">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Delete Order</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {deleteId ? "Delete Order" : `Delete ${selectedOrders.size} Order(s)`}
+              </h2>
               <button
                 onClick={() => {
-                  setDeleteId("");
+                  setDeleteId(null);
                   setDeleteModel(false);
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -264,13 +295,14 @@ const Orders = () => {
               </button>
             </div>
             <p className="text-gray-600 mb-5">
-              Are you sure you want to delete this order? This action cannot be
-              undone.
+              {deleteId
+                ? "Are you sure you want to delete this order? This action cannot be undone."
+                : `Are you sure you want to delete ${selectedOrders.size} selected order(s)? This action cannot be undone.`}
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
-                  setDeleteId("");
+                  setDeleteId(null);
                   setDeleteModel(false);
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -279,9 +311,13 @@ const Orders = () => {
               </button>
               <button
                 onClick={() => {
-                  handleDeleteOrder(deleteId);
-                  setDeleteId("");
-                  setDeleteModel(false);
+                  if (deleteId) {
+                    handleDeleteOrder(deleteId);
+                    setDeleteId(null);
+                    setDeleteModel(false);
+                  } else {
+                    handleBulkDelete();
+                  }
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
               >
@@ -310,13 +346,27 @@ const Orders = () => {
               Templates
             </button> */}
           </div>
-          <button
-            className="p-2 text-gray-600 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
-            onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
-            title="Refresh orders"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedOrders.size > 0 && (
+              <button
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                onClick={() => {
+                  setDeleteId(null);
+                  setDeleteModel(true);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected ({selectedOrders.size})
+              </button>
+            )}
+            <button
+              className="p-2 text-gray-600 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+              onClick={() => fetchOrders("", 1, {}, ordersPerPage)}
+              title="Refresh orders"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -501,6 +551,14 @@ const Orders = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-3 py-2 text-center w-10">
+                      <input
+                        type="checkbox"
+                        checked={orders.length > 0 && selectedOrders.size === orders.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Order ID
                     </th>
@@ -528,7 +586,7 @@ const Orders = () => {
                   {orders.length === 0 ? (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="px-4 py-8 text-center text-sm text-gray-500"
                       >
                         No orders found
@@ -538,8 +596,16 @@ const Orders = () => {
                     orders.map((order) => (
                       <tr
                         key={order._id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className={`hover:bg-gray-50 transition-colors ${selectedOrders.has(order._id) ? "bg-blue-50" : ""}`}
                       >
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedOrders.has(order._id)}
+                            onChange={() => toggleSelectOrder(order._id)}
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </td>
                         <td
                           className="px-3 py-2 whitespace-nowrap cursor-pointer hover:underline"
                           onClick={() =>
