@@ -8,6 +8,7 @@ const EmailTemplatesManager = ({ isOpen, onClose }) => {
   const [activeStatus, setActiveStatus] = useState("Delivered");
 
   const statuses = [
+    "Welcome",
     "Delivered",
     "Artwork Pending",
     "ArtWork Approved",
