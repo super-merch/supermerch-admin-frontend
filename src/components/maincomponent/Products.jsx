@@ -26,6 +26,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Download,
+  ZoomIn,
 } from "lucide-react";
 
 const Products = () => {
@@ -54,6 +56,7 @@ const Products = () => {
   const [newComment, setNewComment] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
+  const [showLogoViewer, setShowLogoViewer] = useState(false);
 
   // Add this useEffect to fetch comments when checkout data loads
   useEffect(() => {
@@ -347,6 +350,46 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
+      {/* Logo viewer modal */}
+      {showLogoViewer && logo?.logo && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowLogoViewer(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="View uploaded logo"
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowLogoViewer(false)}
+              className="absolute -top-10 right-0 p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={logo.logo}
+              alt="Uploaded logo full size"
+              className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl bg-white/5"
+            />
+            <a
+              href={logo.logo}
+              download="order-logo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download logo
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <button
@@ -578,12 +621,32 @@ const Products = () => {
                   Artwork Details
                 </h3>
                 {checkout.artworkOption === "upload" && logo && (
-                  <div className="mb-3 flex items-center justify-center">
-                    <img
-                      src={logo.logo}
-                      alt="Uploaded Logo"
-                      className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-gray-50 p-2"
-                    />
+                  <div className="mb-3 flex flex-col items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowLogoViewer(true)}
+                      className="relative group rounded-lg border border-gray-200 bg-gray-50 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      aria-label="View logo full size"
+                    >
+                      <img
+                        src={logo.logo}
+                        alt="Uploaded Logo"
+                        className="w-32 h-32 object-contain rounded-lg"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 group-hover:bg-black/40 transition-colors">
+                        <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                      </span>
+                    </button>
+                    <a
+                      href={logo.logo}
+                      download="order-logo"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download logo
+                    </a>
                   </div>
                 )}
                 {checkout.artworkOption !== "upload" && (
