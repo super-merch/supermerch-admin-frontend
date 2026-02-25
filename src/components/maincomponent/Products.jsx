@@ -528,13 +528,24 @@ const Products = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {checkout.products?.map((product, idx) => (
+                  {checkout.products?.map((product, idx) => {
+                    const slug = (product.name || "product")
+                      .toLowerCase()
+                      .replace(/\s+/g, "-")
+                      .replace(/[^a-z0-9-]/g, "");
+                    const encodedId = product.id ? btoa(String(product.id)) : "";
+                    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || "https://www.supermerch.com.au";
+                    const productUrl = encodedId
+                      ? `${frontendUrl}/product/${slug}?ref=${encodedId}`
+                      : frontendUrl;
+                    return (
                     <tr
                       key={product._id || idx}
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200">
+                        <a href={productUrl} target="_blank" rel="noreferrer"
+                           className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200 block hover:opacity-80 transition-opacity">
                           <img
                             src={product.image}
                             alt={product.name}
@@ -544,12 +555,13 @@ const Products = () => {
                                 "https://via.placeholder.com/150?text=No+Image";
                             }}
                           />
-                        </div>
+                        </a>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <a href={productUrl} target="_blank" rel="noreferrer"
+                           className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline">
                           {product.name}
-                        </div>
+                        </a>
                         {product.id && (
                           <div className="text-xs text-gray-500 mt-0.5">
                             Code: {product.id}
@@ -605,7 +617,7 @@ const Products = () => {
                         </span>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </table>
             </div>
