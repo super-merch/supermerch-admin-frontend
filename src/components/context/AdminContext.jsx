@@ -349,7 +349,7 @@ const AdminContextProvider = (props) => {
         ? {}
         : {
             page,
-            limit: 10,
+            limit: limit || 10,
             search: filters.searchTerm || "",
             status: filters.filterStatus || "All",
             date: filters.filterDate || "",
@@ -691,6 +691,28 @@ const AdminContextProvider = (props) => {
       });
     }
   };
+  const bulkDeleteOrders = async (ids) => {
+    try {
+      const response = await axios.post(
+        `${backednUrl}/api/checkout/bulk-delete`,
+        { ids },
+        { headers: { aToken } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        await fetchOrders();
+      } else {
+        toast.error(response.data.message || "Failed to delete orders");
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      toast.error(error.response?.data?.message || "Failed to delete orders");
+      return { success: false };
+    }
+  };
+
   const [categories, setCategories] = useState([]);
   const fetchCategories = async () => {
     try {
@@ -892,6 +914,7 @@ const AdminContextProvider = (props) => {
     orderId,
     suppliers,
     deleteOrder,
+    bulkDeleteOrders,
     setSuppliers,
     fetchAustraliaProducts,
     addOrderComment,
