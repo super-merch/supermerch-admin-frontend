@@ -199,13 +199,13 @@ export default function AddQuotePage() {
       formData.append("file", file);
       formData.append(
         "upload_preset",
-        import.meta.env.VITE_CLOUDINARY_PRESET || "super_merch"
+        import.meta.env.VITE_CLOUDINARY_PRESET 
       ); // change this
       formData.append(
         "cloud_name",
-        import.meta.env.VITE_CLOUDINARY_NAME || "desggvwcg"
+        import.meta.env.VITE_CLOUDINARY_NAME 
       );
-      const cloudname = import.meta.env.VITE_CLOUDINARY_NAME || "desggvwcg";
+      const cloudname = import.meta.env.VITE_CLOUDINARY_NAME
 
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudname}/image/upload`,
