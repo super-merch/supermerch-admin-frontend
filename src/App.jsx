@@ -41,6 +41,7 @@ import AdminProfile from "./components/maincomponent/AdminProfile";
 import EmailTemplates from "./components/maincomponent/EmailTemplates";
 import NotificationManagement from "./components/maincomponent/NotificationManagement";
 import GstCharges from "./components/maincomponent/GstCharges";
+import Prioritisation from "./components/maincomponent/Prioritisation";
 
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
@@ -71,47 +72,165 @@ const App = () => {
       <ToastContainer />
       {aToken ? (
         <div>
-          <Sidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-          <div className={`${isSidebarOpen ? "ml-64" : "ml-20"} flex-1 transition-all duration-300`}>
+          <Sidebar
+            isOpen={isSidebarOpen}
+            toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+          <div
+            className={`${isSidebarOpen ? "ml-64" : "ml-20"} flex-1 transition-all duration-300`}
+          >
             <Navbar />
             <DashboardContent>
               <Routes>
-                <Route path="/" element={<PrivateRoute element={<Charts isOpen={isSidebarOpen} />} />} />
-                <Route path="/orders" element={<PrivateRoute element={<Orders />} />} />
-                <Route path="/order-details/:id" element={<PrivateRoute element={<Products />} />} />
-                <Route path="/user-orders/:id" element={<PrivateRoute element={<UserOrders />} />} />
-                <Route path="/all-users" element={<PrivateRoute element={<AllUsers />} />} />
-                <Route path="/products" element={<PrivateRoute element={<AlProducts />} />} />
-                <Route path="/suppliers" element={<PrivateRoute element={<AlSuppliers />} />} />
-                <Route path="/supplier-categories" element={<PrivateRoute element={<SupplierCategories />} />} />
-                <Route path="/admin-quotes" element={<PrivateRoute element={<AdminQuotes />} />} />
-                <Route path="/admin-quote-detail/:id" element={<PrivateRoute element={<AdminQuoteDetails />} />} />
-                <Route path="/add-admin-quote" element={<PrivateRoute element={<AddAdminQuote />} />} />
-                <Route path="/global-discount" element={<PrivateRoute element={<GlobalDiscount />} />} />
-                <Route path="/shipping" element={<PrivateRoute element={<ShippingCharges />} />} />
-                <Route path="/gst" element={<PrivateRoute element={<GstCharges />} />} />
-                <Route path="/add-coupon" element={<PrivateRoute element={<AddCoupen />} />} />
-                <Route path="/quote" element={<PrivateRoute element={<QuoteAdmin />} />} />
-                <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
-                <Route path="/product/:id" element={<PrivateRoute element={<AlProductDetail />} />} />
-                <Route path="/users" element={<PrivateRoute element={<User />} />} />
-                <Route path="/user-queries" element={<PrivateRoute element={<UserQueries />} />} />
-                <Route path="/user-query/:id" element={<PrivateRoute element={<UserQuery />} />} />
-                <Route path="/blogs" element={<PrivateRoute element={<Blog />} />} />
-                <Route path="/add-blog" element={<PrivateRoute element={<AddBlog />} />} /> 
-                <Route path="/change-pass" element={<PrivateRoute element={<ChangePassword />} />} /> 
-                <Route path="/quote-detail/:id" element={<PrivateRoute element={<QuoteDetail />} />} /> 
-                <Route path="/global-margin" element={<PrivateRoute element={<GlobalMargin />} />} /> 
-                <Route path="/categories" element={<PrivateRoute element={<Categories />} />} /> 
+                <Route
+                  path="/"
+                  element={
+                    <PrivateRoute element={<Charts isOpen={isSidebarOpen} />} />
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={<PrivateRoute element={<Orders />} />}
+                />
+                <Route
+                  path="/order-details/:id"
+                  element={<PrivateRoute element={<Products />} />}
+                />
+                <Route
+                  path="/user-orders/:id"
+                  element={<PrivateRoute element={<UserOrders />} />}
+                />
+                <Route
+                  path="/all-users"
+                  element={<PrivateRoute element={<AllUsers />} />}
+                />
+                <Route
+                  path="/products"
+                  element={<PrivateRoute element={<AlProducts />} />}
+                />
+                <Route
+                  path="/suppliers"
+                  element={<PrivateRoute element={<AlSuppliers />} />}
+                />
+                <Route
+                  path="/supplier-categories"
+                  element={<PrivateRoute element={<SupplierCategories />} />}
+                />
+                <Route
+                  path="/admin-quotes"
+                  element={<PrivateRoute element={<AdminQuotes />} />}
+                />
+                <Route
+                  path="/admin-quote-detail/:id"
+                  element={<PrivateRoute element={<AdminQuoteDetails />} />}
+                />
+                <Route
+                  path="/add-admin-quote"
+                  element={<PrivateRoute element={<AddAdminQuote />} />}
+                />
+                <Route
+                  path="/global-discount"
+                  element={<PrivateRoute element={<GlobalDiscount />} />}
+                />
+                <Route
+                  path="/shipping"
+                  element={<PrivateRoute element={<ShippingCharges />} />}
+                />
+                <Route
+                  path="/gst"
+                  element={<PrivateRoute element={<GstCharges />} />}
+                />
+                <Route
+                  path="/add-coupon"
+                  element={<PrivateRoute element={<AddCoupen />} />}
+                />
+                <Route
+                  path="/quote"
+                  element={<PrivateRoute element={<QuoteAdmin />} />}
+                />
+                <Route
+                  path="/reports"
+                  element={<PrivateRoute element={<Reports />} />}
+                />
+                <Route
+                  path="/product/:id"
+                  element={<PrivateRoute element={<AlProductDetail />} />}
+                />
+                <Route
+                  path="/users"
+                  element={<PrivateRoute element={<User />} />}
+                />
+                <Route
+                  path="/user-queries"
+                  element={<PrivateRoute element={<UserQueries />} />}
+                />
+                <Route
+                  path="/user-query/:id"
+                  element={<PrivateRoute element={<UserQuery />} />}
+                />
+                <Route
+                  path="/blogs"
+                  element={<PrivateRoute element={<Blog />} />}
+                />
+                <Route
+                  path="/add-blog"
+                  element={<PrivateRoute element={<AddBlog />} />}
+                />
+                <Route
+                  path="/change-pass"
+                  element={<PrivateRoute element={<ChangePassword />} />}
+                />
+                <Route
+                  path="/quote-detail/:id"
+                  element={<PrivateRoute element={<QuoteDetail />} />}
+                />
+                <Route
+                  path="/global-margin"
+                  element={<PrivateRoute element={<GlobalMargin />} />}
+                />
+                <Route
+                  path="/categories"
+                  element={<PrivateRoute element={<Categories />} />}
+                />
                 <Route path="/edit-blog/:id" element={<EditBlog />} />
-                <Route path="/category-detail" element={<PrivateRoute element={<CategoryDetails />} />} /> 
-                <Route path="/notifications" element={<PrivateRoute element={<Notifications />} />} /> 
-                <Route path="/admin-profile" element={<PrivateRoute element={<AdminProfile />} />} /> 
-                <Route path="/email-templates" element={<PrivateRoute element={<EmailTemplates />} />} /> 
-                <Route path="/email-management" element={<PrivateRoute element={<NotificationManagement />} />} /> 
-                <Route path="/settings" element={<PrivateRoute element={<Settings />} />} /> 
-                <Route path="/add-product" element={<PrivateRoute element={<AddProduct />} />} /> 
-                <Route path="/analytics" element={<PrivateRoute element={<h1>Analytics</h1>} />} />
+                <Route
+                  path="/category-detail"
+                  element={<PrivateRoute element={<CategoryDetails />} />}
+                />
+                <Route
+                  path="/notifications"
+                  element={<PrivateRoute element={<Notifications />} />}
+                />
+                <Route
+                  path="/admin-profile"
+                  element={<PrivateRoute element={<AdminProfile />} />}
+                />
+                <Route
+                  path="/email-templates"
+                  element={<PrivateRoute element={<EmailTemplates />} />}
+                />
+                <Route
+                  path="/email-management"
+                  element={
+                    <PrivateRoute element={<NotificationManagement />} />
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={<PrivateRoute element={<Settings />} />}
+                />
+                <Route
+                  path="/add-product"
+                  element={<PrivateRoute element={<AddProduct />} />}
+                />
+                <Route
+                  path="/analytics"
+                  element={<PrivateRoute element={<h1>Analytics</h1>} />}
+                />
+                <Route
+                  path="/prioritisation"
+                  element={<PrivateRoute element={<Prioritisation />} />}
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </DashboardContent>

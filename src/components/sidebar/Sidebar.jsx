@@ -83,6 +83,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { label: "Suppliers", path: "/suppliers" },
         { label: "Product Categories", path: "/categories" },
         { label: "Products", path: "/products" },
+        { label: "Prioritisation", path: "/prioritisation" },
       ],
     },
     {
@@ -204,8 +205,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* Navigation */}
-        <nav 
-        style={{ scrollbarWidth: "none" }} className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+        <nav
+          style={{ scrollbarWidth: "none" }}
+          className="flex-1 overflow-y-auto py-4 px-2 space-y-1"
+        >
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             const active = isActive(item);
@@ -214,7 +217,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <div
                   onClick={() =>
                     setOpenSetup((perv) =>
-                      perv == item?.label ? "" : item?.label
+                      perv == item?.label ? "" : item?.label,
                     )
                   }
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer
