@@ -42,11 +42,16 @@ import EmailTemplates from "./components/maincomponent/EmailTemplates";
 import NotificationManagement from "./components/maincomponent/NotificationManagement";
 import GstCharges from "./components/maincomponent/GstCharges";
 import Prioritisation from "./components/maincomponent/Prioritisation";
-
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "@tanstack/react-query";
 const PrivateRoute = ({ element }) => {
   const { aToken } = useContext(AdminContext);
   return aToken ? element : <Navigate to="/login" replace />;
 };
+const queryClient = new QueryClient();
 
 const App = () => {
   const { aToken } = useContext(AdminContext);
@@ -68,7 +73,7 @@ const App = () => {
   }, []);
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <ToastContainer />
       {aToken ? (
         <div>
@@ -242,7 +247,7 @@ const App = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       )}
-    </>
+    </QueryClientProvider>
   );
 };
 

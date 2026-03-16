@@ -1,25 +1,29 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import { Button } from "../ui/button";
-
-const criteriaConfig = [
-  { key: "pictures", label: "Pictures Count" },
-  { key: "description", label: "Description Quality" },
-  { key: "stock", label: "Stock Items" },
-  { key: "manual", label: "Manual" },
-  { key: "other", label: "Other" },
-];
+import {
+  useBulkImportCategoryPrioritiesMutation,
+  useDeleteCategoryPriorityMutation,
+  useUpsertCategoryPriorityMutation,
+} from "../apis/priorityApi";
+import { useAddPriorityMutation } from "../apis/priorityApi";
 
 const Prioritisation = () => {
   const { fetchSuppliers, suppliers } = useContext(AdminContext);
+
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
-  const [scores, setScores] = useState({});
-  const [categoryIndex, setCategoryIndex] = useState({});
-  const [showSummary, setShowSummary] = useState(false);
+  const [priorityInput, setPriorityInput] = useState("");
+  const [priorities, setPriorities] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const upsertPriorityMutation = useUpsertCategoryPriorityMutation();
+  const deletePriorityMutation = useDeleteCategoryPriorityMutation();
+  const bulkImportMutation = useBulkImportCategoryPrioritiesMutation();
 
   const supplierMap = useMemo(() => {
     const map = {};
@@ -28,6 +32,15 @@ const Prioritisation = () => {
     });
     return map;
   }, [suppliers]);
+
+  const categoryMap = useMemo(() => {
+    const map = {};
+    (categories || []).forEach((c) => {
+      const id = String(c.groupId ?? c.id ?? c.categoryId);
+      map[id] = c.groupName ?? c.name ?? c.categoryName ?? "Unnamed category";
+    });
+    return map;
+  }, [categories]);
 
   // Load suppliers on first visit if not already loaded
   useEffect(() => {
@@ -50,8 +63,8 @@ const Prioritisation = () => {
   const handleSupplierChange = async (e) => {
     const supplierId = e.target.value;
     setSelectedSupplierId(supplierId);
+    setSelectedCategoryId("");
     setCategories([]);
-    setShowSummary(false);
 
     if (!supplierId) {
       return;
@@ -73,40 +86,6 @@ const Prioritisation = () => {
       const data = await response.json();
       const cats = data?.data || [];
       setCategories(cats);
-
-      // Initialize scores and metadata for this supplier's categories
-      setScores((prev) => {
-        const next = { ...prev };
-        cats.forEach((cat) => {
-          const catId = String(cat.groupId ?? cat.id ?? cat.categoryId);
-          const compoundId = `${supplierId}-${catId}`;
-          if (!next[compoundId]) {
-            next[compoundId] = {};
-          }
-        });
-        return next;
-      });
-
-      setCategoryIndex((prev) => {
-        const next = { ...prev };
-        cats.forEach((cat) => {
-          const catId = String(cat.groupId ?? cat.id ?? cat.categoryId);
-          const compoundId = `${supplierId}-${catId}`;
-          if (!next[compoundId]) {
-            next[compoundId] = {
-              supplierId: String(supplierId),
-              supplierName: supplierMap[String(supplierId)]?.name || "",
-              categoryId: catId,
-              categoryName:
-                cat.groupName ??
-                cat.name ??
-                cat.categoryName ??
-                "Unnamed category",
-            };
-          }
-        });
-        return next;
-      });
     } catch (error) {
       console.error("Error fetching supplier categories:", error);
       toast.error("Failed to load categories");
@@ -115,286 +94,471 @@ const Prioritisation = () => {
     }
   };
 
-  const handleScoreChange = (categoryId, key, value) => {
-    const numeric = Number(value);
-    if (Number.isNaN(numeric) || numeric < 0) {
-      setScores((prev) => {
-        const next = { ...prev };
-        const id = String(categoryId);
-        next[id] = {
-          ...(next[id] || {}),
-          [key]: value === "" ? "" : 0,
-        };
-        return next;
-      });
+  const handleaddPriority = () => {
+    if (!selectedSupplierId) {
+      toast.error("Please select a supplier");
+      return;
+    }
+    if (!selectedCategoryId) {
+      toast.error("Please select a category");
       return;
     }
 
-    setScores((prev) => {
-      const next = { ...prev };
-      const id = String(categoryId);
-      next[id] = {
-        ...(next[id] || {}),
-        [key]: numeric,
-      };
-      return next;
-    });
+    const numeric = Number(priorityInput);
+    if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
+      toast.error("Priority must be between 0 and 100");
+      return;
+    }
+
+    const supplier = supplierMap[String(selectedSupplierId)];
+    const categoryName = categoryMap[String(selectedCategoryId)];
+
+    if (!supplier || !categoryName) {
+      toast.error("Invalid supplier or category selection");
+      return;
+    }
+
+    const key = `${selectedSupplierId}-${selectedCategoryId}`;
+
+    useAddPriorityMutation.mutate(
+      {
+        supplierId: String(selectedSupplierId),
+        categoryId: String(selectedCategoryId),
+        priority: numeric,
+      },
+      {
+        onSuccess: () => {
+          setPriorities((prev) => {
+            const existingIndex = prev.findIndex((p) => p.key === key);
+            const entry = {
+              key,
+              supplierId: String(selectedSupplierId),
+              supplierName: supplier.name,
+              categoryId: String(selectedCategoryId),
+              categoryName,
+              priority: numeric,
+            };
+
+            if (existingIndex === -1) {
+              return [...prev, entry];
+            }
+
+            const next = [...prev];
+            next[existingIndex] = entry;
+            return next;
+          });
+          setPriorityInput("");
+          toast.success("Priority saved successfully");
+        },
+        onError: () => {
+          toast.error("Failed to save priority");
+        },
+      },
+    );
   };
 
-  const rows = useMemo(() => {
-    return categories.map((cat) => {
-      const catId = String(cat.groupId ?? cat.id ?? cat.categoryId);
-      const compoundId = `${selectedSupplierId}-${catId}`;
-      const rowScores = scores[compoundId] || {};
-      const total = criteriaConfig.reduce((sum, c) => {
-        const val = Number(rowScores[c.key]);
-        return sum + (Number.isFinite(val) ? val : 0);
-      }, 0);
+  const sortedPriorities = useMemo(() => {
+    return [...priorities].sort((a, b) => b.priority - a.priority);
+  }, [priorities]);
 
-      return {
-        id: compoundId,
-        name:
-          cat.groupName ?? cat.name ?? cat.categoryName ?? "Unnamed category",
-        scores: rowScores,
-        total,
-      };
-    });
-  }, [categories, scores, selectedSupplierId]);
+  const handleRemovePriority = (row) => {
+    deletePriorityMutation.mutate(
+      {
+        supplierId: row.supplierId,
+        categoryId: row.categoryId,
+      },
+      {
+        onSuccess: () => {
+          setPriorities((prev) => prev.filter((p) => p.key !== row.key));
+          toast.success("Priority removed");
+        },
+        onError: () => {
+          toast.error("Failed to remove priority");
+        },
+      },
+    );
+  };
 
-  const summaryRows = useMemo(() => {
-    const entries = Object.entries(scores || {});
+  const buildCsv = (rows) => {
+    const headers = [
+      "Supplier",
+      "SupplierId",
+      "Category",
+      "CategoryId",
+      "Priority",
+    ];
+    const escape = (val) => {
+      const s = String(val ?? "");
+      if (/[",\n]/.test(s)) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+    const lines = [
+      headers.join(","),
+      ...rows.map((r) =>
+        [
+          escape(r.supplierName),
+          escape(r.supplierId),
+          escape(r.categoryName),
+          escape(r.categoryId),
+          escape(r.priority ?? ""),
+        ].join(","),
+      ),
+    ];
+    return lines.join("\n");
+  };
 
-    const list = entries
-      .map(([compoundId, rowScores]) => {
-        const meta = categoryIndex[compoundId];
-        if (!meta) return null;
+  const downloadTemplate = () => {
+    let rows = [];
 
-        const total = criteriaConfig.reduce((sum, c) => {
-          const val = Number(rowScores?.[c.key]);
-          return sum + (Number.isFinite(val) ? val : 0);
-        }, 0);
-
+    if (selectedSupplierId && categories.length > 0) {
+      const supplier = supplierMap[String(selectedSupplierId)];
+      if (!supplier) {
+        toast.error("Selected supplier not found");
+        return;
+      }
+      rows = categories.map((c) => {
+        const id = String(c.groupId ?? c.id ?? c.categoryId);
+        const name =
+          c.groupName ?? c.name ?? c.categoryName ?? "Unnamed category";
         return {
-          id: compoundId,
-          supplierId: meta.supplierId,
-          supplierName:
-            meta.supplierName || supplierMap[meta.supplierId]?.name || "",
-          categoryId: meta.categoryId,
-          categoryName: meta.categoryName,
-          scores: rowScores,
-          total,
+          supplierName: supplier.name,
+          supplierId: String(selectedSupplierId),
+          categoryName: name,
+          categoryId: id,
+          priority: "",
         };
-      })
-      .filter(Boolean);
+      });
+    }
 
-    list.sort((a, b) => b.total - a.total);
-    return list;
-  }, [scores, categoryIndex, supplierMap]);
+    const csv = buildCsv(rows);
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "priorities-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = String(event.target?.result || "");
+        const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+        if (lines.length === 0) {
+          toast.error("Uploaded file is empty");
+          return;
+        }
+
+        const header = lines[0].split(",");
+        const idxSupplier = header.indexOf("Supplier");
+        const idxSupplierId = header.indexOf("SupplierId");
+        const idxCategory = header.indexOf("Category");
+        const idxCategoryId = header.indexOf("CategoryId");
+        const idxPriority = header.indexOf("Priority");
+
+        if (
+          idxSupplier === -1 ||
+          idxSupplierId === -1 ||
+          idxCategory === -1 ||
+          idxCategoryId === -1 ||
+          idxPriority === -1
+        ) {
+          toast.error("Invalid template headers in uploaded file");
+          return;
+        }
+
+        const imported = [];
+
+        for (let i = 1; i < lines.length; i += 1) {
+          const raw = lines[i];
+          if (!raw.trim()) continue;
+          const cols = raw.split(",");
+          const supplierId = cols[idxSupplierId]?.trim();
+          const supplierName = cols[idxSupplier]?.trim();
+          const categoryId = cols[idxCategoryId]?.trim();
+          const categoryName = cols[idxCategory]?.trim();
+          const priorityRaw = cols[idxPriority]?.trim();
+
+          if (!supplierId || !categoryId) continue;
+          if (!priorityRaw) continue;
+
+          const numeric = Number(priorityRaw);
+          if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
+            continue;
+          }
+
+          imported.push({
+            supplierId,
+            supplierName,
+            categoryId,
+            categoryName,
+            priority: numeric,
+          });
+        }
+
+        if (!imported.length) {
+          toast.error("No valid priority rows found in file");
+          return;
+        }
+
+        bulkImportMutation.mutate(
+          { items: imported },
+          {
+            onSuccess: () => {
+              setPriorities((prev) => {
+                const map = new Map(prev.map((p) => [p.key, p]));
+                imported.forEach((row) => {
+                  const key = `${row.supplierId}-${row.categoryId}`;
+                  const supplier = supplierMap[String(row.supplierId)] || {};
+                  map.set(key, {
+                    key,
+                    supplierId: String(row.supplierId),
+                    supplierName: supplier.name || row.supplierName || "",
+                    categoryId: String(row.categoryId),
+                    categoryName: row.categoryName || "",
+                    priority: row.priority,
+                  });
+                });
+                return Array.from(map.values());
+              });
+
+              toast.success("Priorities imported successfully");
+            },
+            onError: () => {
+              toast.error("Failed to import priorities");
+            },
+          },
+        );
+      } catch (err) {
+        console.error("Error importing priorities:", err);
+        toast.error("Failed to import priorities");
+      }
+    };
+
+    reader.readAsText(file);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-3">
       <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">
-            Supplier Category Prioritisation
+            Supplier & Category Prioritisation
           </h1>
           <p className="text-xs text-gray-600">
-            Score each category per supplier to calculate its prioritisation
-            points.
+            Select a supplier and category, assign a priority point (0–100), and
+            build a list of priorities.
           </p>
         </div>
-        <Button
-          variant={showSummary ? "outline" : "default"}
-          size="sm"
-          onClick={() => {
-            if (!summaryRows.length) {
-              toast.error("No prioritisation data to show yet.");
-              return;
-            }
-            setShowSummary((prev) => !prev);
-          }}
-        >
-          {showSummary ? "Back to Scoring" : "See Prioritisation Table"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={downloadTemplate}
+          >
+            Download Template
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={handleImportClick}
+          >
+            Import from File
+          </Button>
+        </div>
       </div>
 
-      {!showSummary && (
-        <>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 mb-3">
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="flex-1">
-                <label
-                  htmlFor="supplier"
-                  className="block text-xs font-medium text-gray-700 mb-1"
-                >
-                  Select supplier
-                </label>
-                <select
-                  id="supplier"
-                  value={selectedSupplierId}
-                  onChange={handleSupplierChange}
-                  className="w-full sm:w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={loadingSuppliers}
-                >
-                  <option value="">Choose supplier…</option>
-                  {suppliers?.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedSupplierId && (
-                <p className="text-xs text-gray-600">
-                  Categories loaded:{" "}
-                  <span className="font-semibold">{categories.length}</span>
-                </p>
-              )}
-            </div>
-          </div>
-
-          {!selectedSupplierId ? (
-            <div className="bg-white rounded-lg shadow-sm border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-              Select a supplier to view and score its categories.
-            </div>
-          ) : loadingCategories ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center text-sm text-gray-500">
-              Loading categories…
-            </div>
-          ) : categories.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center text-sm text-gray-500">
-              No categories found for the selected supplier.
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">
-                      SN
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">
-                      Category
-                    </th>
-                    {criteriaConfig.map((c) => (
-                      <th
-                        key={c.key}
-                        className="px-3 py-2 text-center font-semibold text-gray-700 whitespace-nowrap"
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                    <th className="px-3 py-2 text-center font-semibold text-gray-900 whitespace-nowrap">
-                      Total Points
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, idx) => (
-                    <tr
-                      key={row.id}
-                      className={`border-b border-gray-100 ${
-                        idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
-                    >
-                      <td className="px-3 py-2 text-gray-900 font-medium whitespace-nowrap">
-                        {idx + 1}
-                      </td>
-                      <td className="px-3 py-2 text-gray-900 font-medium whitespace-nowrap">
-                        {row.name}
-                      </td>
-                      {criteriaConfig.map((c) => (
-                        <td key={c.key} className="px-3 py-2 text-center">
-                          <input
-                            type="number"
-                            min={0}
-                            value={row.scores?.[c.key] ?? ""}
-                            onChange={(e) =>
-                              handleScoreChange(row.id, c.key, e.target.value)
-                            }
-                            className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </td>
-                      ))}
-                      <td className="px-3 py-2 text-center font-semibold text-gray-900">
-                        {row.total}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-
-      {showSummary && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 overflow-x-auto">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">
-              Overall Prioritisation Table
-            </h2>
-            <p className="text-xs text-gray-600">
-              Total scored rows:{" "}
-              <span className="font-semibold">{summaryRows.length}</span>
-            </p>
-          </div>
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-left font-semibold text-gray-700">
-                  SN
-                </th>
-                <th className="px-3 py-2 text-left font-semibold text-gray-700">
-                  Supplier
-                </th>
-                <th className="px-3 py-2 text-left font-semibold text-gray-700">
-                  Category
-                </th>
-                {criteriaConfig.map((c) => (
-                  <th
-                    key={c.key}
-                    className="px-3 py-2 text-center font-semibold text-gray-700 whitespace-nowrap"
-                  >
-                    {c.label}
-                  </th>
-                ))}
-                <th className="px-3 py-2 text-center font-semibold text-gray-900 whitespace-nowrap">
-                  Total Points
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaryRows.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-gray-100 ${
-                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  }`}
-                >
-                  <td className="px-3 py-2 text-gray-900 font-medium whitespace-nowrap">
-                    {idx + 1}
-                  </td>
-                  <td className="px-3 py-2 text-gray-900 font-medium whitespace-nowrap">
-                    {row.supplierName || row.supplierId}
-                  </td>
-                  <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
-                    {row.categoryName}
-                  </td>
-                  {criteriaConfig.map((c) => (
-                    <td key={c.key} className="px-3 py-2 text-center">
-                      {row.scores?.[c.key] ?? 0}
-                    </td>
-                  ))}
-                  <td className="px-3 py-2 text-center font-semibold text-gray-900">
-                    {row.total}
-                  </td>
-                </tr>
+      {/* Selection & Input */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 mb-3 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1">
+            <label
+              htmlFor="supplier"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Supplier
+            </label>
+            <select
+              id="supplier"
+              value={selectedSupplierId}
+              onChange={handleSupplierChange}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loadingSuppliers}
+            >
+              <option value="">Choose supplier…</option>
+              {suppliers?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </div>
+
+          <div className="flex-1">
+            <label
+              htmlFor="category"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Category
+            </label>
+            <select
+              id="category"
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!selectedSupplierId || loadingCategories}
+            >
+              <option value="">
+                {loadingCategories ? "Loading categories…" : "Choose category…"}
+              </option>
+              {categories.map((c) => {
+                const id = String(c.groupId ?? c.id ?? c.categoryId);
+                const name =
+                  c.groupName ?? c.name ?? c.categoryName ?? "Unnamed category";
+                return (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="w-full sm:w-40">
+            <label
+              htmlFor="priority"
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              Priority (0–100)
+            </label>
+            <input
+              id="priority"
+              type="number"
+              min={0}
+              max={100}
+              value={priorityInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setPriorityInput("");
+                  return;
+                }
+                const num = Number(val);
+                if (!Number.isFinite(num)) return;
+                if (num < 0 || num > 100) return;
+                setPriorityInput(val);
+              }}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <Button size="sm" onClick={handleaddPriority}>
+            Add Priority
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* Priorities List */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Priorities List
+          </h2>
+          <p className="text-xs text-gray-600">
+            Total entries:{" "}
+            <span className="font-semibold">{sortedPriorities.length}</span>
+          </p>
+        </div>
+
+        {sortedPriorities.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            No priorities added yet. Start by selecting a supplier, a category,
+            and a priority value, then click Add.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700">
+                    SN
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700">
+                    Supplier
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700">
+                    Category
+                  </th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700">
+                    Priority
+                  </th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedPriorities.map((row, idx) => (
+                  <tr
+                    key={row.key}
+                    className={`border-b border-gray-100 ${
+                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-3 py-2 text-gray-900 font-medium whitespace-nowrap">
+                      {idx + 1}
+                    </td>
+                    <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
+                      {row.supplierName}
+                    </td>
+                    <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
+                      {row.categoryName}
+                    </td>
+                    <td className="px-3 py-2 text-center font-semibold text-gray-900">
+                      {row.priority}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePriority(row)}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

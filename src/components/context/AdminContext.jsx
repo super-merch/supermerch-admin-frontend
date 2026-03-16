@@ -5,8 +5,10 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllQueries } from "../apis/ContactApi";
+import { QueryClient } from "@tanstack/react-query";
 
 export const AdminContext = createContext();
+export const queryClient = new QueryClient();
 
 const AdminContextProvider = (props) => {
   const backednUrl = import.meta.env.VITE_BACKEND_URL;
@@ -32,7 +34,7 @@ const AdminContextProvider = (props) => {
   });
 
   const [aToken, setAToken] = useState(
-    localStorage.getItem("aToken") ? localStorage.getItem("aToken") : false
+    localStorage.getItem("aToken") ? localStorage.getItem("aToken") : false,
   );
 
   const [showPopup, setShowPopup] = useState(false);
@@ -56,7 +58,7 @@ const AdminContextProvider = (props) => {
 
     try {
       const response = await fetch(
-        `${backednUrl}/api/client-products?filter=false&page=1&limit=1&supplier=${supplier}`
+        `${backednUrl}/api/client-products?filter=false&page=1&limit=1&supplier=${supplier}`,
       );
       if (!response.ok) throw new Error("Failed to fetch products");
 
@@ -78,7 +80,7 @@ const AdminContextProvider = (props) => {
     try {
       if (!limit) limit = 100; // Default to 100 if limit is not provided
       const response = await fetch(
-        `${backednUrl}/api/client-products-newArrival?page=${page}&limit=${limit}&sort=${sort}?filter=true`
+        `${backednUrl}/api/client-products-newArrival?page=${page}&limit=${limit}&sort=${sort}?filter=true`,
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -104,7 +106,7 @@ const AdminContextProvider = (props) => {
     try {
       if (!limit) limit = 100; // Default to 100 if limit is not provided
       const response = await fetch(
-        `${backednUrl}/api/client-products-bestSellers?page=${page}&limit=${limit}&sort=${sort}?filter=true`
+        `${backednUrl}/api/client-products-bestSellers?page=${page}&limit=${limit}&sort=${sort}?filter=true`,
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -134,7 +136,7 @@ const AdminContextProvider = (props) => {
     searchTerm,
     categpryId,
     myLimit,
-    supplierId
+    supplierId,
   ) => {
     setSearchLoading(true);
     try {
@@ -143,7 +145,7 @@ const AdminContextProvider = (props) => {
       const response = await fetch(
         supplierId
           ? `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}&supplierId=${supplierId}`
-          : `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}`
+          : `${backednUrl}/api/client-product/category/search?searchTerm=${searchTerm}&page=1&limit=${limit}&filter=false&categoryId=${categpryId}`,
       );
 
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -177,7 +179,7 @@ const AdminContextProvider = (props) => {
       const response = await fetch(
         `${backednUrl}/api/supplier-products?page=${page}&limit=${limit || 15}${
           tag ? `&tag=${tag}` : ""
-        }`
+        }`,
       );
       if (!response.ok) throw new Error("Failed to fetch Suppliers");
 
@@ -287,7 +289,7 @@ const AdminContextProvider = (props) => {
   const getSingleUser = async (id) => {
     try {
       const response = await axios.get(
-        `${backednUrl}/api/auth/single-user/${id}`
+        `${backednUrl}/api/auth/single-user/${id}`,
       );
       return response.data;
     } catch (error) {
@@ -302,7 +304,7 @@ const AdminContextProvider = (props) => {
         `${
           import.meta.env.VITE_BACKEND_URL
         }/api/checkout/user-order/${id}?page=${page}&limit=${limit}`,
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
 
       setUserOrders(response.data.orders);
@@ -408,7 +410,7 @@ const AdminContextProvider = (props) => {
   const deleteOrderComment = async (orderId, commentIndex, orderComments) => {
     try {
       const updatedComments = orderComments?.comments.filter(
-        (_, index) => index !== commentIndex
+        (_, index) => index !== commentIndex,
       );
 
       if (updatedComments.length === 0) {
@@ -417,7 +419,7 @@ const AdminContextProvider = (props) => {
           `${backednUrl}/api/comments/delete-comment/${orderId}`,
           {
             method: "DELETE",
-          }
+          },
         );
 
         if (deleteResponse.ok) {
@@ -434,7 +436,7 @@ const AdminContextProvider = (props) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ comments: updatedComments }),
-          }
+          },
         );
 
         if (updateResponse.ok) {
@@ -464,7 +466,7 @@ const AdminContextProvider = (props) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ comments }),
-        }
+        },
       );
       const data = await response.json();
       if (response.ok) {
@@ -482,7 +484,7 @@ const AdminContextProvider = (props) => {
   const getOrderComments = async (orderId) => {
     try {
       const response = await fetch(
-        `${backednUrl}/api/comments/get-comment/${orderId}`
+        `${backednUrl}/api/comments/get-comment/${orderId}`,
       );
       if (response.status === 404) {
         return { success: true, data: null };
@@ -505,15 +507,15 @@ const AdminContextProvider = (props) => {
         orderData,
         {
           headers: { aToken },
-        }
+        },
       );
 
       if (response.data.success) {
         // Update the local orders state with the updated order
         setOrders((prevOrders) =>
           prevOrders.map((order) =>
-            order._id === orderId ? response.data.data : order
-          )
+            order._id === orderId ? response.data.data : order,
+          ),
         );
         return response.data;
       }
@@ -532,7 +534,7 @@ const AdminContextProvider = (props) => {
       const response = await fetch(
         `${backednUrl}/api/client-products?filter=false&page=${page}&limit=${limit}${
           supplier ? `&supplier=${supplier}` : ""
-        }${category ? `&product_type_ids=${category}` : ""}`
+        }${category ? `&product_type_ids=${category}` : ""}`,
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
@@ -561,7 +563,7 @@ const AdminContextProvider = (props) => {
       const response = await fetch(
         `${backednUrl}/api/client-products-trending?page=${page}&limit=${limit}&filter=true${
           supplier ? `&supplier=${supplier}` : ""
-        }`
+        }`,
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
@@ -583,14 +585,14 @@ const AdminContextProvider = (props) => {
     categoryId,
     page = 1,
     supplierId = null,
-    limit = 25
+    limit = 25,
   ) => {
     setParamLoading(true);
     try {
       const response = await fetch(
         supplierId
           ? `${backednUrl}/api/params-products?product_type_ids=${categoryId}&supplier_id=${supplierId}&items_per_page=${limit}&page=${page}`
-          : `${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${limit}&page=${page}`
+          : `${backednUrl}/api/params-products?product_type_ids=${categoryId}&items_per_page=${limit}&page=${page}`,
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
@@ -615,7 +617,7 @@ const AdminContextProvider = (props) => {
     supplier,
     category,
     page = 1,
-    limit = 25
+    limit = 25,
   ) => {
     setSearchLoading(true);
     try {
@@ -666,7 +668,7 @@ const AdminContextProvider = (props) => {
         `${backednUrl}/api/checkout/delete/${_id}`,
         {
           headers: { aToken },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -680,7 +682,7 @@ const AdminContextProvider = (props) => {
       toast.error(
         `Failed to delete order: ${
           error.response?.data?.message || error.message
-        }`
+        }`,
       );
     } finally {
       // Clear loading for specific order
@@ -696,7 +698,7 @@ const AdminContextProvider = (props) => {
       const response = await axios.post(
         `${backednUrl}/api/checkout/bulk-delete`,
         { ids },
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
 
       if (response.data.success) {
@@ -734,24 +736,24 @@ const AdminContextProvider = (props) => {
       const response = await axios.put(
         `${backednUrl}/api/checkout/status/${orderId}`,
         { status: newStatus },
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
       if (response.data.success) {
         await fetchOrders();
         toast.success("Order status updated successfully!");
       } else {
         toast.error(
-          "Failed to update order status (Backend did not return success)"
+          "Failed to update order status (Backend did not return success)",
         );
       }
     } catch (error) {
       console.error(
         "Error updating order status:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       toast.error(
         "Failed to update order status: " +
-          (error.response?.data?.message || error.message)
+          (error.response?.data?.message || error.message),
       );
     }
   };
@@ -761,7 +763,7 @@ const AdminContextProvider = (props) => {
       const { data } = await axios.get(
         `${backednUrl}/api/blogs/get-blogs${page && `?page=${page}`}${
           searchTerm && `&search=${searchTerm}`
-        }`
+        }`,
       );
       setBlogs(data.blogs); // Note: updated to access data.blogs
       setTotalBlogs(data.totalBlogs);
@@ -792,7 +794,7 @@ const AdminContextProvider = (props) => {
         {
           headers: { aToken },
           params,
-        }
+        },
       );
 
       if (data.success) {
@@ -814,7 +816,7 @@ const AdminContextProvider = (props) => {
     user,
     billingAddress,
     shippingAddress,
-    products
+    products,
   ) => {
     try {
       if (!note || note.length <= 10) {
@@ -823,7 +825,7 @@ const AdminContextProvider = (props) => {
       }
       const response = await axios.post(
         `${backednUrl}/api/checkout/send-note`,
-        { note, email, user, billingAddress, shippingAddress, products }
+        { note, email, user, billingAddress, shippingAddress, products },
       );
       const data = response.data;
       if (data.success) {
@@ -844,7 +846,7 @@ const AdminContextProvider = (props) => {
           limit || 25
         }${supplier && `&supplier=${supplier}`}${
           category && `&product_type_ids=${category}`
-        }`
+        }`,
       );
       const pages = Math.ceil(response.data.item_count / limit);
       setTotalApiPages(pages);
@@ -860,7 +862,7 @@ const AdminContextProvider = (props) => {
           limit || 25
         }${supplier && `&supplier=${supplier}`}${
           category && `&product_type_ids=${category}`
-        }`
+        }`,
       );
       const pages = Math.ceil(response.data.item_count / limit);
       setTotalApiPages(pages);
