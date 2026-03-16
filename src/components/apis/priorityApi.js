@@ -9,86 +9,23 @@ const CATEGORY_PRIORITY_BASE_URL = `${backendUrl}/api/priority`;
 
 // ---------- Raw API functions ----------
 
-export const fetchCategoryPriorities = async (categoryId) => {
-  if (!categoryId) return null;
-  const response = await axios.get(`${PRIORITY_BASE_URL}/${categoryId}`, {
+export const fetchPriorities = async () => {
+  const response = await axios.get(`${PRIORITY_BASE_URL}`, {
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
 };
 
-export const addPriority = async ({ categoryId, categoryName, productId }) => {
-  const response = await axios.post(
-    `${PRIORITY_BASE_URL}/add`,
-    {
-      categoryId,
-      categoryName,
-      productId,
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+export const addPriority = async (payload) => {
+  const response = await axios.post(`${PRIORITY_BASE_URL}/add`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
   return response.data;
 };
 
-export const removePriority = async ({ categoryId, productId }) => {
-  const response = await axios.post(
-    `${PRIORITY_BASE_URL}/remove`,
-    {
-      categoryId,
-      productId,
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  return response.data;
-};
-
-export const reorderPriority = async ({
-  categoryId,
-  productId,
-  newPosition,
-}) => {
-  const response = await axios.post(
-    `${PRIORITY_BASE_URL}/reorder`,
-    {
-      categoryId,
-      productId,
-      newPosition: Number(newPosition),
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  return response.data;
-};
-
-// ---------- Supplier/Category priority raw APIs ----------
-
-export const upsertCategoryPriority = async ({
-  supplierId,
-  categoryId,
-  priority,
-}) => {
-  const response = await axios.post(
-    `${CATEGORY_PRIORITY_BASE_URL}/upsert`,
-    {
-      supplierId,
-      categoryId,
-      priority,
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  return response.data;
-};
-
-export const deleteCategoryPriority = async ({ supplierId, categoryId }) => {
-  const response = await axios.delete(`${CATEGORY_PRIORITY_BASE_URL}`, {
-    data: { supplierId, categoryId },
+export const removePriority = async ({ id }) => {
+  const response = await axios.delete(`${PRIORITY_BASE_URL}/remove`, {
+    data: { id },
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -107,11 +44,10 @@ export const bulkImportCategoryPriorities = async ({ items }) => {
 
 // ---------- React Query hooks (product prioritize) ----------
 
-export const useCategoryPriorities = (categoryId, options = {}) =>
+export const usePriorities = (options = {}) =>
   useQuery({
-    queryKey: ["priorities", categoryId],
-    queryFn: () => fetchCategoryPriorities(categoryId),
-    enabled: !!categoryId,
+    queryKey: ["priorities"],
+    queryFn: fetchPriorities,
     ...options,
   });
 
@@ -140,31 +76,6 @@ export const useRemovePriorityMutation = (categoryId) => {
     },
   });
 };
-
-export const useReorderPriorityMutation = (categoryId) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: reorderPriority,
-    onSuccess: () => {
-      if (categoryId) {
-        queryClient.invalidateQueries(["priorities", categoryId]);
-      }
-    },
-  });
-};
-
-// ---------- React Query hooks (supplier/category priorities) ----------
-
-export const useUpsertCategoryPriorityMutation = () =>
-  useMutation({
-    mutationFn: upsertCategoryPriority,
-  });
-
-export const useDeleteCategoryPriorityMutation = () =>
-  useMutation({
-    mutationFn: deleteCategoryPriority,
-  });
 
 export const useBulkImportCategoryPrioritiesMutation = () =>
   useMutation({

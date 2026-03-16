@@ -4,8 +4,8 @@ import { toast } from "react-toastify";
 import { Button } from "../ui/button";
 import {
   useBulkImportCategoryPrioritiesMutation,
-  useDeleteCategoryPriorityMutation,
-  useUpsertCategoryPriorityMutation,
+  useRemovePriorityMutation,
+  usePriorities,
 } from "../apis/priorityApi";
 import { useAddPriorityMutation } from "../apis/priorityApi";
 
@@ -14,16 +14,36 @@ const Prioritisation = () => {
 
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [selectedSupplierId, setSelectedSupplierId] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selection, setSelection] = useState({
+    supplierId: "",
+    supplierName: "",
+    categoryId: "",
+    categoryName: "",
+    priority: "",
+  });
   const [categories, setCategories] = useState([]);
-  const [priorityInput, setPriorityInput] = useState("");
-  const [priorities, setPriorities] = useState([]);
   const fileInputRef = useRef(null);
+  const [priorities, setPriorities] = useState([]);
 
-  const upsertPriorityMutation = useUpsertCategoryPriorityMutation();
-  const deletePriorityMutation = useDeleteCategoryPriorityMutation();
+  const addPriorityMutation = useAddPriorityMutation();
+  const { data: priorityData, refetch: refetchPriorities } = usePriorities();
+  const deletePriorityMutation = useRemovePriorityMutation();
   const bulkImportMutation = useBulkImportCategoryPrioritiesMutation();
+
+  useEffect(() => {
+    if (!priorityData || !Array.isArray(priorityData)) return;
+    // Normalise API data into the shape used by the table
+    const normalised = priorityData.map((row) => ({
+      id: row._id,
+      key: `${row.supplierId}-${row.categoryId}`,
+      supplierId: String(row.supplierId),
+      supplierName: row.supplierName,
+      categoryId: String(row.categoryId),
+      categoryName: row.categoryName,
+      priority: Number(row.priority ?? row.priorityNumber ?? 0),
+    }));
+    setPriorities(normalised);
+  }, [priorityData]);
 
   const supplierMap = useMemo(() => {
     const map = {};
@@ -62,8 +82,15 @@ const Prioritisation = () => {
 
   const handleSupplierChange = async (e) => {
     const supplierId = e.target.value;
-    setSelectedSupplierId(supplierId);
-    setSelectedCategoryId("");
+    const supplier = supplierMap[String(supplierId)];
+    setSelection((prev) => ({
+      ...prev,
+      supplierId,
+      supplierName: supplier?.name || "",
+      categoryId: "",
+      categoryName: "",
+      priority: "",
+    }));
     setCategories([]);
 
     if (!supplierId) {
@@ -95,60 +122,42 @@ const Prioritisation = () => {
   };
 
   const handleaddPriority = () => {
-    if (!selectedSupplierId) {
+    if (!selection.supplierId) {
       toast.error("Please select a supplier");
       return;
     }
-    if (!selectedCategoryId) {
+    if (!selection.categoryId) {
       toast.error("Please select a category");
       return;
     }
 
-    const numeric = Number(priorityInput);
+    const numeric = Number(selection.priority);
     if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
       toast.error("Priority must be between 0 and 100");
       return;
     }
 
-    const supplier = supplierMap[String(selectedSupplierId)];
-    const categoryName = categoryMap[String(selectedCategoryId)];
+    const supplier = supplierMap[String(selection.supplierId)];
+    const categoryName = categoryMap[String(selection.categoryId)];
 
     if (!supplier || !categoryName) {
       toast.error("Invalid supplier or category selection");
       return;
     }
 
-    const key = `${selectedSupplierId}-${selectedCategoryId}`;
-
-    useAddPriorityMutation.mutate(
+    addPriorityMutation.mutate(
       {
-        supplierId: String(selectedSupplierId),
-        categoryId: String(selectedCategoryId),
-        priority: numeric,
+        supplierId: String(selection.supplierId),
+        supplierName: selection.supplierName,
+        categoryId: String(selection.categoryId),
+        categoryName,
+        priorityNumber: numeric,
       },
       {
         onSuccess: () => {
-          setPriorities((prev) => {
-            const existingIndex = prev.findIndex((p) => p.key === key);
-            const entry = {
-              key,
-              supplierId: String(selectedSupplierId),
-              supplierName: supplier.name,
-              categoryId: String(selectedCategoryId),
-              categoryName,
-              priority: numeric,
-            };
-
-            if (existingIndex === -1) {
-              return [...prev, entry];
-            }
-
-            const next = [...prev];
-            next[existingIndex] = entry;
-            return next;
-          });
-          setPriorityInput("");
+          setSelection((prev) => ({ ...prev, priority: "" }));
           toast.success("Priority saved successfully");
+          refetchPriorities();
         },
         onError: () => {
           toast.error("Failed to save priority");
@@ -156,27 +165,27 @@ const Prioritisation = () => {
       },
     );
   };
-
   const sortedPriorities = useMemo(() => {
     return [...priorities].sort((a, b) => b.priority - a.priority);
   }, [priorities]);
 
   const handleRemovePriority = (row) => {
-    deletePriorityMutation.mutate(
-      {
-        supplierId: row.supplierId,
-        categoryId: row.categoryId,
-      },
-      {
-        onSuccess: () => {
-          setPriorities((prev) => prev.filter((p) => p.key !== row.key));
-          toast.success("Priority removed");
+    if (window.confirm("Are you sure you want to remove this priority?")) {
+      deletePriorityMutation.mutate(
+        {
+          id: row.id,
         },
-        onError: () => {
-          toast.error("Failed to remove priority");
+        {
+          onSuccess: () => {
+            toast.success("Priority removed");
+            refetchPriorities();
+          },
+          onError: () => {
+            toast.error("Failed to remove priority");
+          },
         },
-      },
-    );
+      );
+    }
   };
 
   const buildCsv = (rows) => {
@@ -212,8 +221,8 @@ const Prioritisation = () => {
   const downloadTemplate = () => {
     let rows = [];
 
-    if (selectedSupplierId && categories.length > 0) {
-      const supplier = supplierMap[String(selectedSupplierId)];
+    if (selection.supplierId && categories.length > 0) {
+      const supplier = supplierMap[String(selection.supplierId)];
       if (!supplier) {
         toast.error("Selected supplier not found");
         return;
@@ -224,7 +233,7 @@ const Prioritisation = () => {
           c.groupName ?? c.name ?? c.categoryName ?? "Unnamed category";
         return {
           supplierName: supplier.name,
-          supplierId: String(selectedSupplierId),
+          supplierId: String(selection.supplierId),
           categoryName: name,
           categoryId: id,
           priority: "",
@@ -407,7 +416,7 @@ const Prioritisation = () => {
             </label>
             <select
               id="supplier"
-              value={selectedSupplierId}
+              value={selection.supplierId}
               onChange={handleSupplierChange}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={loadingSuppliers}
@@ -430,10 +439,18 @@ const Prioritisation = () => {
             </label>
             <select
               id="category"
-              value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              value={selection.categoryId}
+              onChange={(e) => {
+                const id = e.target.value;
+                const name = categoryMap[String(id)] || "";
+                setSelection((prev) => ({
+                  ...prev,
+                  categoryId: id,
+                  categoryName: name,
+                }));
+              }}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={!selectedSupplierId || loadingCategories}
+              disabled={!selection.supplierId || loadingCategories}
             >
               <option value="">
                 {loadingCategories ? "Loading categories…" : "Choose category…"}
@@ -463,17 +480,17 @@ const Prioritisation = () => {
               type="number"
               min={0}
               max={100}
-              value={priorityInput}
+              value={selection.priority}
               onChange={(e) => {
                 const val = e.target.value;
                 if (val === "") {
-                  setPriorityInput("");
+                  setSelection((prev) => ({ ...prev, priority: "" }));
                   return;
                 }
                 const num = Number(val);
                 if (!Number.isFinite(num)) return;
                 if (num < 0 || num > 100) return;
-                setPriorityInput(val);
+                setSelection((prev) => ({ ...prev, priority: val }));
               }}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
