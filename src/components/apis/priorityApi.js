@@ -9,16 +9,21 @@ const CATEGORY_PRIORITY_BASE_URL = `${backendUrl}/api/priority`;
 
 // ---------- Raw API functions ----------
 
+const authHeaders = () => ({
+  "Content-Type": "application/json",
+  atoken: localStorage.getItem("aToken"),
+});
+
 export const fetchPriorities = async () => {
   const response = await axios.get(`${PRIORITY_BASE_URL}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
   });
   return response.data;
 };
 
 export const addPriority = async (payload) => {
   const response = await axios.post(`${PRIORITY_BASE_URL}/add`, payload, {
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
   });
   return response.data;
 };
@@ -26,7 +31,7 @@ export const addPriority = async (payload) => {
 export const removePriority = async ({ id }) => {
   const response = await axios.delete(`${PRIORITY_BASE_URL}/remove`, {
     data: { id },
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
   });
   return response.data;
 };
@@ -36,7 +41,7 @@ export const bulkImportCategoryPriorities = async ({ items }) => {
     `${CATEGORY_PRIORITY_BASE_URL}/bulk`,
     { items },
     {
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
     },
   );
   return response.data;
