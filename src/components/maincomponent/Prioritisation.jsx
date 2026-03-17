@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 import { toast } from "react-toastify";
 import { Button } from "../ui/button";
+import * as XLSX from "xlsx";
 import {
   useBulkImportCategoryPrioritiesMutation,
   useRemovePriorityMutation,
@@ -32,7 +33,6 @@ const Prioritisation = () => {
 
   useEffect(() => {
     if (!priorityData || !Array.isArray(priorityData)) return;
-    // Normalise API data into the shape used by the table
     const normalised = priorityData.map((row) => ({
       id: row._id,
       key: `${row.supplierId}-${row.categoryId}`,
@@ -188,38 +188,11 @@ const Prioritisation = () => {
     }
   };
 
-  const buildCsv = (rows) => {
-    const headers = [
-      "Supplier",
-      "SupplierId",
-      "Category",
-      "CategoryId",
-      "Priority",
-    ];
-    const escape = (val) => {
-      const s = String(val ?? "");
-      if (/[",\n]/.test(s)) {
-        return `"${s.replace(/"/g, '""')}"`;
-      }
-      return s;
-    };
-    const lines = [
-      headers.join(","),
-      ...rows.map((r) =>
-        [
-          escape(r.supplierName),
-          escape(r.supplierId),
-          escape(r.categoryName),
-          escape(r.categoryId),
-          escape(r.priority ?? ""),
-        ].join(","),
-      ),
-    ];
-    return lines.join("\n");
-  };
-
   const downloadTemplate = () => {
     let rows = [];
+    const existingMap = new Map(
+      priorities.map((p) => [`${p.supplierId}-${p.categoryId}`, p])
+    );
 
     if (selection.supplierId && categories.length > 0) {
       const supplier = supplierMap[String(selection.supplierId)];
@@ -231,28 +204,29 @@ const Prioritisation = () => {
         const id = String(c.groupId ?? c.id ?? c.categoryId);
         const name =
           c.groupName ?? c.name ?? c.categoryName ?? "Unnamed category";
+        const existing = existingMap.get(`${selection.supplierId}-${id}`);
         return {
-          supplierName: supplier.name,
-          supplierId: String(selection.supplierId),
-          categoryName: name,
-          categoryId: id,
-          priority: "",
+          Supplier: supplier.name,
+          SupplierId: String(selection.supplierId),
+          Category: name,
+          CategoryId: id,
+          Priority: existing ? existing.priority : "",
         };
       });
+    } else {
+      rows = sortedPriorities.map((p) => ({
+        Supplier: p.supplierName,
+        SupplierId: p.supplierId,
+        Category: p.categoryName,
+        CategoryId: p.categoryId,
+        Priority: p.priority,
+      }));
     }
 
-    const csv = buildCsv(rows);
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "priorities-template.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Priorities");
+    XLSX.writeFile(wb, "priorities-template.xlsx");
   };
 
   const handleImportClick = () => {
@@ -269,58 +243,40 @@ const Prioritisation = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = String(event.target?.result || "");
-        const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
-        if (lines.length === 0) {
+        const data = new Uint8Array(event.target?.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        if (!sheet) {
           toast.error("Uploaded file is empty");
           return;
         }
 
-        const header = lines[0].split(",");
-        const idxSupplier = header.indexOf("Supplier");
-        const idxSupplierId = header.indexOf("SupplierId");
-        const idxCategory = header.indexOf("Category");
-        const idxCategoryId = header.indexOf("CategoryId");
-        const idxPriority = header.indexOf("Priority");
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        if (rows.length === 0) {
+          toast.error("No data rows found in file");
+          return;
+        }
 
-        if (
-          idxSupplier === -1 ||
-          idxSupplierId === -1 ||
-          idxCategory === -1 ||
-          idxCategoryId === -1 ||
-          idxPriority === -1
-        ) {
-          toast.error("Invalid template headers in uploaded file");
+        const firstRow = rows[0];
+        if (!("SupplierId" in firstRow) || !("CategoryId" in firstRow) || !("Priority" in firstRow)) {
+          toast.error("Invalid headers — need SupplierId, CategoryId, Priority");
           return;
         }
 
         const imported = [];
+        for (const row of rows) {
+          const supplierId = String(row.SupplierId ?? "").trim();
+          const supplierName = String(row.Supplier ?? "").trim();
+          const categoryId = String(row.CategoryId ?? "").trim();
+          const categoryName = String(row.Category ?? "").trim();
+          const priorityRaw = String(row.Priority ?? "").trim();
 
-        for (let i = 1; i < lines.length; i += 1) {
-          const raw = lines[i];
-          if (!raw.trim()) continue;
-          const cols = raw.split(",");
-          const supplierId = cols[idxSupplierId]?.trim();
-          const supplierName = cols[idxSupplier]?.trim();
-          const categoryId = cols[idxCategoryId]?.trim();
-          const categoryName = cols[idxCategory]?.trim();
-          const priorityRaw = cols[idxPriority]?.trim();
-
-          if (!supplierId || !categoryId) continue;
-          if (!priorityRaw) continue;
+          if (!supplierId || !categoryId || !priorityRaw) continue;
 
           const numeric = Number(priorityRaw);
-          if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
-            continue;
-          }
+          if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) continue;
 
-          imported.push({
-            supplierId,
-            supplierName,
-            categoryId,
-            categoryName,
-            priority: numeric,
-          });
+          imported.push({ supplierId, supplierName, categoryId, categoryName, priority: numeric });
         }
 
         if (!imported.length) {
@@ -332,24 +288,8 @@ const Prioritisation = () => {
           { items: imported },
           {
             onSuccess: () => {
-              setPriorities((prev) => {
-                const map = new Map(prev.map((p) => [p.key, p]));
-                imported.forEach((row) => {
-                  const key = `${row.supplierId}-${row.categoryId}`;
-                  const supplier = supplierMap[String(row.supplierId)] || {};
-                  map.set(key, {
-                    key,
-                    supplierId: String(row.supplierId),
-                    supplierName: supplier.name || row.supplierName || "",
-                    categoryId: String(row.categoryId),
-                    categoryName: row.categoryName || "",
-                    priority: row.priority,
-                  });
-                });
-                return Array.from(map.values());
-              });
-
-              toast.success("Priorities imported successfully");
+              toast.success(`Imported ${imported.length} priorities`);
+              refetchPriorities();
             },
             onError: () => {
               toast.error("Failed to import priorities");
@@ -362,7 +302,7 @@ const Prioritisation = () => {
       }
     };
 
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -381,7 +321,7 @@ const Prioritisation = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={handleFileChange}
           />
