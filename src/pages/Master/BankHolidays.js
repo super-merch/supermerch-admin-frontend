@@ -1,0 +1,548 @@
+import React, { useState, useEffect, useContext, useCallback } from "react";
+import axios from "axios";
+import {
+    Card,
+    CardBody,
+    Col,
+    Container,
+    CardHeader,
+    Row,
+    Label,
+    Input,
+    Modal,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Badge,
+    Button,
+    Alert,
+} from "reactstrap";
+import BreadCrumb from "../../Components/Common/BreadCrumb";
+import DataTable from "react-data-table-component";
+import { toast } from "react-toastify";
+import { MenuContext } from "../../context/MenuContext";
+import LoadingOverlay from "../../Components/Common/LoadingOverlay";
+import FormsHeader from "../../Components/Common/FormsModalHeader";
+import DeleteModal from "../../Components/Common/DeleteModal";
+import FormsFooter from "../../Components/Common/FormAddFooter";
+import { AuthContext } from "../../context/AuthContext";
+
+const initialState = {
+    date: "",
+    name: "",
+    region: "england-and-wales",
+};
+
+const BankHolidays = () => {
+    const { adminData } = useContext(AuthContext);
+    const { currentPagePermissions } = useContext(MenuContext);
+    const [values, setValues] = useState(initialState);
+    const [formErrors, setFormErrors] = useState({});
+    const [isSubmit, setIsSubmit] = useState(false);
+    const [filter, setFilter] = useState(true);
+    const [syncing, setSyncing] = useState(false);
+
+    const [query, setQuery] = useState("");
+    const [remove_id, setRemove_id] = useState("");
+    const [holidays, setHolidays] = useState([]);
+
+    useEffect(() => {
+        if (Object.keys(formErrors).length === 0 && isSubmit) {
+            console.log("no errors");
+        }
+    }, [formErrors, isSubmit]);
+
+    const [modal_list, setmodal_list] = useState(false);
+    const tog_list = () => {
+        setmodal_list(!modal_list);
+        setValues(initialState);
+        setIsSubmit(false);
+    };
+
+    const [modal_delete, setmodal_delete] = useState(false);
+    const tog_delete = (_id) => {
+        setmodal_delete(!modal_delete);
+        setRemove_id(_id);
+    };
+
+    const handleChange = (e) => {
+        let { name, value } = e.target;
+        setValues({ ...values, [name]: value });
+    };
+
+    const handleSubmitCancel = () => {
+        setmodal_list(false);
+        setValues(initialState);
+        setIsSubmit(false);
+    };
+
+    const handleClick = async (e) => {
+        e.preventDefault();
+        setFormErrors({});
+        let errors = validate(values);
+        setFormErrors(errors);
+        setIsSubmit(true);
+
+        if (Object.keys(errors).length === 0) {
+            setLoading(true);
+            try {
+                const response = await axios.post(
+                    `/api/admin/bank-holidays`,
+                    values,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem(
+                                "token"
+                            )}`,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    setmodal_list(!modal_list);
+                    fetchHolidays();
+                    toast.success(response.data.message);
+                    setValues(initialState);
+                } else {
+                    toast.error(response.data.message);
+                }
+            } catch (error) {
+                console.log(error);
+                toast.error(
+                    error.response?.data?.message ||
+                        "Error adding bank holiday!"
+                );
+            }
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const response = await axios.delete(
+                `/api/admin/bank-holidays/${remove_id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                setmodal_delete(!modal_delete);
+                fetchHolidays();
+                toast.success(response.data.message);
+            } else {
+                toast.error(
+                    response.data.message || "Error deleting bank holiday!"
+                );
+            }
+        } catch (err) {
+            console.log(err);
+            setmodal_delete(false);
+            toast.error(
+                err.response?.data?.message ||
+                    "Failed to delete bank holiday. Please try again."
+            );
+        }
+        setLoading(false);
+    };
+
+    const handleDeleteClose = (e) => {
+        e.preventDefault();
+        setmodal_delete(false);
+    };
+
+    const handleSync = async () => {
+        setSyncing(true);
+        try {
+            const response = await axios.post(
+                `/api/admin/bank-holidays/sync`,
+                { region: "england-and-wales" },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                toast.success(
+                    `Synced ${response.data.count} bank holidays from gov.uk!`
+                );
+                fetchHolidays();
+            } else {
+                toast.error(response.data.message || "Sync failed");
+            }
+        } catch (error) {
+            console.error("Sync error:", error);
+            toast.error(
+                error.response?.data?.message || "Failed to sync bank holidays"
+            );
+        }
+        setSyncing(false);
+    };
+
+    const validate = (values) => {
+        const errors = {};
+
+        if (!values.date || values.date.trim() === "") {
+            errors.date = "Date is required!";
+        }
+
+        if (!values.name || values.name.trim() === "") {
+            errors.name = "Holiday Name is required!";
+        }
+
+        return errors;
+    };
+
+    const [loading, setLoading] = useState(false);
+    const [totalRows, setTotalRows] = useState(0);
+    const [perPage, setPerPage] = useState(100);
+    const [pageNo, setPageNo] = useState(0);
+
+    const fetchHolidays = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const params = {
+                year: new Date().getFullYear(),
+                isActive: filter,
+            };
+
+            const response = await axios.get(`/api/admin/bank-holidays`, {
+                params,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+
+            if (response.data.success) {
+                let data = response.data.data;
+
+                // Filter by search query
+                if (query) {
+                    data = data.filter(
+                        (h) =>
+                            h.name
+                                .toLowerCase()
+                                .includes(query.toLowerCase()) ||
+                            h.date.includes(query)
+                    );
+                }
+
+                setHolidays(data);
+                setTotalRows(data.length);
+            } else {
+                setHolidays([]);
+                setTotalRows(0);
+            }
+        } catch (error) {
+            console.error("Error fetching bank holidays:", error);
+            setHolidays([]);
+            setTotalRows(0);
+        } finally {
+            setLoading(false);
+        }
+    }, [query, filter]);
+
+    useEffect(() => {
+        fetchHolidays();
+    }, [fetchHolidays]);
+
+    const handlePageChange = (page) => {
+        setPageNo(page);
+    };
+
+    const handlePerRowsChange = async (newPerPage, page) => {
+        setPerPage(newPerPage);
+    };
+
+    const handleFilter = (e) => {
+        setFilter(e.target.checked);
+    };
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
+    const isUpcoming = (dateString) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date >= today;
+    };
+
+    const col = [
+        {
+            name: "Sr No",
+            selector: (row, index) => index + 1,
+            sortable: true,
+            maxWidth: "70px",
+        },
+        {
+            name: "Date",
+            selector: (row) => (
+                <div>
+                    <strong>{formatDate(row.date)}</strong>
+                    {isUpcoming(row.date) && (
+                        <Badge color="success" className="ms-2">
+                            Upcoming
+                        </Badge>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            sortFunction: (a, b) => new Date(a.date) - new Date(b.date),
+            minWidth: "200px",
+        },
+        {
+            name: "Holiday Name",
+            selector: (row) => row.name,
+            sortable: true,
+            minWidth: "200px",
+        },
+        {
+            name: "Region",
+            selector: (row) => (
+                <Badge color="info">
+                    {row.region === "england-and-wales"
+                        ? "England & Wales"
+                        : row.region === "scotland"
+                        ? "Scotland"
+                        : "Northern Ireland"}
+                </Badge>
+            ),
+            minWidth: "150px",
+        },
+        {
+            name: "Action",
+            selector: (row) => {
+                return (
+                    <React.Fragment>
+                        <div className="d-flex gap-2">
+                            <div className="remove">
+                                {currentPagePermissions.delete && (
+                                    <button
+                                        className="btn btn-sm btn-danger remove-item-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteRecordModal"
+                                        onClick={() => tog_delete(row.id)}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                                {!currentPagePermissions.delete && (
+                                    <span className="text-muted">
+                                        No actions available
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </React.Fragment>
+                );
+            },
+            sortable: false,
+            minWidth: "120px",
+        },
+    ];
+
+    document.title = `Bank Holidays | ${adminData?.companyName}`;
+
+    return (
+        <React.Fragment>
+            {loading && <LoadingOverlay />}
+            <div className="page-content">
+                <Container fluid>
+                    <BreadCrumb
+                        maintitle="Master"
+                        title="Bank Holidays"
+                        pageTitle="Master"
+                    />
+                    <Row>
+                        <Col lg={12}>
+                            <Card>
+                                <CardHeader>
+                                    <Row className="align-items-center">
+                                        <Col md={8}>
+                                            <FormsHeader
+                                                formName="UK Bank Holidays"
+                                                filter={filter}
+                                                handleFilter={handleFilter}
+                                                tog_list={tog_list}
+                                                setQuery={setQuery}
+                                                currentPagePermissions={
+                                                    currentPagePermissions
+                                                }
+                                                showAddButton={
+                                                    currentPagePermissions.write
+                                                }
+                                            />
+                                        </Col>
+                                        <Col md={4} className="text-end">
+                                            <Button
+                                                color="primary"
+                                                onClick={handleSync}
+                                                disabled={syncing}
+                                            >
+                                                {syncing ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" />
+                                                        Syncing...
+                                                    </>
+                                                ) : (
+                                                    <>🔄 Sync from Gov.UK</>
+                                                )}
+                                            </Button>
+                                        </Col>
+                                    </Row>
+                                </CardHeader>
+
+                                <CardBody>
+                                    <Alert color="info" className="mb-3">
+                                        <i className="ri-information-line me-2"></i>
+                                        Bank holidays are used to calculate
+                                        accurate delivery estimates. Click "Sync
+                                        from Gov.UK" to automatically fetch the
+                                        latest UK bank holidays.
+                                    </Alert>
+
+                                    <div id="customerList">
+                                        <div className="table-responsive table-card mt-1 mb-1 text-right">
+                                            <DataTable
+                                                columns={col}
+                                                data={holidays}
+                                                progressPending={loading}
+                                                pagination
+                                                paginationServer={false}
+                                                paginationTotalRows={totalRows}
+                                                paginationPerPage={100}
+                                                paginationRowsPerPageOptions={[
+                                                    50,
+                                                    100,
+                                                    200,
+                                                    300,
+                                                    totalRows,
+                                                ]}
+                                                onChangeRowsPerPage={
+                                                    handlePerRowsChange
+                                                }
+                                                onChangePage={handlePageChange}
+                                                defaultSortFieldId={2}
+                                                defaultSortAsc={true}
+                                            />
+                                        </div>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Container>
+            </div>
+
+            {/* Add Modal */}
+            <Modal
+                isOpen={modal_list}
+                toggle={() => {
+                    tog_list();
+                }}
+                centered
+                size="md"
+            >
+                <ModalHeader
+                    className="bg-light p-3"
+                    toggle={() => {
+                        setmodal_list(false);
+                        setIsSubmit(false);
+                    }}
+                >
+                    Add Custom Bank Holiday
+                </ModalHeader>
+                <form>
+                    <ModalBody>
+                        <div className="form-floating mb-3">
+                            <Input
+                                type="date"
+                                placeholder="Select Date"
+                                required
+                                name="date"
+                                value={values.date}
+                                onChange={handleChange}
+                            />
+                            <Label>
+                                Date <span className="text-danger">*</span>
+                            </Label>
+                            {isSubmit && (
+                                <p className="text-danger">{formErrors.date}</p>
+                            )}
+                        </div>
+
+                        <div className="form-floating mb-3">
+                            <Input
+                                type="text"
+                                placeholder="Enter Holiday Name"
+                                required
+                                name="name"
+                                value={values.name}
+                                onChange={handleChange}
+                            />
+                            <Label>
+                                Holiday Name{" "}
+                                <span className="text-danger">*</span>
+                            </Label>
+                            {isSubmit && (
+                                <p className="text-danger">{formErrors.name}</p>
+                            )}
+                        </div>
+
+                        <div className="form-floating mb-3">
+                            <Input
+                                type="select"
+                                name="region"
+                                value={values.region}
+                                onChange={handleChange}
+                            >
+                                <option value="england-and-wales">
+                                    England & Wales
+                                </option>
+                                <option value="scotland">Scotland</option>
+                                <option value="northern-ireland">
+                                    Northern Ireland
+                                </option>
+                            </Input>
+                            <Label>Region</Label>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <FormsFooter
+                            handleSubmit={handleClick}
+                            handleSubmitCancel={handleSubmitCancel}
+                        />
+                    </ModalFooter>
+                </form>
+            </Modal>
+
+            <DeleteModal
+                show={modal_delete}
+                handleDelete={handleDelete}
+                toggle={handleDeleteClose}
+                setmodal_delete={setmodal_delete}
+            />
+        </React.Fragment>
+    );
+};
+
+export default BankHolidays;
