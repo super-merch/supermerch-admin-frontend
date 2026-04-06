@@ -12,6 +12,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -114,7 +116,6 @@ const HomePageBanner = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "10px",
     },
     {
       name: "Image",
@@ -125,13 +126,11 @@ const HomePageBanner = () => {
           style={{ width: "100px", height: "60px", objectFit: "cover", margin: "5px 0" }}
         />
       ),
-      maxWidth: "120px",
     },
     {
       name: "Sort Order",
       selector: (row) => row.sortOrder,
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Status",
@@ -140,7 +139,6 @@ const HomePageBanner = () => {
           {row.isActive ? 'Active' : 'Inactive'}
         </span>
       ),
-      maxWidth: "100px",
     },
     {
       name: "Action",
@@ -531,7 +529,6 @@ const HomePageBanner = () => {
                                 alt="Preview"
                                 style={{
                                   width: "100%",
-                                  maxWidth: "100%",
                                   height: "auto",
                                   maxHeight: "400px",
                                   objectFit: "contain",
@@ -635,6 +632,9 @@ const HomePageBanner = () => {
     </CardBody>
   );
 
+  const exportColumns = [{header:"Title",key:"title"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { return data; };
+
   document.title = `Home Page Banner | ${adminData?.companyName}`;
 
   return (
@@ -666,6 +666,7 @@ const HomePageBanner = () => {
                     // currentPagePermissions={currentPagePermissions}
                     // showAddButton={currentPagePermissions.write}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="home_banners" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 {showForm || updateForm ? (
@@ -674,6 +675,7 @@ const HomePageBanner = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={columns}
                         data={data}
                         progressPending={loading}

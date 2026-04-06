@@ -26,6 +26,8 @@ import { createMenuGroup, deleteMenuGroup, getMenuGroupById, updateMenuGroup } f
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     menugroupName: "",
@@ -36,8 +38,7 @@ const initialState = {
 };
 
 const MenuGroup = () => {
-  const { currentPagePermissions } = useContext(MenuContext);
-  console.log("current page permissions", currentPagePermissions);
+  const { currentPagePermissions, isSuperAdmin } = useContext(MenuContext);
   const [values, setValues] = useState(initialState);
   const [formErrors, setFormErrors] = useState({});
   const [isSubmit, setIsSubmit] = useState(false);
@@ -245,6 +246,22 @@ const MenuGroup = () => {
   const [column, setcolumn] = useState();
   const [sortDirection, setsortDirection] = useState();
 
+  const exportColumns = [
+    { header: "Menu Group Name", key: "menugroupName" },
+    { header: "Sequence", key: "sequence" },
+    { header: "Is Link", key: "isLink" },
+    { header: "URL", key: "url" },
+    { header: "Is Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    const response = await axios.get('/api/menugroups', {
+      params: { page: 1, limit: 10000, isActive: filter, search: query },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return response.data.data || [];
+  };
+
   const handleSort = (column, sortDirection) => {
     setcolumn(column.sortField);
     setsortDirection(sortDirection);
@@ -304,9 +321,8 @@ const MenuGroup = () => {
   const col = [
     {
       name: "Sr No",
-      selector: (row, index) => index + 1, 
+      selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Menu Group Name",
@@ -333,7 +349,7 @@ const MenuGroup = () => {
         return (
           <React.Fragment>
             <div className="d-flex gap-2">
-              {/* {currentPagePermissions.edit && ( */}
+              {isSuperAdmin && (
               <div className="edit">
                 <button
                   className="btn btn-sm btn-success edit-item-btn "
@@ -344,8 +360,8 @@ const MenuGroup = () => {
                   Edit
                 </button>
               </div>
-              {/* )} */}
-              {/* {currentPagePermissions.delete && ( */}
+              )}
+              {isSuperAdmin && (
               <div className="remove">
                 <button
                   className="btn btn-sm btn-danger remove-item-btn"
@@ -356,10 +372,10 @@ const MenuGroup = () => {
                   Remove
                 </button>
               </div>
-              {/* )} */}
-              {/* {!currentPagePermissions.edit && !currentPagePermissions.delete && (
-                <span className="text-muted">No actions available</span>
-              )} */}
+              )}
+              {!isSuperAdmin && (
+                <span className="text-muted">View only</span>
+              )}
             </div>
           </React.Fragment>
         );
@@ -386,14 +402,22 @@ const MenuGroup = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Menu Group"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={tog_list}
-                    setQuery={setQuery}
-                    // showAddButton={currentPagePermissions.write}
-                  />
+                  <div className="d-flex justify-content-between align-items-center">
+                    <FormsHeader
+                      formName="Menu Group"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={tog_list}
+                      setQuery={setQuery}
+                      showAddButton={isSuperAdmin}
+                    />
+                    <ExportButtons
+                      data={departments}
+                      columns={exportColumns}
+                      fileName="MenuGroups"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -402,6 +426,7 @@ const MenuGroup = () => {
                       <DataTable
                         columns={col}
                         data={departments}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection, sortedRows) => {

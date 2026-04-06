@@ -16,6 +16,8 @@ import {
 } from "reactstrap";
 import axios from "axios";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
@@ -333,7 +335,6 @@ const Department = () => {
       name: "Sr No",
       selector: (row, index) => index + 1, 
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Department Name",
@@ -393,6 +394,9 @@ const Department = () => {
     },
   ];
 
+  const exportColumns = [{header:"Name",key:"departmentName"},{header:"Code",key:"departmentCode"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { return departments; };
+
   document.title = `Department Master | ${adminData.companyName}`;
 
   return (
@@ -418,12 +422,14 @@ const Department = () => {
                     setQuery={setQuery}
                     showAddButton={currentPagePermissions.write}
                   />
+                  <ExportButtons data={departments} columns={exportColumns} fileName="departments" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
                   <div id="customerList">
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={col}
                         data={departments}
                         progressPending={loading}

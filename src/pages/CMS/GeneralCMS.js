@@ -14,6 +14,8 @@ import {
 import Select from "react-select";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -213,7 +215,6 @@ const GeneralCMS = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "80px",
         },
         {
             name: "Name",
@@ -250,7 +251,6 @@ const GeneralCMS = () => {
                 ) : (
                     <span className="text-muted">No Image</span>
                 ),
-            maxWidth: "100px",
         },
         {
             name: "Points",
@@ -259,7 +259,6 @@ const GeneralCMS = () => {
                     {row.points ? row.points.length : 0} points
                 </span>
             ),
-            maxWidth: "100px",
         },
         {
             name: "Status",
@@ -272,7 +271,6 @@ const GeneralCMS = () => {
                     {row.isActive ? "Active" : "Inactive"}
                 </span>
             ),
-            maxWidth: "100px",
         },
         {
             name: "Action",
@@ -819,8 +817,6 @@ const GeneralCMS = () => {
                                                                 alt="Preview"
                                                                 style={{
                                                                     width: "100%",
-                                                                    maxWidth:
-                                                                        "100%",
                                                                     height: "auto",
                                                                     maxHeight:
                                                                         "200px",
@@ -1084,6 +1080,9 @@ const GeneralCMS = () => {
         </CardBody>
     );
 
+    const exportColumns = [{header:"Title",key:"title"},{header:"Type",key:"type"},{header:"Active",key:"isActive"}];
+    const fetchAllForExport = async () => { return data; };
+
     document.title = `General CMS | ${adminData?.companyName}`;
 
     return (
@@ -1113,6 +1112,7 @@ const GeneralCMS = () => {
                                         setShowForm={setShowForm}
                                         setUpdateForm={setUpdateForm}
                                     />
+                                    <ExportButtons data={data} columns={exportColumns} fileName="general_cms" fetchAll={fetchAllForExport} />
                                 </CardHeader>
 
                                 {showForm || updateForm ? (
@@ -1121,6 +1121,7 @@ const GeneralCMS = () => {
                                     <CardBody>
                                         <div className="table-responsive table-card mt-1 mb-1 text-right">
                                             <DataTable
+                      customStyles={tableCustomStyles}
                                                 columns={columns}
                                                 data={data}
                                                 progressPending={loading}

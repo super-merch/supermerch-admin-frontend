@@ -26,6 +26,8 @@ import FormsHeader from "../../Components/Common/FormsModalHeader";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     date: "",
@@ -291,7 +293,6 @@ const BankHolidays = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "70px",
         },
         {
             name: "Date",
@@ -360,6 +361,23 @@ const BankHolidays = () => {
         },
     ];
 
+    const exportColumns = [
+        { header: "Date", key: "date" },
+        { header: "Holiday Name", key: "name" },
+        { header: "Region", key: "region" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.get(`/api/admin/bank-holidays`, {
+                params: { year: new Date().getFullYear(), isActive: filter },
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            });
+            if (response.data.success) return response.data.data;
+            return [];
+        } catch { return []; }
+    };
+
     document.title = `Bank Holidays | ${adminData?.companyName}`;
 
     return (
@@ -392,7 +410,13 @@ const BankHolidays = () => {
                                                 }
                                             />
                                         </Col>
-                                        <Col md={4} className="text-end">
+                                        <Col md={4} className="text-end d-flex justify-content-end align-items-center gap-2">
+                                            <ExportButtons
+                                                data={holidays}
+                                                columns={exportColumns}
+                                                fileName="bank-holidays"
+                                                fetchAll={fetchAllForExport}
+                                            />
                                             <Button
                                                 color="primary"
                                                 onClick={handleSync}
@@ -426,6 +450,7 @@ const BankHolidays = () => {
                                                 columns={col}
                                                 data={holidays}
                                                 progressPending={loading}
+                                                customStyles={tableCustomStyles}
                                                 pagination
                                                 paginationServer={false}
                                                 paginationTotalRows={totalRows}

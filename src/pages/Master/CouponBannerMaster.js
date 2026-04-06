@@ -33,6 +33,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import classnames from "classnames";
 import { api } from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     title: "",
@@ -518,7 +520,6 @@ const CouponBannerMaster = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "60px",
         },
         {
             name: "Title",
@@ -669,6 +670,28 @@ const CouponBannerMaster = () => {
             minWidth: "120px",
         },
     ];
+
+    const exportColumns = [
+        { header: "Title", key: "title" },
+        { header: "Discount Type", key: "discountType" },
+        { header: "Discount Value", key: "discountValue" },
+        { header: "Trigger", key: "triggerType" },
+        { header: "Start Date", key: "startDate" },
+        { header: "End Date", key: "endDate" },
+        { header: "Active", key: "isActive" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.post(
+                `/api/coupon-banners/list`,
+                { page: 1, limit: 10000 },
+                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            );
+            if (response.data.success) return response.data.data || [];
+            return [];
+        } catch { return []; }
+    };
 
     document.title = `Coupon Banners | ${adminData?.companyName}`;
 
@@ -1115,6 +1138,7 @@ const CouponBannerMaster = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
+                                    <div className="d-flex justify-content-between align-items-center">
                                     <FormsHeader
                                         formName="Coupon Banner"
                                         filter={filter}
@@ -1128,6 +1152,13 @@ const CouponBannerMaster = () => {
                                         setShowForm={setShowForm}
                                         setUpdateForm={setUpdateForm}
                                     />
+                                    <ExportButtons
+                                        data={banners}
+                                        columns={exportColumns}
+                                        fileName="coupon-banners"
+                                        fetchAll={fetchAllForExport}
+                                    />
+                                    </div>
                                 </CardHeader>
 
                                 {showForm || updateForm ? (
@@ -1139,6 +1170,7 @@ const CouponBannerMaster = () => {
                                                 columns={columns}
                                                 data={banners}
                                                 progressPending={loading}
+                                                customStyles={tableCustomStyles}
                                                 pagination
                                                 paginationServer
                                                 paginationTotalRows={totalRows}

@@ -28,6 +28,8 @@ import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -827,6 +829,26 @@ const WebsiteUsers = () => {
     );
   };
 
+  const exportColumns = [
+    { header: "First Name", key: "firstName" },
+    { header: "Last Name", key: "lastName" },
+    { header: "Email", key: "email" },
+    { header: "Phone", key: "phone" },
+    { header: "Status", key: "isActive" },
+    { header: "Registered", key: "createdAt" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const response = await axios.get(`/api/admin/website-users`, {
+        params: { page: 1, limit: 10000, isActive: filter },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.data.success) return response.data.data;
+      return [];
+    } catch { return []; }
+  };
+
   document.title = `Website Users | ${adminData.companyName}`;
 
   return (
@@ -915,6 +937,7 @@ const WebsiteUsers = () => {
               <Card>
                 <CardHeader>
                   {!showDetails && (
+                    <div className="d-flex justify-content-between align-items-center">
                     <FormsHeader
                       formName="Website Users"
                       filter={filter}
@@ -924,6 +947,13 @@ const WebsiteUsers = () => {
                       updateForm={false}
                       showAddButton={false}
                     />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="website-users"
+                      fetchAll={fetchAllForExport}
+                    />
+                    </div>
                   )}
                 </CardHeader>
 
@@ -936,6 +966,7 @@ const WebsiteUsers = () => {
                         columns={columns}
                         data={data}
                         progressPending={loading}
+                        customStyles={tableCustomStyles}
                         sortServer
                         onSort={(column, sortDirection) =>
                           handleSort(column, sortDirection)

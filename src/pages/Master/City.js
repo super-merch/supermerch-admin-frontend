@@ -31,6 +31,8 @@ import { toast, ToastContainer } from "react-toastify";
 import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
   countryId: "",
@@ -394,9 +396,9 @@ const City = () => {
   const col = [
     {
       name: "Sr No",
-      selector: (row, index) => index + 1, 
+      selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Country Name",
@@ -462,6 +464,33 @@ const City = () => {
     },
   ];
 
+  const exportColumns = [
+    { header: "Country Name", key: "country.countryName" },
+    { header: "State Name", key: "state.stateName" },
+    { header: "City Name", key: "cityName" },
+    { header: "City Code", key: "cityCode" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: 1,
+        limit: 10000,
+        isActive: filter,
+      });
+      const response = await axios.get(`/api/cities?${params}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
+
   document.title = `City | ${adminData?.companyName}`;
 
   return (
@@ -479,15 +508,23 @@ const City = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="City"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={tog_list}
-                    setQuery={setQuery}
-                    currentPagePermissions={currentPagePermissions}
-                    showAddButton={currentPagePermissions.write}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="City"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={tog_list}
+                      setQuery={setQuery}
+                      currentPagePermissions={currentPagePermissions}
+                      showAddButton={currentPagePermissions.write}
+                    />
+                    <ExportButtons
+                      data={cities}
+                      columns={exportColumns}
+                      fileName="cities"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -496,6 +533,7 @@ const City = () => {
                       <DataTable
                         columns={col}
                         data={cities}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection, sortedRows) => {

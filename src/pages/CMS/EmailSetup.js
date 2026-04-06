@@ -15,6 +15,8 @@ import {
 } from "reactstrap";
 import axios from "axios";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsModalHeader";
@@ -318,27 +320,22 @@ const EmailSetup = () => {
       name: "Sr No",
       selector: (row, index) => index + 1, 
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Email",
       selector: (row) => <p className="text-wrap my-1">{row.email}</p>,
-      maxWidth: "250px",
     },
     {
       name: "Host",
       selector: (row) => <p className="text-wrap my-1">{row.host}</p>,
-      maxWidth: "150px",
     },
     {
       name: "Port",
       selector: (row) => <p className="text-wrap my-1">{row.port}</p>,
-      maxWidth: "80px",
     },
     {
       name: "SSL",
       selector: (row) => <p className="text-wrap my-1">{row.ssl ? "Yes" : "No"}</p>,
-      maxWidth: "60px",
     },
     {
       name: "Action",
@@ -383,6 +380,9 @@ const EmailSetup = () => {
     },
   ];
 
+  const exportColumns = [{header:"Email",key:"email"},{header:"Host",key:"host"},{header:"Port",key:"port"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { return countries; };
+
   document.title = `Email Setup | ${adminData?.companyName}`;
 
   return (
@@ -408,12 +408,14 @@ const EmailSetup = () => {
                     currentPagePermissions={currentPagePermissions}
                     showAddButton={currentPagePermissions.write}
                   />
+                  <ExportButtons data={countries} columns={exportColumns} fileName="email_setup" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
                   <div id="customerList">
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={col}
                         data={countries}
                         progressPending={loading}

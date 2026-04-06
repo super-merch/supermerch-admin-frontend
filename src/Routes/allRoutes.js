@@ -16,7 +16,7 @@ import MenuGroup from "../pages/Master/MenuGroup";
 import MenuMaster from "../pages/Master/MenuMaster";
 import EmployeeRoles from "../pages/Setup/EmployeeRoles";
 import RoleMaster from "../pages/Master/RoleMaster";
-import CurrencyMaster from "../pages/Master/CurrencyMaster";
+// CurrencyMaster removed (dead weight)
 import Supplier from "../pages/Master/Supplier";
 import Brand from "../pages/Master/Brand";
 import Gender from "../pages/Master/Gender";
@@ -28,20 +28,19 @@ import Color from "../pages/Master/Color";
 import Collection from "../pages/Master/Collection";
 import CustomizationMethod from "../pages/Master/CustomizationMethod";
 import CustomizationPosition from "../pages/Master/CustomizationPosition";
-// Original Workwear Product.js kept for reference — ProductMaster.js is the active page
 import Deal from "../pages/Master/Deal";
 import HomePageBanner from "../pages/CMS/HomePageBanner";
 import AboutUsBanner from "../pages/CMS/AboutUsBanner";
 import GeneralCMS from "../pages/CMS/GeneralCMS";
 import CMSPage from "../pages/CMS/CMSPage";
 import Material from "../pages/Master/Material";
-import DeliveryType from "../pages/Master/DeliveryType";
+// DeliveryType removed
 import BankHolidays from "../pages/Master/BankHolidays";
 import WebsiteUsers from "../pages/Master/WebsiteUsers";
 import Orders from "../pages/Master/Orders";
 import OrderDetail from "../pages/Master/OrderDetail";
-import VatMaster from "../pages/Master/VatMaster";
-import LogisticMaster from "../pages/Master/LogisticMaster";
+// VatMaster removed (dead weight)
+// LogisticMaster removed
 import CouponMaster from "../pages/Master/CouponMaster";
 import CouponBannerMaster from "../pages/Master/CouponBannerMaster";
 import SupportTickets from "../pages/Master/SupportTickets";
@@ -51,13 +50,8 @@ import SupportTickets from "../pages/Master/SupportTickets";
 import ProductMaster from "../pages/Master/ProductMaster";
 
 // Pricing & Margins
-import GlobalMargin from "../pages/Pricing/GlobalMargin";
-import SupplierMargin from "../pages/Pricing/SupplierMargin";
+import GlobalPricing from "../pages/Pricing/GlobalPricing";
 import CategoryMargin from "../pages/Pricing/CategoryMargin";
-import ProductMargin from "../pages/Pricing/ProductMargin";
-import GlobalDiscount from "../pages/Pricing/GlobalDiscount";
-import SupplierDiscount from "../pages/Pricing/SupplierDiscount";
-import ProductDiscount from "../pages/Pricing/ProductDiscount";
 
 // Curation
 import Trending from "../pages/Curation/Trending";
@@ -82,9 +76,22 @@ import CustomNames from "../pages/Product/CustomNames";
 // Users
 import EmailSubscriptions from "../pages/Users/EmailSubscriptions";
 
-// Shipping & Settings
-import ShippingConfig from "../pages/Shipping/ShippingConfig";
-import GSTConfig from "../pages/Shipping/GSTConfig";
+// Reviews & Notifications (orphaned pages — now wired)
+import ProductReviews from "../pages/Master/ProductReviews";
+import PushNotificationSettings from "../pages/Setup/PushNotificationSettings";
+import Notifications from "../pages/Master/Notifications";
+
+// Section 3 — CMS, Tags, Reports
+import SeoManagement from "../pages/CMS/SeoManagement";
+import ProductTags from "../pages/Master/ProductTags";
+import PopUpManagement from "../pages/CMS/PopUpManagement";
+import PartnerBrands from "../pages/CMS/PartnerBrands";
+import SalesReports from "../pages/Reports/SalesReports";
+import CustomerInsights from "../pages/Reports/CustomerInsights";
+import SupplierPerformance from "../pages/Reports/SupplierPerformance";
+import MarginAnalysis from "../pages/Reports/MarginAnalysis";
+
+// Shipping & Settings removed (delivery modules)
 
 const authProtectedRoutes = [
     { path: "/profile", component: <UserProfile /> },
@@ -103,7 +110,6 @@ const authProtectedRoutes = [
     { path: "/menu-group", component: <MenuGroup /> },
     { path: "/menu-master", component: <MenuMaster /> },
     { path: "/role-master", component: <RoleMaster /> },
-    { path: "/currency-master", component: <CurrencyMaster /> },
     { path: "/supplier-master", component: <Supplier /> },
     { path: "/brand-master", component: <Brand /> },
     { path: "/gender-master", component: <Gender /> },
@@ -122,26 +128,20 @@ const authProtectedRoutes = [
     { path: "/general-cms", component: <GeneralCMS /> },
     { path: "/cms-pages", component: <CMSPage /> },
     { path: "/material", component: <Material /> },
-    { path: "/delivery-type", component: <DeliveryType /> },
+    // delivery-type route removed
     { path: "/bank-holidays", component: <BankHolidays /> },
     { path: "/website-users", component: <WebsiteUsers /> },
     { path: "/orders", component: <Orders /> },
     { path: "/orders/:id", component: <OrderDetail /> },
-    { path: "/vat", component: <VatMaster /> },
-    { path: "/logistic-master", component: <LogisticMaster /> },
+    // logistic-master route removed
     { path: "/coupon-master", component: <CouponMaster /> },
     { path: "/coupon-banners", component: <CouponBannerMaster /> },
     { path: "/support-tickets", component: <SupportTickets /> },
 
     // ── SuperMerch-specific routes ────────────────────────────
     // Pricing & Margins
-    { path: "/pricing/global-margin", component: <GlobalMargin /> },
-    { path: "/pricing/supplier-margin", component: <SupplierMargin /> },
+    { path: "/pricing/global", component: <GlobalPricing /> },
     { path: "/pricing/category-margin", component: <CategoryMargin /> },
-    { path: "/pricing/product-margin", component: <ProductMargin /> },
-    { path: "/pricing/global-discount", component: <GlobalDiscount /> },
-    { path: "/pricing/supplier-discount", component: <SupplierDiscount /> },
-    { path: "/pricing/product-discount", component: <ProductDiscount /> },
 
     // Curation
     { path: "/curation/trending", component: <Trending /> },
@@ -166,9 +166,22 @@ const authProtectedRoutes = [
     // Users
     { path: "/email-subscriptions", component: <EmailSubscriptions /> },
 
-    // Settings
-    { path: "/shipping-config", component: <ShippingConfig /> },
-    { path: "/gst-config", component: <GSTConfig /> },
+    // Reviews & Notifications
+    { path: "/product-reviews", component: <ProductReviews /> },
+    { path: "/push-notification-settings", component: <PushNotificationSettings /> },
+    { path: "/notifications", component: <Notifications /> },
+
+    // Section 3 — CMS, Tags, Reports
+    { path: "/seo-management", component: <SeoManagement /> },
+    { path: "/product-tags", component: <ProductTags /> },
+    { path: "/popup-management", component: <PopUpManagement /> },
+    { path: "/partner-brands", component: <PartnerBrands /> },
+    { path: "/reports/sales", component: <SalesReports /> },
+    { path: "/reports/customers", component: <CustomerInsights /> },
+    { path: "/reports/suppliers", component: <SupplierPerformance /> },
+    { path: "/reports/margins", component: <MarginAnalysis /> },
+
+    // Settings — shipping/gst routes removed
 
     {
         path: "/",

@@ -8,7 +8,7 @@ const Footer = () => {
                 <Container fluid>
                     <Row>
                         <Col sm={6}>
-                            {new Date().getFullYear()} © Workwear Apparel
+                            {new Date().getFullYear()} © Super Merch
                         </Col>
                         <Col sm={6}>
                             <div className="text-sm-end d-none d-sm-block cursor-pointer" onClick={() => window.open("https://barodaweb.com", "_blank")}>

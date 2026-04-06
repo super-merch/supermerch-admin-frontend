@@ -15,6 +15,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import FormsHeader from "../../Components/Common/FormsHeader";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -63,37 +65,31 @@ const UserQuotes = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "60px",
     },
     {
       name: "Customer Name",
       selector: (row) => <p className="text-wrap">{row.customerName}</p>,
       sortable: true,
-      maxWidth: "180px",
     },
     {
       name: "Product",
       selector: (row) => <p className="text-wrap">{row.productName}</p>,
       sortable: true,
-      maxWidth: "200px",
     },
     {
       name: "Quantity",
       selector: (row) => row.quantity,
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Status",
       selector: (row) => getStatusBadge(row.status),
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Date",
       selector: (row) => new Date(row.createdAt).toLocaleDateString(),
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Action",
@@ -170,6 +166,9 @@ const UserQuotes = () => {
     setFilter(e.target.checked);
   };
 
+  const exportColumns = [{header:"Customer",key:"customerName"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"productName"},{header:"Status",key:"status"}];
+  const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
+
   document.title = `User Quote Requests | ${adminData.companyName}`;
 
   return (
@@ -195,11 +194,13 @@ const UserQuotes = () => {
                     setValues={() => {}}
                     showAddButton={false}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
+                      customStyles={tableCustomStyles}
                       columns={columns}
                       data={data}
                       progressPending={loading}

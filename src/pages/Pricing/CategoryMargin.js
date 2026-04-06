@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
+import React, { useState, useEffect, useContext, useCallback, useRef } from "react";
 import {
   Input,
   Label,
@@ -14,6 +14,9 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
+import Select from "react-select";
 import { AuthContext } from "../../context/AuthContext";
 import { MenuContext } from "../../context/MenuContext";
 import { toast } from "react-toastify";
@@ -35,11 +38,15 @@ const CategoryMargin = () => {
   // Supplier selection
   const [suppliers, setSuppliers] = useState([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const suppliersFetched = useRef(false);
 
   // Add / Edit form
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoriesFetched = useRef(false);
   const [margin, setMargin] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +55,6 @@ const CategoryMargin = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: false,
-      maxWidth: "80px",
     },
     {
       name: "Category",
@@ -59,7 +65,6 @@ const CategoryMargin = () => {
     {
       name: "Margin (%)",
       selector: (row) => <p className="text-wrap">{row.margin}%</p>,
-      maxWidth: "150px",
     },
     {
       name: "Action",
@@ -85,10 +90,10 @@ const CategoryMargin = () => {
     },
   ];
 
-  const fetchSuppliers = useCallback(async () => {
+  const fetchSuppliers = useCallback(async (search = "") => {
     try {
       const response = await axios.get("/api/listbyparams/suppliers", {
-        params: { page: 1, limit: 1000, isActive: true },
+        params: { page: 1, limit: 50, isActive: true, search },
       });
       if (response.data.success) {
         setSuppliers(response.data.data || []);
@@ -98,10 +103,10 @@ const CategoryMargin = () => {
     }
   }, []);
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = useCallback(async (search = "") => {
     try {
       const response = await axios.get("/api/listbyparams/main-categories", {
-        params: { page: 1, limit: 1000, isActive: true },
+        params: { page: 1, limit: 50, isActive: true, search },
       });
       if (response.data.success) {
         setCategories(response.data.data || []);
@@ -111,10 +116,33 @@ const CategoryMargin = () => {
     }
   }, []);
 
+  const handleSupplierMenuOpen = () => {
+    if (!suppliersFetched.current) {
+      suppliersFetched.current = true;
+      fetchSuppliers();
+    }
+  };
+
+  const handleCategoryMenuOpen = () => {
+    if (!categoriesFetched.current) {
+      categoriesFetched.current = true;
+      fetchCategories();
+    }
+  };
+
+  // Debounced search for supplier dropdown
   useEffect(() => {
-    fetchSuppliers();
-    fetchCategories();
-  }, [fetchSuppliers, fetchCategories]);
+    if (!suppliersFetched.current) return;
+    const timer = setTimeout(() => fetchSuppliers(supplierSearch), 300);
+    return () => clearTimeout(timer);
+  }, [supplierSearch, fetchSuppliers]);
+
+  // Debounced search for category dropdown
+  useEffect(() => {
+    if (!categoriesFetched.current) return;
+    const timer = setTimeout(() => fetchCategories(categorySearch), 300);
+    return () => clearTimeout(timer);
+  }, [categorySearch, fetchCategories]);
 
   const fetchCategoryMargins = useCallback(async () => {
     if (!selectedSupplierId) {
@@ -144,8 +172,8 @@ const CategoryMargin = () => {
     fetchCategoryMargins();
   }, [fetchCategoryMargins]);
 
-  const handleSupplierChange = (e) => {
-    setSelectedSupplierId(e.target.value);
+  const handleSupplierChange = (value) => {
+    setSelectedSupplierId(value);
     setShowForm(false);
   };
 
@@ -215,6 +243,9 @@ const CategoryMargin = () => {
     }
   };
 
+  const exportColumns = [{header:"Category",key:"categoryName"},{header:"Category ID",key:"categoryId"},{header:"Margin %",key:"margin"}];
+  const fetchAllForExport = async () => { return data || []; };
+
   document.title = `Category Margin | ${adminData.companyName}`;
 
   return (
@@ -233,20 +264,22 @@ const CategoryMargin = () => {
                 <CardHeader>
                   <div className="d-flex justify-content-between align-items-center">
                     <h5 className="card-title mb-0">Category Margins</h5>
+                    <ExportButtons data={data} columns={exportColumns} fileName="category_margins" fetchAll={fetchAllForExport} />
                     <div className="d-flex gap-2 align-items-center">
                       <div style={{ minWidth: "250px" }}>
-                        <select
-                          className="form-select"
-                          value={selectedSupplierId}
-                          onChange={handleSupplierChange}
-                        >
-                          <option value="">Select Supplier</option>
-                          {suppliers.map((s) => (
-                            <option key={s._id || s.id} value={s._id || s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
+                        <Select
+                          isClearable
+                          placeholder="Select Supplier"
+                          options={suppliers.map((s) => ({
+                            value: s._id || s.id,
+                            label: s.name,
+                          }))}
+                          value={selectedSupplierId ? suppliers.map((s) => ({ value: s._id || s.id, label: s.name })).find((o) => o.value === selectedSupplierId) || null : null}
+                          onChange={(opt) => handleSupplierChange(opt ? opt.value : "")}
+                          onMenuOpen={handleSupplierMenuOpen}
+                          onInputChange={(val) => setSupplierSearch(val)}
+                          filterOption={null}
+                        />
                       </div>
                       {currentPagePermissions.write &&
                         selectedSupplierId && (
@@ -272,20 +305,19 @@ const CategoryMargin = () => {
                                       Category{" "}
                                       <span className="text-danger">*</span>
                                     </Label>
-                                    <select
-                                      className="form-select"
-                                      value={categoryId}
-                                      onChange={(e) =>
-                                        setCategoryId(e.target.value)
-                                      }
-                                    >
-                                      <option value="">Select Category</option>
-                                      {categories.map((c) => (
-                                        <option key={c._id || c.id} value={c._id || c.id}>
-                                          {c.name}
-                                        </option>
-                                      ))}
-                                    </select>
+                                    <Select
+                                      isClearable
+                                      placeholder="Select Category"
+                                      options={categories.map((c) => ({
+                                        value: c._id || c.id,
+                                        label: c.name,
+                                      }))}
+                                      value={categoryId ? categories.map((c) => ({ value: c._id || c.id, label: c.name })).find((o) => o.value === categoryId) || null : null}
+                                      onChange={(opt) => setCategoryId(opt ? opt.value : "")}
+                                      onMenuOpen={handleCategoryMenuOpen}
+                                      onInputChange={(val) => setCategorySearch(val)}
+                                      filterOption={null}
+                                    />
                                   </div>
                                 </Col>
                                 <Col lg={4}>
@@ -353,7 +385,8 @@ const CategoryMargin = () => {
                   ) : (
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
-                        columns={columns}
+                      customStyles={tableCustomStyles}
+                      columns={columns}
                         data={data}
                         progressPending={loading}
                         noDataComponent={

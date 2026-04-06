@@ -5,7 +5,7 @@ import { AuthContext } from "../../context/AuthContext";
 
 const UserProfile = () => {
     const { adminData } = useContext(AuthContext);
-    document.title = `Profile | Trivedi Associates & Tecknical Services Pvt. Ltd.`;
+    document.title = `Profile | Super Merch`;
     return (
         <React.Fragment>
             <div className="page-content">

@@ -22,6 +22,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -85,23 +87,23 @@ const SubCategory = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Name",
       selector: (row) => <p className="text-wrap">{row.name}</p>,
-      maxWidth: "200px",
+      minWidth: "150px",
     },
     {
       name: "Main Category",
       selector: (row) => <p className="text-wrap">{row.mainCategory?.name || '-'}</p>,
-      maxWidth: "150px",
+      minWidth: "150px",
     },
     {
       name: "Slug",
       selector: (row) => <p className="text-wrap">{row.slug}</p>,
       sortable: true,
-      maxWidth: "200px",
+      minWidth: "150px",
     },
     {
       name: "Image",
@@ -119,15 +121,38 @@ const SubCategory = () => {
         </div>
       ),
       sortable: false,
-      maxWidth: "100px",
+      minWidth: "120px",
     },
     {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
-      maxWidth: "100px",
+      minWidth: "120px",
     },
   ];
+
+  const exportColumns = [
+    { header: "Name", key: "name" },
+    { header: "Main Category", key: "mainCategory.name" },
+    { header: "Slug", key: "slug" },
+    { header: "Sort Order", key: "sortOrder" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const response = await axios.get('/api/listbyparams/sub-categories', {
+        params: { page: 1, limit: 10000, isActive: filter },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
 
   const fetchSubCategoriesMaster = useCallback(async () => {
     setLoading(true);
@@ -796,20 +821,28 @@ const SubCategory = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Sub Category"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setQuery}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    showAddButton={false}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="Sub Category"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setQuery}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                      showAddButton={false}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="sub_categories"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -817,6 +850,7 @@ const SubCategory = () => {
                     <DataTable
                       columns={columns}
                       data={data}
+                      customStyles={tableCustomStyles}
                       progressPending={loading}
                       sortServer
                       onSort={(column, sortDirection) =>

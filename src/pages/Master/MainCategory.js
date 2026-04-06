@@ -22,6 +22,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -86,18 +88,18 @@ const MainCategory = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Name",
       selector: (row) => <p className="text-wrap">{row.name}</p>,
-      maxWidth: "200px",
+      minWidth: "150px",
     },
     {
       name: "Slug",
       selector: (row) => <p className="text-wrap">{row.slug}</p>,
       sortable: true,
-      maxWidth: "200px",
+      minWidth: "150px",
     },
     {
       name: "Image",
@@ -115,13 +117,13 @@ const MainCategory = () => {
         </div>
       ),
       sortable: false,
-      maxWidth: "100px",
+      minWidth: "120px",
     },
     {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
-      maxWidth: "120px",
+      minWidth: "120px",
     },
     {
       name: "Show on Home Page",
@@ -132,6 +134,30 @@ const MainCategory = () => {
       selector: (row) => <p className="text-wrap">{row.showOnHeader ? "Yes" : "No"}</p>,
     },
   ];
+
+  const exportColumns = [
+    { header: "Name", key: "name" },
+    { header: "Slug", key: "slug" },
+    { header: "Sort Order", key: "sortOrder" },
+    { header: "Show on Home Page", key: "showOnHomePage" },
+    { header: "Show on Header", key: "showOnHeader" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const response = await axios.get('/api/listbyparams/main-categories', {
+        params: { page: 1, limit: 10000, isActive: filter },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
 
   const fetchMainCategoriesMaster = useCallback(async () => {
     setLoading(true);
@@ -827,20 +853,28 @@ const MainCategory = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Main Category"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setSearchInput}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    showAddButton={false}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="Main Category"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setSearchInput}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                      showAddButton={false}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="main_categories"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <div className="d-flex gap-2">
@@ -877,6 +911,7 @@ const MainCategory = () => {
                     <DataTable
                       columns={columns}
                       data={data}
+                      customStyles={tableCustomStyles}
                       progressPending={loading}
                       sortServer
                       onSort={(column, sortDirection) =>

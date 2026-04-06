@@ -26,6 +26,8 @@ import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal.js";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
   roleName: "",
@@ -268,9 +270,8 @@ const RoleMaster = () => {
   const col = [
     {
       name: "Sr No",
-      selector: (row, index) => index + 1, 
+      selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Role Name",

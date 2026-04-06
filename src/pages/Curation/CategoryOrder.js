@@ -9,6 +9,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import {
@@ -28,7 +30,6 @@ const CategoryOrder = () => {
         {
             name: "Sr No",
             selector: (row, index) => (pageNo - 1) * perPage + index + 1,
-            maxWidth: "80px",
         },
         {
             name: "Category ID",
@@ -37,7 +38,6 @@ const CategoryOrder = () => {
                     {row.categoryId || "-"}
                 </p>
             ),
-            maxWidth: "150px",
         },
         {
             name: "Category Name",
@@ -51,7 +51,6 @@ const CategoryOrder = () => {
         {
             name: "Prioritized Products",
             selector: (row) => (row.productIds || []).length,
-            maxWidth: "180px",
             sortable: true,
         },
     ];
@@ -94,7 +93,11 @@ const CategoryOrder = () => {
         setPerPage(newPerPage);
     };
 
-    document.title = `Category Ordering | ${adminData.companyName}`;
+    
+  const exportColumns = [{header:"Category ID",key:"categoryId"},{header:"Category Name",key:"categoryName"},{header:"Products",key:"productIds"}];
+  const fetchAllForExport = async () => { try { const r = await getCategoryOrder({page:1,limit:10000}); return r.data?.data||[]; } catch{return data;} };
+
+  document.title = `Category Ordering | ${adminData.companyName}`;
 
     return (
         <React.Fragment>
@@ -114,13 +117,15 @@ const CategoryOrder = () => {
                                             Category Ordering
                                         </h5>
                                         <div className="d-flex gap-2">
+                                            <ExportButtons data={data} columns={exportColumns} fileName="category_order" fetchAll={fetchAllForExport} />
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardBody>
                                     <div className="table-responsive table-card mt-1 mb-1">
                                         <DataTable
-                                            columns={columns}
+                      customStyles={tableCustomStyles}
+                      columns={columns}
                                             data={data}
                                             progressPending={loading}
                                             pagination

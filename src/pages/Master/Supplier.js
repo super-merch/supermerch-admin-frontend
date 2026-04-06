@@ -8,7 +8,9 @@ import {
   Col,
   Form,
   Container,
-  Row
+  Row,
+  Button,
+  Badge,
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
@@ -21,6 +23,17 @@ import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
+import ExportButtons from "../../Components/Common/ExportButtons";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import {
+  getSupplierMargins,
+  addSupplierMargin,
+  deleteSupplierMargin,
+} from "../../functions/Pricing/marginFunc";
+import {
+  getSupplierDiscounts,
+  addSupplierDiscount,
+} from "../../functions/Pricing/discountFunc";
 
 const Supplier = () => {
   const { adminData } = useContext(AuthContext);
@@ -66,6 +79,12 @@ const Supplier = () => {
   const [referenceModal, setReferenceModal] = useState(false);
   const [referenceData, setReferenceData] = useState(null);
 
+  // ── Inline margin/discount states ──
+  const [marginMap, setMarginMap] = useState({});       // { supplierId: margin% }
+  const [discountMap, setDiscountMap] = useState({});    // { supplierId: discount% }
+  const [marginInputs, setMarginInputs] = useState({});
+  const [discountInputs, setDiscountInputs] = useState({});
+
   const {currentPagePermissions} = useContext(MenuContext);
 
   const columns = [
@@ -73,24 +92,86 @@ const Supplier = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      width: "70px",
     },
     {
       name: "Name",
-      selector: (row) => <p className="text-wrap">{row.name}</p>,
-      maxWidth: "200px",
+      cell: (row) => <span className="text-wrap">{row.name}</span>,
+      minWidth: "160px",
     },
     {
       name: "Code",
-      selector: (row) => <p className="text-wrap">{row.code}</p>,
+      cell: (row) => <span className="text-wrap">{row.code}</span>,
       sortable: true,
-      maxWidth: "200px",
+      minWidth: "140px",
     },
     {
       name: "Email",
-      selector: (row) => <p className="text-wrap">{row.email}</p>,
+      cell: (row) => <span className="text-wrap">{row.email}</span>,
       sortable: true,
-      maxWidth: "250px",
+      minWidth: "180px",
+    },
+    {
+      name: "Margin %",
+      width: "200px",
+      cell: (row) => {
+        const sid = row._id;
+        const existing = marginMap[sid];
+        return (
+          <div className="d-flex align-items-center gap-1">
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              style={{ width: 70 }}
+              step="0.01"
+              min="0"
+              placeholder="%"
+              value={marginInputs[sid] ?? ""}
+              onChange={(e) =>
+                setMarginInputs((prev) => ({ ...prev, [sid]: e.target.value }))
+              }
+            />
+            <Button color="success" size="sm" className="btn-icon" onClick={() => handleMarginSave(sid)} title="Save">
+              <i className="ri-save-line"></i>
+            </Button>
+            {existing !== undefined && (
+              <Button color="soft-danger" size="sm" className="btn-icon" onClick={() => handleMarginDelete(sid)} title="Remove">
+                <i className="ri-delete-bin-line"></i>
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      name: "Discount %",
+      width: "200px",
+      cell: (row) => {
+        const sid = row._id;
+        const existing = discountMap[sid];
+        return (
+          <div className="d-flex align-items-center gap-1">
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              style={{ width: 70 }}
+              step="0.01"
+              min="0"
+              placeholder="%"
+              value={discountInputs[sid] ?? ""}
+              onChange={(e) =>
+                setDiscountInputs((prev) => ({ ...prev, [sid]: e.target.value }))
+              }
+            />
+            <Button color="success" size="sm" className="btn-icon" onClick={() => handleDiscountSave(sid)} title="Save">
+              <i className="ri-save-line"></i>
+            </Button>
+            {existing !== undefined && (
+              <Badge color="soft-info" className="text-info ms-1">{existing}%</Badge>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -129,9 +210,119 @@ const Supplier = () => {
     }
   }, [pageNo, perPage, column, sortDirection, query, filter]);
 
+  // ── Fetch supplier margins & discounts ──
+  const fetchMargins = useCallback(async () => {
+    try {
+      const res = await getSupplierMargins({ limit: 10000 });
+      const list = res.data?.data || [];
+      const mMap = {};
+      const mInputs = {};
+      list.forEach((item) => {
+        mMap[item.supplierId] = item.margin;
+        mInputs[item.supplierId] = item.margin;
+      });
+      setMarginMap(mMap);
+      setMarginInputs(mInputs);
+    } catch (err) {
+      console.error("Error fetching supplier margins:", err);
+    }
+  }, []);
+
+  const fetchDiscounts = useCallback(async () => {
+    try {
+      const res = await getSupplierDiscounts({ limit: 10000 });
+      const list = res.data?.data || [];
+      const dMap = {};
+      const dInputs = {};
+      list.forEach((item) => {
+        dMap[item.supplierId] = item.discount;
+        dInputs[item.supplierId] = item.discount;
+      });
+      setDiscountMap(dMap);
+      setDiscountInputs(dInputs);
+    } catch (err) {
+      console.error("Error fetching supplier discounts:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSupplierMaster();
   }, [fetchSupplierMaster]);
+
+  useEffect(() => {
+    fetchMargins();
+    fetchDiscounts();
+  }, [fetchMargins, fetchDiscounts]);
+
+  // ── Inline margin/discount handlers ──
+  const handleMarginSave = async (supplierId) => {
+    const val = parseFloat(marginInputs[supplierId]);
+    if (isNaN(val) || val < 0) {
+      toast.error("Enter a valid margin %");
+      return;
+    }
+    try {
+      const res = await addSupplierMargin({ supplierId, margin: val });
+      if (res.data?.success !== false) {
+        toast.success("Supplier margin saved");
+        setMarginMap((prev) => ({ ...prev, [supplierId]: val }));
+      }
+    } catch (err) {
+      toast.error("Failed to save margin");
+    }
+  };
+
+  const handleMarginDelete = async (supplierId) => {
+    try {
+      const res = await deleteSupplierMargin({ supplierId });
+      if (res.data?.success !== false) {
+        toast.success("Supplier margin removed");
+        setMarginMap((prev) => { const n = { ...prev }; delete n[supplierId]; return n; });
+        setMarginInputs((prev) => { const n = { ...prev }; delete n[supplierId]; return n; });
+      }
+    } catch (err) {
+      toast.error("Failed to delete margin");
+    }
+  };
+
+  const handleDiscountSave = async (supplierId) => {
+    const val = parseFloat(discountInputs[supplierId]);
+    if (isNaN(val) || val < 0) {
+      toast.error("Enter a valid discount %");
+      return;
+    }
+    try {
+      const res = await addSupplierDiscount({ supplierId, discount: val });
+      if (res.data?.success !== false) {
+        toast.success("Supplier discount saved");
+        setDiscountMap((prev) => ({ ...prev, [supplierId]: val }));
+      }
+    } catch (err) {
+      toast.error("Failed to save discount");
+    }
+  };
+
+  // ── Export columns & fetchAll for ExportButtons ──
+  const exportColumns = [
+    { header: "Name", key: "name" },
+    { header: "Code", key: "code" },
+    { header: "Email", key: "email" },
+    { header: "Phone", key: "phone" },
+    { header: "Address", key: "address" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const res = await axios.get("/api/listbyparams/suppliers", {
+        params: { page: 1, limit: 10000, isActive: filter },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      return res.data?.data || data;
+    } catch {
+      return data;
+    }
+  };
 
   const validate = (values) => {
     const errors = {};
@@ -617,20 +808,28 @@ const Supplier = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Supplier"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setQuery}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    showAddButton={false}
-                  />
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <FormsHeader
+                      formName="Supplier"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setQuery}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                      showAddButton={false}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="suppliers"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -638,6 +837,7 @@ const Supplier = () => {
                     <DataTable
                       columns={columns}
                       data={data}
+                      customStyles={tableCustomStyles}
                       progressPending={loading}
                       sortServer
                       onSort={(column, sortDirection) =>

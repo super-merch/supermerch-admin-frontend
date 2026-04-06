@@ -21,11 +21,20 @@ import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import {
     getNewArrivals,
     addNewArrival,
     removeNewArrival,
 } from "../../functions/Curation/curationFunc";
+
+const exportColumns = [
+    { header: "Product Name", key: "overview.name" },
+    { header: "SKU", key: "overview.sku_number" },
+    { header: "Supplier", key: "supplier.supplier" },
+    { header: "Status", key: "isActive" },
+];
 
 const NewArrivals = () => {
     const { adminData } = useContext(AuthContext);
@@ -54,7 +63,6 @@ const NewArrivals = () => {
         {
             name: "Sr No",
             selector: (row, index) => (pageNo - 1) * perPage + index + 1,
-            maxWidth: "80px",
         },
         {
             name: "Product Name",
@@ -66,12 +74,10 @@ const NewArrivals = () => {
         {
             name: "SKU",
             selector: (row) => row.overview?.sku_number || row.overview?.code || row.sku || "-",
-            maxWidth: "150px",
         },
         {
             name: "Supplier",
             selector: (row) => row.supplier?.supplier || row.overview?.supplier || row.brandName || "-",
-            maxWidth: "150px",
         },
         {
             name: "Status",
@@ -80,7 +86,6 @@ const NewArrivals = () => {
                     {row.isActive !== false ? "Active" : "Inactive"}
                 </Badge>
             ),
-            maxWidth: "100px",
         },
         {
             name: "Action",
@@ -230,6 +235,16 @@ const NewArrivals = () => {
         setSearchResults([]);
     };
 
+    const fetchAllForExport = async () => {
+        try {
+            const response = await getNewArrivals({ page: 1, limit: 10000 });
+            return response.data.success ? response.data.data || [] : [];
+        } catch (error) {
+            console.error("Export fetch error:", error);
+            return [];
+        }
+    };
+
     document.title = `New Arrivals | ${adminData.companyName}`;
 
     return (
@@ -251,6 +266,12 @@ const NewArrivals = () => {
                                             New Arrivals
                                         </h5>
                                         <div className="d-flex gap-2">
+                                            <ExportButtons
+                                                data={data}
+                                                columns={exportColumns}
+                                                fileName="New_Arrivals"
+                                                fetchAll={fetchAllForExport}
+                                            />
                                             <div className="search-box">
                                                 <Input
                                                     type="text"
@@ -279,6 +300,7 @@ const NewArrivals = () => {
                                         <DataTable
                                             columns={columns}
                                             data={data}
+                                            customStyles={tableCustomStyles}
                                             progressPending={loading}
                                             pagination
                                             paginationServer

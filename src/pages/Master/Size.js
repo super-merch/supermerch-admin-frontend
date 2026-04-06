@@ -26,6 +26,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import Select from "react-select";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     name: "",
@@ -373,7 +375,7 @@ const Size = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "20px",
+            minWidth: "80px",
         },
         {
             name: "Size",
@@ -389,9 +391,31 @@ const Size = () => {
             name: "Sort Order",
             selector: (row) => row.sortOrder,
             sortable: true,
-            maxWidth: "100px",
+            minWidth: "120px",
         },
     ];
+
+    const exportColumns = [
+        { header: "Size", key: "name" },
+        { header: "Category", key: "sizeCategory.name" },
+        { header: "Sort Order", key: "sortOrder" },
+        { header: "Active", key: "isActive" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.get(`/api/listbyparams/sizes`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                params: { page: 1, limit: 10000, isActive: filter },
+            });
+            return response.data.success ? response.data.data : [];
+        } catch (error) {
+            console.error("Export fetch error:", error);
+            return [];
+        }
+    };
 
     document.title = `Sizes | ${adminData?.companyName}`;
 
@@ -409,17 +433,25 @@ const Size = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
-                                    <FormsHeader
-                                        formName="Sizes"
-                                        filter={filter}
-                                        handleFilter={handleFilter}
-                                        tog_list={tog_list}
-                                        setQuery={setQuery}
-                                        currentPagePermissions={
-                                            currentPagePermissions
-                                        }
-                                        showAddButton={false}
-                                    />
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <FormsHeader
+                                            formName="Sizes"
+                                            filter={filter}
+                                            handleFilter={handleFilter}
+                                            tog_list={tog_list}
+                                            setQuery={setQuery}
+                                            currentPagePermissions={
+                                                currentPagePermissions
+                                            }
+                                            showAddButton={false}
+                                        />
+                                        <ExportButtons
+                                            data={sizes}
+                                            columns={exportColumns}
+                                            fileName="sizes"
+                                            fetchAll={fetchAllForExport}
+                                        />
+                                    </div>
                                 </CardHeader>
 
                                 <CardBody>
@@ -428,6 +460,7 @@ const Size = () => {
                                             <DataTable
                                                 columns={col}
                                                 data={sizes}
+                                                customStyles={tableCustomStyles}
                                                 progressPending={loading}
                                                 sortServer
                                                 onSort={(

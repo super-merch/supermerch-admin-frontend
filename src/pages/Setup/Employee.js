@@ -17,6 +17,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -102,30 +104,25 @@ const Employee = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "FirstName",
       selector: (row) => <p className="text-wrap">{row.firstName}</p>,
-      maxWidth: "200px",
     },
     {
       name: "Last Name",
       selector: (row) => <p className="text-wrap">{row.lastName}</p>,
       sortable: true,
-      maxWidth: "200px",
     },
     {
       name: "Email",
       selector: (row) => <p className="text-wrap">{row.email}</p>,
       sortable: true,
-      maxWidth: "250px",
     },
     {
       name: "Role",
       selector: (row) => <p className="text-wrap">{row.role?.roleName || "N/A"}</p>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Action",
@@ -739,6 +736,9 @@ const Employee = () => {
     setShowResetPassword(false);
   }
 
+  const exportColumns = [{header:"First Name",key:"firstName"},{header:"Last Name",key:"lastName"},{header:"Email",key:"email"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { try { const r = await axios.get("/api/users",{params:{page:1,limit:10000},headers:{Authorization:"Bearer "+localStorage.getItem("token")}}); return r.data?.data||[]; } catch(e){return data;} };
+
   document.title = `Employee | ${adminData.companyName}`;
 
   return (
@@ -767,6 +767,7 @@ const Employee = () => {
                     setUpdateForm={setUpdateForm}
                     // showAddButton={currentPagePermissions.write}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="employees" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 {(showForm || updateForm) ? (
@@ -775,6 +776,7 @@ const Employee = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={columns}
                         data={data}
                         progressPending={loading}

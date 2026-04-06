@@ -17,6 +17,7 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import Select from "react-select";
 import { AuthContext } from "../../context/AuthContext";
 import { MenuContext } from "../../context/MenuContext";
 import { toast } from "react-toastify";
@@ -46,6 +47,7 @@ const SupplierMargin = () => {
   const [supplierId, setSupplierId] = useState("");
   const [margin, setMargin] = useState("");
   const [suppliers, setSuppliers] = useState([]);
+  const [supplierSearch, setSupplierSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Delete states
@@ -127,10 +129,10 @@ const SupplierMargin = () => {
     fetchSupplierMargins();
   }, [fetchSupplierMargins]);
 
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = useCallback(async (search = "") => {
     try {
       const response = await axios.get("/api/listbyparams/suppliers", {
-        params: { page: 1, limit: 1000, isActive: true },
+        params: { page: 1, limit: 50, isActive: true, search },
       });
       if (response.data.success) {
         setSuppliers(response.data.data || []);
@@ -138,7 +140,14 @@ const SupplierMargin = () => {
     } catch (error) {
       console.error("Error fetching suppliers:", error);
     }
-  };
+  }, []);
+
+  // Debounced search for supplier dropdown in modal
+  useEffect(() => {
+    if (!showAddModal) return;
+    const timer = setTimeout(() => fetchSuppliers(supplierSearch), 300);
+    return () => clearTimeout(timer);
+  }, [supplierSearch, showAddModal, fetchSuppliers]);
 
   const handleOpenAddModal = () => {
     fetchSuppliers();
@@ -307,18 +316,18 @@ const SupplierMargin = () => {
               <Label className="form-label">
                 Supplier <span className="text-danger">*</span>
               </Label>
-              <select
-                className="form-select"
-                value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-              >
-                <option value="">Select Supplier</option>
-                {suppliers.map((s) => (
-                  <option key={s._id || s.id} value={s._id || s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                isClearable
+                placeholder="Select Supplier"
+                options={suppliers.map((s) => ({
+                  value: s._id || s.id,
+                  label: s.name,
+                }))}
+                value={supplierId ? suppliers.map((s) => ({ value: s._id || s.id, label: s.name })).find((o) => o.value === supplierId) || null : null}
+                onChange={(opt) => setSupplierId(opt ? opt.value : "")}
+                onInputChange={(val) => setSupplierSearch(val)}
+                filterOption={null}
+              />
             </div>
             <div className="mb-3">
               <Label className="form-label">

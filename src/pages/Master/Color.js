@@ -22,6 +22,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import { ColorPicker } from "@vtaits/react-color-picker";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const Color = () => {
   const { adminData } = useContext(AuthContext);
@@ -72,24 +74,24 @@ const Color = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Name",
       selector: (row) => <p className="text-wrap">{row.name}</p>,
-      maxWidth: "200px",
+      minWidth: "150px",
     },
     {
       name: "Primary Code",
       selector: (row) => <p className="text-wrap">{row.primaryCode}</p>,
       sortable: true,
-      maxWidth: "150px",
+      minWidth: "130px",
     },
     {
       name: "Primary Color",
       selector: (row) => (
         <div className="d-flex align-items-center">
-          <div 
+          <div
             style={{
               width: "20px",
               height: "20px",
@@ -102,20 +104,20 @@ const Color = () => {
         </div>
       ),
       sortable: false,
-      maxWidth: "180px",
+      minWidth: "150px",
     },
     {
       name: "Secondary Code",
       selector: (row) => <p className="text-wrap">{row.secondaryCode || "-"}</p>,
       sortable: true,
-      maxWidth: "150px",
+      minWidth: "130px",
     },
     {
       name: "Secondary Color",
       selector: (row) => (
         row.secondaryHexCode ? (
           <div className="d-flex align-items-center">
-            <div 
+            <div
               style={{
                 width: "20px",
                 height: "20px",
@@ -129,9 +131,32 @@ const Color = () => {
         ) : <span>-</span>
       ),
       sortable: false,
-      maxWidth: "180px",
+      minWidth: "150px",
     },
   ];
+
+  const exportColumns = [
+    { header: "Name", key: "name" },
+    { header: "Primary Code", key: "primaryCode" },
+    { header: "Primary Hex", key: "primaryHexCode" },
+    { header: "Primary Pantone", key: "primaryPantoneCode" },
+    { header: "Secondary Code", key: "secondaryCode" },
+    { header: "Secondary Hex", key: "secondaryHexCode" },
+    { header: "Secondary Pantone", key: "secondaryPantoneCode" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const response = await axios.get('/api/list-colors-by-params', {
+        params: { page: 1, limit: 10000, isActive: filter },
+      });
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
 
   const fetchColorMaster = useCallback(async () => {
     setLoading(true);
@@ -669,20 +694,28 @@ const Color = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Color"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setQuery}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    showAddButton={false}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="Color"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setQuery}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                      showAddButton={false}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="colors"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -690,6 +723,7 @@ const Color = () => {
                     <DataTable
                       columns={columns}
                       data={data}
+                      customStyles={tableCustomStyles}
                       progressPending={loading}
                       sortServer
                       onSort={(column, sortDirection) =>

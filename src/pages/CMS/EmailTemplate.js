@@ -12,6 +12,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -207,35 +209,30 @@ const EmailTemplate = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "10px",
         },
         {
             name: "Template Name",
             selector: (row) => (
                 <span className="text-wrap">{row.templateName}</span>
             ),
-            maxWidth: "150px",
         },
         {
             name: "Email From",
             selector: (row) => (
                 <span className="text-wrap">{row.emailSetup?.email}</span>
             ),
-            maxWidth: "250px",
         },
         {
             name: "Email For",
             selector: (row) => (
                 <span className="text-wrap">{row.emailFor?.emailFor}</span>
             ),
-            maxWidth: "150px",
         },
         {
             name: "Mailer Name",
             selector: (row) => (
                 <span className="text-wrap">{row.mailerName}</span>
             ),
-            maxWidth: "200px",
         },
         {
             name: "Action",
@@ -860,6 +857,9 @@ const EmailTemplate = () => {
         </CardBody>
     );
 
+    const exportColumns = [{header:"Name",key:"name"},{header:"Subject",key:"subject"}];
+    const fetchAllForExport = async () => { return data; };
+
     document.title = `Email Template | ${adminData?.companyName}`;
 
     return (
@@ -897,6 +897,7 @@ const EmailTemplate = () => {
                                             currentPagePermissions.write
                                         }
                                     />
+                                    <ExportButtons data={data} columns={exportColumns} fileName="email_templates" fetchAll={fetchAllForExport} />
                                 </CardHeader>
 
                                 {showForm || updateForm ? (
@@ -905,6 +906,7 @@ const EmailTemplate = () => {
                                     <CardBody>
                                         <div className="table-responsive table-card mt-1 mb-1 text-right">
                                             <DataTable
+                      customStyles={tableCustomStyles}
                                                 columns={columns}
                                                 data={data}
                                                 progressPending={loading}

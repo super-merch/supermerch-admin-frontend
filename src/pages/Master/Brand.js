@@ -29,6 +29,8 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import BrandPriceTierForm from "../../Components/Common/BrandPriceTierForm";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -90,18 +92,18 @@ const Brand = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "20px",
+            minWidth: "80px",
         },
         {
             name: "Name",
             selector: (row) => <p className="text-wrap">{row.name}</p>,
-            maxWidth: "200px",
+            minWidth: "150px",
         },
         {
             name: "Slug",
             selector: (row) => <p className="text-wrap">{row.slug}</p>,
             sortable: true,
-            maxWidth: "200px",
+            minWidth: "150px",
         },
         {
             name: "Website",
@@ -121,9 +123,31 @@ const Brand = () => {
                 </p>
             ),
             sortable: true,
-            maxWidth: "250px",
+            minWidth: "200px",
         },
     ];
+
+    const exportColumns = [
+        { header: "Name", key: "name" },
+        { header: "Slug", key: "slug" },
+        { header: "Website", key: "website" },
+        { header: "Active", key: "isActive" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.get("/api/listbyparams/brands", {
+                params: { page: 1, limit: 10000, isActive: filter },
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            return response.data.success ? response.data.data : [];
+        } catch (error) {
+            console.error("Export fetch error:", error);
+            return [];
+        }
+    };
 
     const fetchBrandMaster = useCallback(async () => {
         setLoading(true);
@@ -874,20 +898,28 @@ const Brand = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
-                                    <FormsHeader
-                                        formName="Brand"
-                                        filter={filter}
-                                        handleFilter={handleFilter}
-                                        tog_list={() => handleList()}
-                                        setQuery={setQuery}
-                                        initialState={initialState}
-                                        setValues={setValues}
-                                        updateForm={updateForm}
-                                        showForm={showForm}
-                                        setShowForm={setShowForm}
-                                        setUpdateForm={setUpdateForm}
-                                        showAddButton={false}
-                                    />
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <FormsHeader
+                                            formName="Brand"
+                                            filter={filter}
+                                            handleFilter={handleFilter}
+                                            tog_list={() => handleList()}
+                                            setQuery={setQuery}
+                                            initialState={initialState}
+                                            setValues={setValues}
+                                            updateForm={updateForm}
+                                            showForm={showForm}
+                                            setShowForm={setShowForm}
+                                            setUpdateForm={setUpdateForm}
+                                            showAddButton={false}
+                                        />
+                                        <ExportButtons
+                                            data={data}
+                                            columns={exportColumns}
+                                            fileName="brands"
+                                            fetchAll={fetchAllForExport}
+                                        />
+                                    </div>
                                 </CardHeader>
 
                                 <CardBody>
@@ -895,6 +927,7 @@ const Brand = () => {
                                         <DataTable
                                             columns={columns}
                                             data={data}
+                                            customStyles={tableCustomStyles}
                                             progressPending={loading}
                                             sortServer
                                             onSort={(

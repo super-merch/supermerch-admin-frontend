@@ -25,6 +25,8 @@ import DeleteModal from "../../Components/Common/DeleteModal";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
   name: "",
@@ -311,9 +313,9 @@ const Material = () => {
   const col = [
     {
       name: "Sr No",
-      selector: (row, index) => index + 1, 
+      selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Material",

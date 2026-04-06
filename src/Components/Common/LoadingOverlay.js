@@ -1,6 +1,6 @@
 import React from 'react';
 
-const LoadingOverlay = ({ fullScreen = false }) => {
+const LoadingOverlay = ({ fullScreen = false, isLoading = true, children }) => {
   const overlayStyle = {
     position: fullScreen ? 'fixed' : 'absolute',
     top: 0,
@@ -24,7 +24,7 @@ const LoadingOverlay = ({ fullScreen = false }) => {
     fontWeight: '500'
   };
 
-  return (
+  const spinner = (
     <div style={overlayStyle}>
       <div style={spinnerWrapperStyle}>
         <div className="spinner-border text-primary" role="status">
@@ -34,6 +34,19 @@ const LoadingOverlay = ({ fullScreen = false }) => {
       </div>
     </div>
   );
+
+  // Wrapper mode: render children + conditional overlay
+  if (children !== undefined) {
+    return (
+      <div style={{ position: 'relative', minHeight: isLoading ? 120 : 'auto' }}>
+        {children}
+        {isLoading && spinner}
+      </div>
+    );
+  }
+
+  // Standalone mode (existing pattern: {isLoading && <LoadingOverlay />})
+  return spinner;
 };
 
 export default LoadingOverlay;

@@ -12,6 +12,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -46,19 +48,16 @@ const EmailSubscriptions = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "60px",
     },
     {
       name: "Email",
       selector: (row) => <p className="text-wrap">{row.email}</p>,
       sortable: true,
-      maxWidth: "350px",
     },
     {
       name: "Subscribed Date",
       selector: (row) => new Date(row.createdAt).toLocaleDateString(),
       sortable: true,
-      maxWidth: "180px",
     },
     {
       name: "Action",
@@ -214,6 +213,9 @@ const EmailSubscriptions = () => {
     }
   };
 
+  const exportColumns = [{header:"Email",key:"email"},{header:"Date",key:"createdAt"}];
+  const fetchAllForExport = async () => { try { const r = await axios.get("/api/subscriptions",{params:{page:1,limit:10000},headers:{Authorization:"Bearer "+localStorage.getItem("token")}}); return r.data?.data||[]; } catch(e){return data;} };
+
   document.title = `Email Subscriptions | ${adminData.companyName}`;
 
   return (
@@ -252,11 +254,13 @@ const EmailSubscriptions = () => {
                       </Button>
                     </Col>
                   </Row>
+                  <ExportButtons data={data} columns={exportColumns} fileName="email_subscriptions" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
+                      customStyles={tableCustomStyles}
                       columns={columns}
                       data={data}
                       progressPending={loading}

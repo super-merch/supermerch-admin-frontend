@@ -13,6 +13,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -71,25 +73,21 @@ const CustomProducts = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "60px",
     },
     {
       name: "Name",
       selector: (row) => <p className="text-wrap">{row.name}</p>,
       sortable: true,
-      maxWidth: "200px",
     },
     {
       name: "Code",
       selector: (row) => <p className="text-wrap">{row.code}</p>,
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Category",
       selector: (row) => <p className="text-wrap">{row.category || "-"}</p>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Price",
@@ -100,7 +98,6 @@ const CustomProducts = () => {
         return "-";
       },
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Action",
@@ -670,6 +667,9 @@ const CustomProducts = () => {
     </CardBody>
   );
 
+  const exportColumns = [{header:"Name",key:"name"},{header:"Code",key:"code"},{header:"Category",key:"category"},{header:"Price",key:"price"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { try { const r = await axios.get("/api/custom-products",{params:{page:1,limit:10000},headers:{Authorization:"Bearer "+localStorage.getItem("token")}}); return r.data?.data||[]; } catch(e){return data;} };
+
   document.title = `Custom Products | ${adminData.companyName}`;
 
   return (
@@ -696,6 +696,7 @@ const CustomProducts = () => {
                     setShowForm={setShowForm}
                     setUpdateForm={setUpdateForm}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="custom_products" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 {showForm || updateForm ? (
@@ -704,7 +705,8 @@ const CustomProducts = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
-                        columns={columns}
+                      customStyles={tableCustomStyles}
+                      columns={columns}
                         data={data}
                         progressPending={loading}
                         sortServer

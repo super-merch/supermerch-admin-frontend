@@ -21,6 +21,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
@@ -56,7 +58,6 @@ const SupplierPriority = () => {
         {
             name: "Sr No",
             selector: (row, index) => (pageNo - 1) * perPage + index + 1,
-            maxWidth: "80px",
         },
         {
             name: "Supplier Name",
@@ -79,7 +80,6 @@ const SupplierPriority = () => {
         {
             name: "Current Priority",
             selector: (row) => row.priority ?? 0,
-            maxWidth: "150px",
             sortable: true,
         },
         {
@@ -105,7 +105,6 @@ const SupplierPriority = () => {
                     <span>{row.priority ?? 0}</span>
                 );
             },
-            maxWidth: "150px",
         },
         {
             name: "Action",
@@ -330,7 +329,11 @@ const SupplierPriority = () => {
         }
     };
 
-    document.title = `Supplier Priority | ${adminData.companyName}`;
+    
+  const exportColumns = [{header:"Supplier",key:"supplierName"},{header:"Category",key:"categoryName"},{header:"Priority",key:"priority"}];
+  const fetchAllForExport = async () => { try { const r = await getSupplierPriority({page:1,limit:10000}); return r.data?.data||[]; } catch{return data;} };
+
+  document.title = `Supplier Priority | ${adminData.companyName}`;
 
     return (
         <React.Fragment>
@@ -351,6 +354,7 @@ const SupplierPriority = () => {
                                             Supplier Priority
                                         </h5>
                                         <div className="d-flex gap-2">
+                                            <ExportButtons data={data} columns={exportColumns} fileName="supplier_priority" fetchAll={fetchAllForExport} />
                                             <div className="search-box">
                                                 <Input
                                                     type="text"
@@ -388,7 +392,8 @@ const SupplierPriority = () => {
                                 <CardBody>
                                     <div className="table-responsive table-card mt-1 mb-1">
                                         <DataTable
-                                            columns={columns}
+                      customStyles={tableCustomStyles}
+                      columns={columns}
                                             data={data}
                                             progressPending={loading}
                                             pagination

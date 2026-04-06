@@ -22,6 +22,8 @@ import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -381,6 +383,30 @@ const Orders = () => {
     setPageNo(0);
   };
 
+  const exportColumns = [
+    { header: "Order #", key: "orderNumber" },
+    { header: "Date", key: "createdAt" },
+    { header: "Customer", key: "customerName" },
+    { header: "Email", key: "customerEmail" },
+    { header: "Total", key: "totalAmount" },
+    { header: "Status", key: "status" },
+    { header: "Payment", key: "paymentStatus" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const params = { page: 1, limit: 10000 };
+      if (statusFilter) params.status = statusFilter;
+      if (activeDeliveryTab && activeDeliveryTab !== "all") params.deliveryType = activeDeliveryTab;
+      const response = await axios.get(`/api/admin/orders`, {
+        params,
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.data.success) return response.data.data;
+      return [];
+    } catch { return []; }
+  };
+
   document.title = `Orders | ${adminData.companyName}`;
 
   return (
@@ -592,7 +618,13 @@ const Orders = () => {
                         ))}
                       </Input>
                     </Col>
-                    <Col md={5} className="text-end">
+                    <Col md={5} className="text-end d-flex justify-content-end align-items-center gap-2">
+                      <ExportButtons
+                        data={data}
+                        columns={exportColumns}
+                        fileName="orders"
+                        fetchAll={fetchAllForExport}
+                      />
                       <Button
                         color={showPendingLogoOnly ? "warning" : "light"}
                         outline={!showPendingLogoOnly}
@@ -624,6 +656,7 @@ const Orders = () => {
                       columns={columns}
                       data={data}
                       progressPending={loading}
+                      customStyles={tableCustomStyles}
                       pagination
                       paginationServer
                       paginationTotalRows={totalRows}

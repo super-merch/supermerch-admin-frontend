@@ -58,7 +58,7 @@ const ProfileDropdown = () => {
                 </DropdownToggle>
                 <DropdownMenu className="dropdown-menu-end">
                     <h6 className="dropdown-header">Welcome {adminData?.companyName}!</h6>
-                    <DropdownItem href="/company-details" as="Link">
+                    <DropdownItem onClick={() => navigate("/company-details")}>
                         <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
                         <span className="align-middle">Profile</span>
                     </DropdownItem>

@@ -12,6 +12,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -120,7 +122,6 @@ const CMSPage = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "80px",
         },
         {
             name: "Name",
@@ -147,7 +148,6 @@ const CMSPage = () => {
                     {row.isActive ? "Active" : "Inactive"}
                 </span>
             ),
-            maxWidth: "100px",
         },
         {
             name: "Action",
@@ -553,6 +553,9 @@ const CMSPage = () => {
         </CardBody>
     );
 
+    const exportColumns = [{header:"Title",key:"title"},{header:"Slug",key:"slug"},{header:"Active",key:"isActive"}];
+    const fetchAllForExport = async () => { return data; };
+
     document.title = `CMS Pages | ${adminData?.companyName}`;
 
     return (
@@ -589,6 +592,7 @@ const CMSPage = () => {
                                             currentPagePermissions.write
                                         }
                                     />
+                                    <ExportButtons data={data} columns={exportColumns} fileName="cms_pages" fetchAll={fetchAllForExport} />
                                 </CardHeader>
 
                                 {showForm || updateForm ? (
@@ -597,6 +601,7 @@ const CMSPage = () => {
                                     <CardBody>
                                         <div className="table-responsive table-card mt-1 mb-1 text-right">
                                             <DataTable
+                      customStyles={tableCustomStyles}
                                                 columns={columns}
                                                 data={data}
                                                 progressPending={loading}

@@ -25,6 +25,8 @@ import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
   name: "",
@@ -313,7 +315,7 @@ const Gender = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Gender",
@@ -368,6 +370,30 @@ const Gender = () => {
     },
   ];
 
+  const exportColumns = [
+    { header: "Gender", key: "name" },
+    { header: "Is VAT Free", key: "isVatFree" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const response = await axios.post(
+        `/api/listbyparams/genders`,
+        { page: 1, limit: 10000, isActive: filter },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
+
   document.title = `Gender | ${adminData?.companyName}`;
 
   return (
@@ -384,15 +410,23 @@ const Gender = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Gender"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={tog_list}
-                    setQuery={setQuery}
-                    currentPagePermissions={currentPagePermissions}
-                    showAddButton={currentPagePermissions.write}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="Gender"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={tog_list}
+                      setQuery={setQuery}
+                      currentPagePermissions={currentPagePermissions}
+                      showAddButton={currentPagePermissions.write}
+                    />
+                    <ExportButtons
+                      data={countries}
+                      columns={exportColumns}
+                      fileName="genders"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -401,6 +435,7 @@ const Gender = () => {
                       <DataTable
                         columns={col}
                         data={countries}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection, sortedRows) => {

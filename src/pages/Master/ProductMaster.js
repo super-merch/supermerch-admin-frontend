@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     Input,
     Card,
@@ -20,12 +20,22 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import Select from "react-select";
 import axios from "axios";
 // Auth token is added by axios interceptor in api_helper.js
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import classnames from "classnames";
 import config from "../../config";
+import ExportButtons from "../../Components/Common/ExportButtons";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import {
+    addProductMargin,
+    getProductMargin,
+} from "../../functions/Pricing/marginFunc";
+import {
+    addProductDiscount,
+} from "../../functions/Pricing/discountFunc";
 
 const apiUrl = config.api.API_URL;
 
@@ -43,6 +53,10 @@ const ProductMaster = () => {
     const [categoryFilter, setCategoryFilter] = useState("");
     const [suppliers, setSuppliers] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [supplierSearch, setSupplierSearch] = useState("");
+    const [categorySearch, setCategorySearch] = useState("");
+    const suppliersFetched = useRef(false);
+    const categoriesFetched = useRef(false);
 
     // ── Detail view states ───────────────────────────────────
     const [updateForm, setUpdateForm] = useState(false);
@@ -59,28 +73,64 @@ const ProductMaster = () => {
     // { methodId: mappingDocId } — for DELETE when removing a method
     const [isSavingCustomization, setIsSavingCustomization] = useState(false);
 
-    // ── Fetch supplier + category lists for filter dropdowns ─
-    useEffect(() => {
-        const fetchFilters = async () => {
-            try {
-                const [supRes, catRes] = await Promise.all([
-                    axios.get(`${apiUrl}/api/listbyparams/suppliers`, {
-                        params: { limit: 500, isActive: true },
-                    }),
-                    axios.get(`${apiUrl}/api/listbyparams/sub-categories`, {
-                        params: { limit: 500, isActive: true },
-                    }),
-                ]);
-                const supList = supRes.data?.data || supRes.data || [];
-                setSuppliers(Array.isArray(supList) ? supList : []);
-                const catList = catRes.data?.data || catRes.data || [];
-                setCategories(Array.isArray(catList) ? catList : []);
-            } catch (err) {
-                console.error("Error fetching filter options:", err);
-            }
-        };
-        fetchFilters();
+    // ── Inline margin/discount for product list ──
+    const [productMarginInputs, setProductMarginInputs] = useState({});
+    const [productDiscountInputs, setProductDiscountInputs] = useState({});
+    const [productMarginMap, setProductMarginMap] = useState({});
+    const [productDiscountMap, setProductDiscountMap] = useState({});
+
+    // ── Lazy-fetch supplier + category lists for filter dropdowns ─
+    const fetchSuppliers = useCallback(async (search = "") => {
+        try {
+            const res = await axios.get(`${apiUrl}/api/listbyparams/suppliers`, {
+                params: { limit: 50, isActive: true, search },
+            });
+            const list = res.data?.data || res.data || [];
+            setSuppliers(Array.isArray(list) ? list : []);
+        } catch (err) {
+            console.error("Error fetching suppliers:", err);
+        }
     }, []);
+
+    const fetchCategories = useCallback(async (search = "") => {
+        try {
+            const res = await axios.get(`${apiUrl}/api/listbyparams/sub-categories`, {
+                params: { limit: 50, isActive: true, search },
+            });
+            const list = res.data?.data || res.data || [];
+            setCategories(Array.isArray(list) ? list : []);
+        } catch (err) {
+            console.error("Error fetching categories:", err);
+        }
+    }, []);
+
+    const handleSupplierMenuOpen = () => {
+        if (!suppliersFetched.current) {
+            suppliersFetched.current = true;
+            fetchSuppliers();
+        }
+    };
+
+    const handleCategoryMenuOpen = () => {
+        if (!categoriesFetched.current) {
+            categoriesFetched.current = true;
+            fetchCategories();
+        }
+    };
+
+    // Debounced search for supplier dropdown
+    useEffect(() => {
+        if (!suppliersFetched.current) return;
+        const timer = setTimeout(() => fetchSuppliers(supplierSearch), 300);
+        return () => clearTimeout(timer);
+    }, [supplierSearch, fetchSuppliers]);
+
+    // Debounced search for category dropdown
+    useEffect(() => {
+        if (!categoriesFetched.current) return;
+        const timer = setTimeout(() => fetchCategories(categorySearch), 300);
+        return () => clearTimeout(timer);
+    }, [categorySearch, fetchCategories]);
 
     // ── Fetch products ───────────────────────────────────────
     const fetchProducts = useCallback(async () => {
@@ -104,13 +154,22 @@ const ProductMaster = () => {
             const res = await axios.get(endpoint, { params });
             const resData = res.data;
 
+            if (resData?.success === false || resData?.error) {
+                toast.error(resData.error || "Failed to load products");
+                setData([]);
+                // Don't reset totalRows on error — keeps pagination intact
+                return;
+            }
+
             if (resData?.data) {
                 setData(resData.data);
-                setTotalRows(
-                    resData.item_count ||
-                    resData.pagination?.totalCount ||
-                    resData.data.length
-                );
+                
+                // Use the total count from the backend response
+                const count = resData.pagination?.totalCount ?? resData.item_count ?? resData.totalRows ?? resData.data.length;
+                
+                if (count > 0 || pageNo === 1) {
+                    setTotalRows(count);
+                }
             } else {
                 setData([]);
                 setTotalRows(0);
@@ -119,7 +178,7 @@ const ProductMaster = () => {
             console.error("Error fetching products:", err);
             toast.error("Failed to load products");
             setData([]);
-            setTotalRows(0);
+            // Don't reset totalRows on network error — keeps pagination intact
         } finally {
             setIsLoading(false);
         }
@@ -220,6 +279,96 @@ const ProductMaster = () => {
         setActiveTab("1");
         setMethodPositionMappings([]);
         setExistingMappingIds({});
+    };
+
+    // ── Fetch product margins/discounts when data changes ──
+    useEffect(() => {
+        if (!data.length) return;
+        const fetchProductPricing = async () => {
+            const mMap = {};
+            const mInputs = {};
+            const dMap = {};
+            const dInputs = {};
+            await Promise.all(
+                data.map(async (row) => {
+                    const pid = row.meta?.id || row._id || row.id;
+                    if (!pid) return;
+                    try {
+                        const res = await getProductMargin(pid);
+                        if (res.data?.success && res.data.data?.margin !== undefined) {
+                            mMap[pid] = res.data.data.margin;
+                            mInputs[pid] = res.data.data.margin;
+                        }
+                        if (res.data?.success && res.data.data?.discount !== undefined) {
+                            dMap[pid] = res.data.data.discount;
+                            dInputs[pid] = res.data.data.discount;
+                        }
+                    } catch {
+                        // no margin set for this product
+                    }
+                })
+            );
+            setProductMarginMap(mMap);
+            setProductMarginInputs((prev) => ({ ...prev, ...mInputs }));
+            setProductDiscountMap(dMap);
+            setProductDiscountInputs((prev) => ({ ...prev, ...dInputs }));
+        };
+        fetchProductPricing();
+    }, [data]);
+
+    const handleProductMarginSave = async (productId) => {
+        const val = parseFloat(productMarginInputs[productId]);
+        if (isNaN(val) || val < 0) {
+            toast.error("Enter a valid margin %");
+            return;
+        }
+        try {
+            const res = await addProductMargin({ productId, margin: val });
+            if (res.data?.success !== false) {
+                toast.success("Product margin saved");
+                setProductMarginMap((prev) => ({ ...prev, [productId]: val }));
+            }
+        } catch {
+            toast.error("Failed to save product margin");
+        }
+    };
+
+    const handleProductDiscountSave = async (productId) => {
+        const val = parseFloat(productDiscountInputs[productId]);
+        if (isNaN(val) || val < 0) {
+            toast.error("Enter a valid discount %");
+            return;
+        }
+        try {
+            const res = await addProductDiscount({ productId, discount: val });
+            if (res.data?.success !== false) {
+                toast.success("Product discount saved");
+                setProductDiscountMap((prev) => ({ ...prev, [productId]: val }));
+            }
+        } catch {
+            toast.error("Failed to save product discount");
+        }
+    };
+
+    // ── Export helpers ──
+    const exportColumns = [
+        { header: "Name", key: "overview.name" },
+        { header: "Code", key: "overview.code" },
+        { header: "Supplier", key: "supplier.supplier" },
+        { header: "Category", key: "product.categorisation.promodata_product_type.type_name" },
+        { header: "Status", key: "meta.discontinued" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const params = { page: 1, limit: 10000, filter: "false" };
+            if (supplierFilter) params.supplier = supplierFilter;
+            if (categoryFilter) params.product_type_ids = categoryFilter;
+            const res = await axios.get(`${apiUrl}/api/client-products`, { params });
+            return res.data?.data || data;
+        } catch {
+            return data;
+        }
     };
 
     // ── Customization handlers ───────────────────────────────
@@ -438,6 +587,64 @@ const ProductMaster = () => {
                     <Badge color="soft-danger" className="text-danger">Discontinued</Badge>
                 ) : (
                     <Badge color="soft-success" className="text-success">Active</Badge>
+                );
+            },
+        },
+        {
+            name: "Margin %",
+            width: "180px",
+            cell: (row) => {
+                const pid = row.meta?.id || row._id || row.id;
+                return (
+                    <div className="d-flex align-items-center gap-1">
+                        <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            style={{ width: 65 }}
+                            step="0.01"
+                            min="0"
+                            placeholder="%"
+                            value={productMarginInputs[pid] ?? ""}
+                            onChange={(e) =>
+                                setProductMarginInputs((prev) => ({ ...prev, [pid]: e.target.value }))
+                            }
+                        />
+                        <Button color="success" size="sm" className="btn-icon" onClick={() => handleProductMarginSave(pid)} title="Save">
+                            <i className="ri-save-line"></i>
+                        </Button>
+                        {productMarginMap[pid] !== undefined && (
+                            <Badge color="soft-info" className="text-info">{productMarginMap[pid]}%</Badge>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            name: "Discount %",
+            width: "180px",
+            cell: (row) => {
+                const pid = row.meta?.id || row._id || row.id;
+                return (
+                    <div className="d-flex align-items-center gap-1">
+                        <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            style={{ width: 65 }}
+                            step="0.01"
+                            min="0"
+                            placeholder="%"
+                            value={productDiscountInputs[pid] ?? ""}
+                            onChange={(e) =>
+                                setProductDiscountInputs((prev) => ({ ...prev, [pid]: e.target.value }))
+                            }
+                        />
+                        <Button color="success" size="sm" className="btn-icon" onClick={() => handleProductDiscountSave(pid)} title="Save">
+                            <i className="ri-save-line"></i>
+                        </Button>
+                        {productDiscountMap[pid] !== undefined && (
+                            <Badge color="soft-warning" className="text-warning">{productDiscountMap[pid]}%</Badge>
+                        )}
+                    </div>
                 );
             },
         },
@@ -1257,11 +1464,17 @@ const ProductMaster = () => {
     const renderListView = () => (
         <>
             <Card>
-                <CardHeader className="d-flex align-items-center justify-content-between">
+                <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 className="card-title mb-0">
                         Product Master{" "}
                         <small className="text-muted fw-normal">({totalRows} products)</small>
                     </h5>
+                    <ExportButtons
+                        data={data}
+                        columns={exportColumns}
+                        fileName="products"
+                        fetchAll={fetchAllForExport}
+                    />
                 </CardHeader>
                 <CardBody>
                     <Row className="g-3 mb-3">
@@ -1274,51 +1487,63 @@ const ProductMaster = () => {
                             />
                         </Col>
                         <Col md={3}>
-                            <Input
-                                type="select"
-                                value={supplierFilter}
-                                onChange={(e) => {
-                                    setSupplierFilter(e.target.value);
+                            <Select
+                                isClearable
+                                placeholder="All Suppliers"
+                                options={suppliers.map((s) => ({
+                                    value: s.code,
+                                    label: s.name,
+                                }))}
+                                value={supplierFilter ? suppliers.map((s) => ({ value: s.code, label: s.name })).find((o) => o.value === supplierFilter) || null : null}
+                                onChange={(opt) => {
+                                    setSupplierFilter(opt ? opt.value : "");
                                     setPageNo(1);
                                 }}
-                            >
-                                <option value="">All Suppliers</option>
-                                {suppliers.map((s) => (
-                                    <option key={s.id || s._id} value={s.code}>
-                                        {s.name}
-                                    </option>
-                                ))}
-                            </Input>
+                                onMenuOpen={handleSupplierMenuOpen}
+                                onInputChange={(val) => setSupplierSearch(val)}
+                                filterOption={null}
+                            />
                         </Col>
                         <Col md={3}>
-                            <Input
-                                type="select"
-                                value={categoryFilter}
-                                onChange={(e) => {
-                                    setCategoryFilter(e.target.value);
+                            <Select
+                                isClearable
+                                placeholder="All Categories"
+                                options={categories.map((c) => ({
+                                    value: c._promodataTypeId || c.id || c._id,
+                                    label: c.name,
+                                }))}
+                                value={categoryFilter ? categories.map((c) => ({ value: c._promodataTypeId || c.id || c._id, label: c.name })).find((o) => o.value === categoryFilter) || null : null}
+                                onChange={(opt) => {
+                                    setCategoryFilter(opt ? opt.value : "");
                                     setPageNo(1);
                                 }}
-                            >
-                                <option value="">All Categories</option>
-                                {categories.map((c) => (
-                                    <option key={c.id || c._id} value={c._promodataTypeId || c.id || c._id}>
-                                        {c.name}
-                                    </option>
-                                ))}
-                            </Input>
+                                onMenuOpen={handleCategoryMenuOpen}
+                                onInputChange={(val) => setCategorySearch(val)}
+                                filterOption={null}
+                            />
                         </Col>
                     </Row>
                     {isLoading && <LoadingOverlay />}
                     <DataTable
                         columns={columns}
                         data={data}
+                        customStyles={tableCustomStyles}
                         pagination
                         paginationServer
                         paginationTotalRows={totalRows}
                         paginationDefaultPage={pageNo}
+                        paginationComponentOptions={{
+                            noRowsPerPage: false,
+                            rangeSeparatorText: "of",
+                            selectAllRowsItem: false,
+                            selectAllRowsItemText: "All",
+                        }}
+                        onChangePage={(page) => {
+                            console.log("DataTable onChangePage called with:", page);
+                            setPageNo(page);
+                        }}
                         paginationPerPage={perPage}
                         paginationRowsPerPageOptions={[50, 100, 200, 300]}
-                        onChangePage={handlePageChange}
                         onChangeRowsPerPage={handlePerRowsChange}
                         highlightOnHover
                         striped

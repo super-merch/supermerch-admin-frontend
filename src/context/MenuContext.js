@@ -9,6 +9,7 @@ const MenuProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [employeeRoles, setEmployeeRoles] = useState(null);
     const [isStatusFetched, setIsStatusFetched] = useState(false);
     const [currentPagePermissions, setCurrentPagePermissions] = useState({
@@ -86,6 +87,7 @@ const MenuProvider = ({ children }) => {
 
             if (adminResponse.data.success) {
                 const role = adminResponse.data.role;
+                setIsSuperAdmin(adminResponse.data.data.isSuperAdmin || false);
                 // If role is "ADMIN", set isAdmin true — full permissions
                 if (role === "ADMIN") {
                     setIsAdmin(true);
@@ -325,6 +327,7 @@ const MenuProvider = ({ children }) => {
                 error,
                 fetchMenus,
                 isAdmin,
+                isSuperAdmin,
                 employeeRoles,
                 invalidateMenuCache,
                 currentPagePermissions,

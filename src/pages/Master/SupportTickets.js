@@ -23,6 +23,8 @@ import { toast } from "react-toastify";
 import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const SupportTickets = () => {
     const { adminData } = useContext(AuthContext);
@@ -416,7 +418,6 @@ const SupportTickets = () => {
             name: "Messages",
             selector: (row) => row._count?.messages || 0,
             sortable: true,
-            maxWidth: "90px",
             cell: (row) => (
                 <Badge color="light" className="text-dark">
                     <i className="ri-chat-3-line me-1"></i>
@@ -501,6 +502,25 @@ const SupportTickets = () => {
             </Card>
         </Col>
     );
+
+    const exportColumns = [
+        { header: "Ticket #", key: "ticketNumber" },
+        { header: "Category", key: "category" },
+        { header: "Subject", key: "subject" },
+        { header: "Status", key: "status" },
+        { header: "Created", key: "createdAt" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.get(`/api/admin/support-tickets`, {
+                params: { page: 1, limit: 10000 },
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            });
+            if (response.data.success) return response.data.data || [];
+            return [];
+        } catch { return []; }
+    };
 
     document.title = `Support Tickets | ${adminData?.companyName}`;
 
@@ -657,7 +677,13 @@ const SupportTickets = () => {
                                                 }
                                             />
                                         </Col>
-                                        <Col md={1}>
+                                        <Col md={1} className="d-flex align-items-center gap-2">
+                                            <ExportButtons
+                                                data={tickets}
+                                                columns={exportColumns}
+                                                fileName="support-tickets"
+                                                fetchAll={fetchAllForExport}
+                                            />
                                             {hasFilters && (
                                                 <Button
                                                     color="light"
@@ -676,6 +702,7 @@ const SupportTickets = () => {
                                         columns={columns}
                                         data={tickets}
                                         progressPending={loading}
+                                        customStyles={tableCustomStyles}
                                         pagination
                                         paginationServer
                                         paginationTotalRows={totalRows}

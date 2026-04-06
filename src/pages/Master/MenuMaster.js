@@ -32,6 +32,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     menuName: "",
@@ -44,7 +46,7 @@ const initialState = {
 };
 
 const MenuMaster = () => {
-    const { currentPagePermissions } = useContext(MenuContext);
+    const { currentPagePermissions, isSuperAdmin } = useContext(MenuContext);
     const [values, setValues] = useState(initialState);
     const [formErrors, setFormErrors] = useState({});
     const [isSubmit, setIsSubmit] = useState(false);
@@ -441,7 +443,6 @@ const MenuMaster = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "20px",
         },
         {
             name: "Menu Name",
@@ -452,7 +453,7 @@ const MenuMaster = () => {
         },
         {
             name: "Menu Group",
-            selector: (row) => row.menugroup?.menugroupName || 'N/A',
+            selector: (row) => row.menugroupId?.menugroupName || 'N/A',
             sortable: true,
             sortField: "menugroup.menugroupName",
             minWidth: "130px",
@@ -476,7 +477,7 @@ const MenuMaster = () => {
                     <React.Fragment>
                         <div className="d-flex gap-2">
                             <div className="edit d-flex gap-2">
-                                {/* {currentPagePermissions.edit && ( */}
+                                {isSuperAdmin && (
                                 <button
                                     className="btn btn-sm btn-success edit-item-btn "
                                     data-bs-toggle="modal"
@@ -485,8 +486,8 @@ const MenuMaster = () => {
                                 >
                                     Edit
                                 </button>
-                                {/* )} */}
-                                {/* {currentPagePermissions.delete && ( */}
+                                )}
+                                {isSuperAdmin && (
                                 <button
                                     className="btn btn-sm btn-danger remove-item-btn"
                                     data-bs-toggle="modal"
@@ -495,10 +496,10 @@ const MenuMaster = () => {
                                 >
                                     Remove
                                 </button>
-                                {/* )} */}
-                                {/* {!currentPagePermissions.edit && !currentPagePermissions.delete && (
-                                    <span className="text-muted">No actions available</span>
-                                )} */}
+                                )}
+                                {!isSuperAdmin && (
+                                    <span className="text-muted">View only</span>
+                                )}
                             </div>
                         </div>
                     </React.Fragment>
@@ -533,7 +534,7 @@ const MenuMaster = () => {
                                         tog_list={tog_list}
                                         setQuery={setQuery}
                                         currentPagePermissions={currentPagePermissions}
-                                        // showAddButton={currentPagePermissions.write}
+                                        showAddButton={isSuperAdmin}
                                     />
                                 </CardHeader>
 

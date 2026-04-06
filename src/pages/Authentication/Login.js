@@ -290,7 +290,7 @@ const Login = () => {
         setConfirmPassword("");
     };
 
-    document.title = `Sign in | Workwear Apparel`;
+    document.title = `Sign in | Super Merch`;
 
     // Render forgot password form based on current step
     const renderForgotPasswordForm = () => {

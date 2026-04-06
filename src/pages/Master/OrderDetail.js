@@ -64,6 +64,10 @@ const OrderDetail = () => {
     // Invoice download
     const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
+    // Delivery date override
+    const [deliveryDateOverride, setDeliveryDateOverride] = useState("");
+    const [savingDeliveryDate, setSavingDeliveryDate] = useState(false);
+
     // Customization Proof states
     const [proofModal, setProofModal] = useState(false);
     const [selectedProofItem, setSelectedProofItem] = useState(null);
@@ -318,6 +322,39 @@ const OrderDetail = () => {
             );
         } finally {
             setDownloadingInvoice(false);
+        }
+    };
+
+    // Save delivery date override
+    const handleSaveDeliveryDate = async () => {
+        if (!deliveryDateOverride) {
+            toast.error("Please select a delivery date");
+            return;
+        }
+
+        setSavingDeliveryDate(true);
+        try {
+            const response = await axios.put(
+                `/api/admin/orders/${order.id}/delivery-date`,
+                { deliveryDate: deliveryDateOverride },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                toast.success("Delivery date updated successfully");
+                fetchOrder();
+            } else {
+                toast.error(response.data.message || "Failed to update delivery date");
+            }
+        } catch (error) {
+            console.error("Error updating delivery date:", error);
+            toast.error(error.response?.data?.message || "Failed to update delivery date");
+        } finally {
+            setSavingDeliveryDate(false);
         }
     };
 
@@ -2076,6 +2113,55 @@ const OrderDetail = () => {
                                             </tr>
                                         </tbody>
                                     </Table>
+                                </CardBody>
+                            </Card>
+
+                            {/* Delivery Date Override */}
+                            <Card>
+                                <CardHeader className="bg-light">
+                                    <h6 className="mb-0">
+                                        <i className="ri-truck-line me-2"></i>
+                                        Delivery Date
+                                    </h6>
+                                </CardHeader>
+                                <CardBody>
+                                    {order.estimatedDeliveryDate && (
+                                        <div className="mb-3">
+                                            <small className="text-muted d-block">Estimated Delivery</small>
+                                            <span className="fw-medium">
+                                                {new Date(order.estimatedDeliveryDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {order.deliveryDateOverride && (
+                                        <div className="mb-3">
+                                            <small className="text-muted d-block">Admin Override</small>
+                                            <span className="fw-medium text-primary">
+                                                {new Date(order.deliveryDateOverride).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="mb-3">
+                                        <Label className="form-label mb-1">Set Delivery Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={deliveryDateOverride}
+                                            onChange={(e) => setDeliveryDateOverride(e.target.value)}
+                                            min={new Date().toISOString().split("T")[0]}
+                                        />
+                                    </div>
+                                    <Button
+                                        color="primary"
+                                        className="w-100"
+                                        onClick={handleSaveDeliveryDate}
+                                        disabled={savingDeliveryDate || !deliveryDateOverride}
+                                    >
+                                        {savingDeliveryDate ? (
+                                            <><Spinner size="sm" className="me-1" /> Saving...</>
+                                        ) : (
+                                            <><i className="ri-calendar-check-line me-1"></i> Update Delivery Date</>
+                                        )}
+                                    </Button>
                                 </CardBody>
                             </Card>
 

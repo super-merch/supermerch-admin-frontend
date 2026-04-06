@@ -14,6 +14,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
@@ -100,37 +102,31 @@ const AdminQuotes = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "60px",
     },
     {
       name: "Quote #",
       selector: (row) => <p className="text-wrap">{row.quoteNumber || row._id}</p>,
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Customer",
       selector: (row) => <p className="text-wrap">{row.customer?.name || row.customerName || "-"}</p>,
       sortable: true,
-      maxWidth: "180px",
     },
     {
       name: "Total",
       selector: (row) => `A$${parseFloat(row.total || 0).toFixed(2)}`,
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Status",
       selector: (row) => getStatusBadge(row.status),
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Date",
       selector: (row) => new Date(row.createdAt).toLocaleDateString(),
       sortable: true,
-      maxWidth: "120px",
     },
     {
       name: "Action",
@@ -635,6 +631,9 @@ const AdminQuotes = () => {
     </CardBody>
   );
 
+  const exportColumns = [{header:"Customer",key:"customerName"},{header:"Email",key:"customerEmail"},{header:"Phone",key:"customerPhone"},{header:"Company",key:"customerCompany"},{header:"Status",key:"status"}];
+  const fetchAllForExport = async () => { try { const r = await getAdminQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
+
   document.title = `Admin Quotes | ${adminData.companyName}`;
 
   return (
@@ -661,6 +660,7 @@ const AdminQuotes = () => {
                     setShowForm={setShowForm}
                     setUpdateForm={setUpdateForm}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="admin_quotes" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 {showForm || updateForm ? (
@@ -669,7 +669,8 @@ const AdminQuotes = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
-                        columns={columns}
+                      customStyles={tableCustomStyles}
+                      columns={columns}
                         data={data}
                         progressPending={loading}
                         sortServer

@@ -12,6 +12,8 @@ import {
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsHeader";
@@ -114,7 +116,6 @@ const AboutUsBanner = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "10px",
     },
     {
       name: "Image",
@@ -125,13 +126,11 @@ const AboutUsBanner = () => {
           style={{ width: "100px", height: "60px", objectFit: "cover", margin: "5px 0" }}
         />
       ),
-      maxWidth: "120px",
     },
     {
       name: "Sort Order",
       selector: (row) => row.sortOrder,
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Status",
@@ -140,7 +139,6 @@ const AboutUsBanner = () => {
           {row.isActive ? 'Active' : 'Inactive'}
         </span>
       ),
-      maxWidth: "100px",
     },
     {
       name: "Action",
@@ -531,7 +529,6 @@ const AboutUsBanner = () => {
                                 alt="Preview"
                                 style={{
                                   width: "100%",
-                                  maxWidth: "100%",
                                   height: "auto",
                                   maxHeight: "400px",
                                   objectFit: "contain",
@@ -635,6 +632,9 @@ const AboutUsBanner = () => {
     </CardBody>
   );
 
+  const exportColumns = [{header:"Title",key:"title"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { return data; };
+
   document.title = `About Us Banner | ${adminData?.companyName}`;
 
   return (
@@ -664,6 +664,7 @@ const AboutUsBanner = () => {
                     setShowForm={setShowForm}
                     setUpdateForm={setUpdateForm}
                   />
+                  <ExportButtons data={data} columns={exportColumns} fileName="about_banners" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 {showForm || updateForm ? (
@@ -672,6 +673,7 @@ const AboutUsBanner = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={columns}
                         data={data}
                         progressPending={loading}

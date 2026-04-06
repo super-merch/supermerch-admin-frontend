@@ -15,6 +15,8 @@ import {
 } from "reactstrap";
 import axios from "axios";
 import DataTable from "react-data-table-component";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DeleteModal from "../../Components/Common/DeleteModal";
 import FormsHeader from "../../Components/Common/FormsModalHeader";
@@ -292,7 +294,6 @@ const EmailFor = () => {
       name: "Sr No",
       selector: (row, index) => index + 1, 
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Email For",
@@ -342,6 +343,9 @@ const EmailFor = () => {
     },
   ];
 
+  const exportColumns = [{header:"Email For",key:"emailFor"},{header:"Active",key:"isActive"}];
+  const fetchAllForExport = async () => { return countries; };
+
   document.title = `Email For | ${adminData?.companyName}`;
 
   return (
@@ -368,12 +372,14 @@ const EmailFor = () => {
                     currentPagePermissions={currentPagePermissions}
                     showAddButton={currentPagePermissions.write}
                   />
+                  <ExportButtons data={countries} columns={exportColumns} fileName="email_for" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
                   <div id="customerList">
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
+                      customStyles={tableCustomStyles}
                         columns={col}
                         data={countries}
                         progressPending={loading}

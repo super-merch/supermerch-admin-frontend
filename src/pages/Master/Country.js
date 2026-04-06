@@ -32,6 +32,8 @@ import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
   countryName: "",
@@ -289,9 +291,9 @@ const Country = () => {
   const col = [
     {
       name: "Sr No",
-      selector: (row, index) => index + 1, 
+      selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
+      minWidth: "80px",
     },
     {
       name: "Country Name",
@@ -347,6 +349,31 @@ const Country = () => {
     },
   ];
 
+  const exportColumns = [
+    { header: "Country Name", key: "countryName" },
+    { header: "Country Code", key: "countryCode" },
+    { header: "Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: 1,
+        limit: 10000,
+        isActive: filter,
+      });
+      const response = await axios.get(`/api/country?${params}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error("Export fetch error:", error);
+      return [];
+    }
+  };
+
   document.title = `Country | ${adminData?.companyName}`;
 
   return (
@@ -364,15 +391,23 @@ const Country = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Country"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={tog_list}
-                    setQuery={setQuery}
-                    currentPagePermissions={currentPagePermissions}
-                    showAddButton={currentPagePermissions.write}
-                  />
+                  <div className="d-flex align-items-center justify-content-between">
+                    <FormsHeader
+                      formName="Country"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={tog_list}
+                      setQuery={setQuery}
+                      currentPagePermissions={currentPagePermissions}
+                      showAddButton={currentPagePermissions.write}
+                    />
+                    <ExportButtons
+                      data={countries}
+                      columns={exportColumns}
+                      fileName="countries"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -381,6 +416,7 @@ const Country = () => {
                       <DataTable
                         columns={col}
                         data={countries}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection, sortedRows) => {

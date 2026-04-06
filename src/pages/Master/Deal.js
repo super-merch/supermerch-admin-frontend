@@ -32,6 +32,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import { api } from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const Deal = () => {
   const { adminData } = useContext(AuthContext);
@@ -162,7 +164,6 @@ const Deal = () => {
       name: "Deal Code",
       selector: (row) => <span className="text-wrap fw-semibold">{row.dealCode}</span>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Title",
@@ -283,6 +284,24 @@ const Deal = () => {
       minWidth: "180px",
     },
   ];
+
+  const exportColumns = [
+    { header: "Deal Code", key: "dealCode" },
+    { header: "Title", key: "title" },
+    { header: "Deal Type", key: "dealType" },
+    { header: "Base Price", key: "basePrice" },
+    { header: "Deal Price", key: "dealPrice" },
+    { header: "Status", key: "status" },
+    { header: "Is Featured", key: "isFeatured" },
+  ];
+
+  const fetchAllForExport = async () => {
+    const response = await axios.get(`/api/list-deals-by-params`, {
+      params: { page: 1, limit: 10000, search: query },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return response.data.data || [];
+  };
 
   // Toggle tab
   const toggleTab = (tab) => {
@@ -2458,21 +2477,29 @@ const Deal = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Deal"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={handleList}
-                    setQuery={setSearchTerm}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    openAddForm={openAddForm}
-                    showAddButton={currentPagePermissions?.write}
-                  />
+                  <div className="d-flex justify-content-between align-items-center">
+                    <FormsHeader
+                      formName="Deal"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={handleList}
+                      setQuery={setSearchTerm}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                      openAddForm={openAddForm}
+                      showAddButton={currentPagePermissions?.write}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="Deals"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 {(showForm || updateForm) ? (
@@ -2483,6 +2510,7 @@ const Deal = () => {
                       <DataTable
                         columns={columns}
                         data={data}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection) =>

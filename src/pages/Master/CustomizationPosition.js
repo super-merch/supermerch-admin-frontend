@@ -24,6 +24,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -83,18 +85,15 @@ const CustomizationPosition = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Position Name",
       selector: (row) => <p className="text-wrap">{row.positionName}</p>,
-      maxWidth: "200px",
     },
     {
       name: "Position Code",
       selector: (row) => <p className="text-wrap">{row.positionCode}</p>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Image",
@@ -112,37 +111,33 @@ const CustomizationPosition = () => {
         </div>
       ),
       sortable: false,
-      maxWidth: "100px",
     },
     {
       name: "Max Dimensions",
       selector: (row) => (
         <p className="text-wrap">
-          {row.maxWidth && row.maxHeight 
-            ? `${row.maxWidth} x ${row.maxHeight}` 
+          {row.maxWidth && row.maxHeight
+            ? `${row.maxWidth} x ${row.maxHeight}`
             : "-"}
         </p>
       ),
       sortable: false,
-      maxWidth: "150px",
     },
     {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Pricing Tiers",
       selector: (row) => (
         <div className="text-wrap">
-          {row.pricingTiers && row.pricingTiers.length > 0 
-            ? `${row.pricingTiers.length} tier(s)` 
+          {row.pricingTiers && row.pricingTiers.length > 0
+            ? `${row.pricingTiers.length} tier(s)`
             : "No tiers"}
         </div>
       ),
       sortable: false,
-      maxWidth: "120px",
     },
     {
       name: "Action",
@@ -175,6 +170,24 @@ const CustomizationPosition = () => {
       minWidth: "180px",
     },
   ];
+
+  const exportColumns = [
+    { header: "Position Name", key: "positionName" },
+    { header: "Position Code", key: "positionCode" },
+    { header: "Description", key: "description" },
+    { header: "Max Width", key: "maxWidth" },
+    { header: "Max Height", key: "maxHeight" },
+    { header: "Sort Order", key: "sortOrder" },
+    { header: "Is Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    const response = await axios.get('/api/listbyparams/customization-positions', {
+      params: { page: 1, limit: 10000, isActive: filter, search: query },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return response.data.data || [];
+  };
 
   const fetchCustomizationPositions = useCallback(async () => {
     setLoading(true);
@@ -907,19 +920,27 @@ const CustomizationPosition = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Customization Position"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setQuery}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                  />
+                  <div className="d-flex justify-content-between align-items-center">
+                    <FormsHeader
+                      formName="Customization Position"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setQuery}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="CustomizationPositions"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 {(showForm || updateForm) ? (
@@ -930,6 +951,7 @@ const CustomizationPosition = () => {
                       <DataTable
                         columns={columns}
                         data={data}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection) =>

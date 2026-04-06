@@ -22,6 +22,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const apiUrl = config.api.API_URL;
 
@@ -67,25 +69,21 @@ const CustomizationMethod = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
-      maxWidth: "20px",
     },
     {
       name: "Application Method",
       selector: (row) => <p className="text-wrap">{row.applicationMethod}</p>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Application Type",
       selector: (row) => <p className="text-wrap">{row.applicationType}</p>,
       sortable: true,
-      maxWidth: "150px",
     },
     {
       name: "Setup Charge",
       selector: (row) => <p className="text-wrap">A${parseFloat(row.setupCharge).toFixed(2)}</p>,
       sortable: true,
-      maxWidth: "100px",
     },
     {
       name: "Action",
@@ -118,6 +116,21 @@ const CustomizationMethod = () => {
       minWidth: "180px",
     },
   ];
+
+  const exportColumns = [
+    { header: "Application Method", key: "applicationMethod" },
+    { header: "Application Type", key: "applicationType" },
+    { header: "Setup Charge", key: "setupCharge" },
+    { header: "Is Active", key: "isActive" },
+  ];
+
+  const fetchAllForExport = async () => {
+    const response = await axios.get('/api/listbyparams/customization-methods', {
+      params: { page: 1, limit: 10000, isActive: filter },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return response.data.data || [];
+  };
 
   const fetchCustomizationMethods = useCallback(async () => {
     setLoading(true);
@@ -486,19 +499,27 @@ const CustomizationMethod = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
-                    formName="Customization Method"
-                    filter={filter}
-                    handleFilter={handleFilter}
-                    tog_list={() => handleList()}
-                    setQuery={setQuery}
-                    initialState={initialState}
-                    setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                  />
+                  <div className="d-flex justify-content-between align-items-center">
+                    <FormsHeader
+                      formName="Customization Method"
+                      filter={filter}
+                      handleFilter={handleFilter}
+                      tog_list={() => handleList()}
+                      setQuery={setQuery}
+                      initialState={initialState}
+                      setValues={setValues}
+                      updateForm={updateForm}
+                      showForm={showForm}
+                      setShowForm={setShowForm}
+                      setUpdateForm={setUpdateForm}
+                    />
+                    <ExportButtons
+                      data={data}
+                      columns={exportColumns}
+                      fileName="CustomizationMethods"
+                      fetchAll={fetchAllForExport}
+                    />
+                  </div>
                 </CardHeader>
 
                 {(showForm || updateForm) ? (
@@ -509,6 +530,7 @@ const CustomizationMethod = () => {
                       <DataTable
                         columns={columns}
                         data={data}
+                        customStyles={tableCustomStyles}
                         progressPending={loading}
                         sortServer
                         onSort={(column, sortDirection) =>

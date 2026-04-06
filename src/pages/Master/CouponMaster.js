@@ -26,6 +26,8 @@ import { toast, ToastContainer } from "react-toastify";
 import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import tableCustomStyles from "../../Components/Common/tableStyles";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const initialState = {
     title: "",
@@ -477,7 +479,6 @@ const CouponMaster = () => {
             name: "Sr No",
             selector: (row, index) => index + 1,
             sortable: true,
-            maxWidth: "60px",
         },
         {
             name: "Code",
@@ -590,6 +591,30 @@ const CouponMaster = () => {
             minWidth: "180px",
         },
     ];
+
+    const exportColumns = [
+        { header: "Code", key: "code" },
+        { header: "Title", key: "title" },
+        { header: "Discount %", key: "discountPercentage" },
+        { header: "Max Discount", key: "maxDiscountAmount" },
+        { header: "Min Order", key: "minOrderAmount" },
+        { header: "Start Date", key: "startDate" },
+        { header: "End Date", key: "endDate" },
+        { header: "Redemptions", key: "totalRedemptions" },
+        { header: "Active", key: "isActive" },
+    ];
+
+    const fetchAllForExport = async () => {
+        try {
+            const response = await axios.post(
+                `/api/coupons/list`,
+                { page: 1, limit: 10000 },
+                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            );
+            if (response.data.success) return response.data.data || [];
+            return [];
+        } catch { return []; }
+    };
 
     document.title = `Coupon Master | ${adminData?.companyName}`;
 
@@ -846,6 +871,7 @@ const CouponMaster = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
+                                    <div className="d-flex justify-content-between align-items-center">
                                     <FormsHeader
                                         formName="Coupon"
                                         filter={filter}
@@ -860,6 +886,13 @@ const CouponMaster = () => {
                                         }
                                         showIsActiveFilter={true}
                                     />
+                                    <ExportButtons
+                                        data={coupons}
+                                        columns={exportColumns}
+                                        fileName="coupons"
+                                        fetchAll={fetchAllForExport}
+                                    />
+                                    </div>
                                 </CardHeader>
 
                                 <CardBody>
@@ -869,6 +902,7 @@ const CouponMaster = () => {
                                                 columns={col}
                                                 data={coupons}
                                                 progressPending={loading}
+                                                customStyles={tableCustomStyles}
                                                 sortServer
                                                 onSort={(
                                                     column,
