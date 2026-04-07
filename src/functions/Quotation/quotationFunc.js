@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// User Quote Requests
-export const getUserQuotes = async (params) => await axios.get("/api/quotes", { params });
+// User Quote Requests (submitted from SuperMerch frontend via "Express Quote")
+export const getUserQuotes = async (params) => await axios.get("/api/checkout/list-quote", { params });
 
 // Admin Quotes
 export const getAdminQuotes = async (params) => await axios.get("/api/admin-quotes", { params });

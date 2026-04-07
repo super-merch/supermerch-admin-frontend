@@ -8,7 +8,6 @@ import {
   Col,
   Container,
   Row,
-  Badge,
   Modal,
   ModalHeader,
   ModalBody,
@@ -45,68 +44,69 @@ const UserQuotes = () => {
   const [viewModal, setViewModal] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState(null);
 
-  const getStatusBadge = (status) => {
-    const statusColors = {
-      pending: "warning",
-      reviewed: "info",
-      approved: "success",
-      rejected: "danger",
-      completed: "primary",
-    };
-    return (
-      <Badge color={statusColors[status] || "secondary"} className="text-capitalize">
-        {status}
-      </Badge>
-    );
-  };
-
   const columns = [
     {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
+      width: "70px",
     },
     {
       name: "Customer Name",
-      selector: (row) => <p className="text-wrap">{row.customerName}</p>,
+      selector: (row) => row.name,
+      cell: (row) => <p className="text-wrap mb-0">{row.name || "N/A"}</p>,
       sortable: true,
     },
     {
+      name: "Contact",
+      cell: (row) => (
+        <div>
+          <small className="d-block text-muted">{row.email}</small>
+          <small className="d-block">{row.phone}</small>
+        </div>
+      ),
+      sortable: false,
+      minWidth: "200px",
+    },
+    {
       name: "Product",
-      selector: (row) => <p className="text-wrap">{row.productName}</p>,
+      selector: (row) => row.product,
+      cell: (row) => <p className="text-wrap mb-0">{row.product || "N/A"}</p>,
       sortable: true,
     },
     {
       name: "Quantity",
       selector: (row) => row.quantity,
       sortable: true,
+      width: "100px",
     },
     {
-      name: "Status",
-      selector: (row) => getStatusBadge(row.status),
+      name: "Delivery",
+      selector: (row) => row.delivery,
+      cell: (row) => <span>{row.delivery || "N/A"}</span>,
       sortable: true,
     },
     {
       name: "Date",
-      selector: (row) => new Date(row.createdAt).toLocaleDateString(),
+      selector: (row) => row.createdAt,
+      cell: (row) => new Date(row.createdAt).toLocaleDateString(),
       sortable: true,
+      width: "120px",
     },
     {
       name: "Action",
-      selector: (row) => {
-        return (
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-sm btn-info"
-              onClick={() => handleView(row)}
-            >
-              View
-            </button>
-          </div>
-        );
-      },
+      cell: (row) => (
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-sm btn-info"
+            onClick={() => handleView(row)}
+          >
+            View
+          </button>
+        </div>
+      ),
       sortable: false,
-      minWidth: "100px",
+      width: "100px",
     },
   ];
 
@@ -166,7 +166,7 @@ const UserQuotes = () => {
     setFilter(e.target.checked);
   };
 
-  const exportColumns = [{header:"Customer",key:"customerName"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"productName"},{header:"Status",key:"status"}];
+  const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
   const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
 
   document.title = `User Quote Requests | ${adminData.companyName}`;
@@ -234,61 +234,122 @@ const UserQuotes = () => {
         <ModalBody>
           {selectedQuote && (
             <div>
+              {/* Customer Information */}
+              <h6 className="fw-bold text-primary border-bottom pb-2 mb-3">Customer Information</h6>
+              <Row className="mb-3">
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Name</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.name || "N/A"}</p>
+                </Col>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Email</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.email || "N/A"}</p>
+                </Col>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Phone</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.phone || "N/A"}</p>
+                </Col>
+              </Row>
+
+              {/* Delivery & Comment */}
+              <Row className="mb-3">
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Delivery</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.delivery || "N/A"}</p>
+                </Col>
+                <Col md={8}>
+                  <Label className="text-muted small mb-1">Comment</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.comment || "N/A"}</p>
+                </Col>
+              </Row>
+
+              {/* Product Details */}
+              <h6 className="fw-bold text-primary border-bottom pb-2 mb-3 mt-4">Product Details</h6>
               <Row className="mb-3">
                 <Col md={6}>
-                  <Label className="fw-bold">Customer Name</Label>
-                  <p>{selectedQuote.customerName || "N/A"}</p>
+                  <Label className="text-muted small mb-1">Product</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.product || "N/A"}</p>
                 </Col>
                 <Col md={6}>
-                  <Label className="fw-bold">Email</Label>
-                  <p>{selectedQuote.email || "N/A"}</p>
+                  <Label className="text-muted small mb-1">Product ID</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.productId || "N/A"}</p>
                 </Col>
               </Row>
               <Row className="mb-3">
-                <Col md={6}>
-                  <Label className="fw-bold">Phone</Label>
-                  <p>{selectedQuote.phone || "N/A"}</p>
-                </Col>
-                <Col md={6}>
-                  <Label className="fw-bold">Company</Label>
-                  <p>{selectedQuote.company || "N/A"}</p>
+                <Col md={12}>
+                  <Label className="text-muted small mb-1">Description</Label>
+                  <p className="fw-medium mb-0" style={{ whiteSpace: "pre-wrap" }}>{selectedQuote.description || "N/A"}</p>
                 </Col>
               </Row>
               <Row className="mb-3">
-                <Col md={6}>
-                  <Label className="fw-bold">Product</Label>
-                  <p>{selectedQuote.productName || "N/A"}</p>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Quantity</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.quantity ?? "N/A"}</p>
                 </Col>
-                <Col md={6}>
-                  <Label className="fw-bold">Quantity</Label>
-                  <p>{selectedQuote.quantity || "N/A"}</p>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Unit Price</Label>
+                  <p className="fw-medium mb-0">${selectedQuote.price ?? "N/A"}</p>
+                </Col>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Color</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.color && selectedQuote.color !== "None" ? selectedQuote.color : "N/A"}</p>
+                </Col>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Size</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.size && selectedQuote.size !== "None" ? selectedQuote.size : "N/A"}</p>
+                </Col>
+              </Row>
+
+              {/* Pricing & Print Details */}
+              <h6 className="fw-bold text-primary border-bottom pb-2 mb-3 mt-4">Pricing & Print Details</h6>
+              <Row className="mb-3">
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Print Method</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.printMethod && selectedQuote.printMethod !== "None" ? selectedQuote.printMethod : "N/A"}</p>
+                </Col>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Logo Color</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.logoColor && selectedQuote.logoColor !== "None" ? selectedQuote.logoColor : "N/A"}</p>
+                </Col>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Setup Fee</Label>
+                  <p className="fw-medium mb-0">${selectedQuote.setupFee ?? 0}</p>
+                </Col>
+                <Col md={3}>
+                  <Label className="text-muted small mb-1">Freight Fee</Label>
+                  <p className="fw-medium mb-0">${selectedQuote.freightFee ?? 0}</p>
                 </Col>
               </Row>
               <Row className="mb-3">
-                <Col md={6}>
-                  <Label className="fw-bold">Status</Label>
-                  <div>{getStatusBadge(selectedQuote.status)}</div>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Total Price</Label>
+                  <p className="fw-bold text-success fs-5 mb-0">${selectedQuote.totalPrice ?? 0}</p>
                 </Col>
-                <Col md={6}>
-                  <Label className="fw-bold">Date</Label>
-                  <p>{new Date(selectedQuote.createdAt).toLocaleDateString()}</p>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Date</Label>
+                  <p className="fw-medium mb-0">{new Date(selectedQuote.createdAt).toLocaleDateString()}</p>
                 </Col>
               </Row>
-              {selectedQuote.message && (
-                <Row className="mb-3">
-                  <Col md={12}>
-                    <Label className="fw-bold">Message</Label>
-                    <p>{selectedQuote.message}</p>
-                  </Col>
-                </Row>
-              )}
-              {selectedQuote.notes && (
-                <Row className="mb-3">
-                  <Col md={12}>
-                    <Label className="fw-bold">Notes</Label>
-                    <p>{selectedQuote.notes}</p>
-                  </Col>
-                </Row>
+
+              {/* File Attachment */}
+              {selectedQuote.file && selectedQuote.file !== "None" && (
+                <>
+                  <h6 className="fw-bold text-primary border-bottom pb-2 mb-3 mt-4">Attached File</h6>
+                  <div className="text-center">
+                    <img
+                      src={selectedQuote.file}
+                      alt="Quote attachment"
+                      className="img-fluid rounded border"
+                      style={{ maxHeight: "300px", objectFit: "contain" }}
+                      onError={(e) => { e.target.style.display = "none"; }}
+                    />
+                    <div className="mt-2">
+                      <a href={selectedQuote.file} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
+                        View Full Image
+                      </a>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}

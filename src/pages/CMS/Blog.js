@@ -41,6 +41,7 @@ const Blog = () => {
     content: "",
     metaTitle: "",
     metaDescription: "",
+    keywords: "",
     image: "",
     isActive: true,
   };
@@ -185,6 +186,7 @@ const Blog = () => {
       formData.append("content", values.content);
       formData.append("metaTitle", values.metaTitle || "");
       formData.append("metaDescription", values.metaDescription || "");
+      formData.append("keywords", values.keywords || "");
       formData.append("isActive", values.isActive);
 
       if (selectedFile) {
@@ -231,6 +233,7 @@ const Blog = () => {
       formData.append("content", values.content);
       formData.append("metaTitle", values.metaTitle || "");
       formData.append("metaDescription", values.metaDescription || "");
+      formData.append("keywords", values.keywords || "");
       formData.append("isActive", values.isActive);
 
       if (selectedFile) {
@@ -333,6 +336,7 @@ const Blog = () => {
             content: blog.content || "",
             metaTitle: blog.metaTitle || "",
             metaDescription: blog.metaDescription || "",
+            keywords: blog.keywords || "",
             image: blog.image || "",
             isActive: blog.isActive !== undefined ? blog.isActive : true,
           });
@@ -484,6 +488,24 @@ const Blog = () => {
                           style={{ minHeight: "80px" }}
                         />
                         <label className="form-label">Meta Description</label>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col lg={12}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="keywords"
+                          value={values.keywords}
+                          onChange={handleChange}
+                          placeholder="e.g. promotional products, branded merchandise, workwear"
+                        />
+                        <label className="form-label">
+                          SEO Keywords{" "}
+                          <small className="text-muted">(comma separated)</small>
+                        </label>
                       </div>
                     </Col>
                   </Row>

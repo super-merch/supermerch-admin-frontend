@@ -380,6 +380,7 @@ const OrderDetail = () => {
             const formData = new FormData();
             formData.append("proof", proofFile);
             formData.append("adminNotes", proofNotes);
+            formData.append("orderId", order.id || order._id);
 
             const response = await axios.post(
                 `/api/admin/orders/items/${selectedProofItem.id}/proofs`,

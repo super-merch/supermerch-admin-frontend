@@ -132,7 +132,7 @@ const ProductMaster = () => {
         return () => clearTimeout(timer);
     }, [categorySearch, fetchCategories]);
 
-    // ── Fetch products ───────────────────────────────────────
+    // ── Fetch products (category-first search) ────────────────
     const fetchProducts = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -144,11 +144,31 @@ const ProductMaster = () => {
             if (supplierFilter) params.supplier = supplierFilter;
             if (categoryFilter) params.product_type_ids = categoryFilter;
 
-            // Use search endpoint when there's a search term
             let endpoint = `${apiUrl}/api/client-products`;
+
             if (query) {
-                endpoint = `${apiUrl}/api/client-products/search`;
-                params.searchTerm = query;
+                // Category-first search: check if query matches any subcategories
+                let matchedCategoryId = null;
+                try {
+                    const catRes = await axios.get(`${apiUrl}/api/listbyparams/sub-categories`, {
+                        params: { search: query, limit: 1, isActive: true },
+                    });
+                    const catList = catRes.data?.data || catRes.data || [];
+                    if (Array.isArray(catList) && catList.length > 0) {
+                        matchedCategoryId = catList[0]._promodataTypeId || catList[0].id || catList[0]._id;
+                    }
+                } catch (catErr) {
+                    console.warn("Category search failed, falling back to product search:", catErr);
+                }
+
+                if (matchedCategoryId && !categoryFilter) {
+                    // Found a matching category — filter products by that category
+                    params.product_type_ids = matchedCategoryId;
+                } else {
+                    // No matching category — fall back to product text search
+                    endpoint = `${apiUrl}/api/client-products/search`;
+                    params.searchTerm = query;
+                }
             }
 
             const res = await axios.get(endpoint, { params });
@@ -157,16 +177,14 @@ const ProductMaster = () => {
             if (resData?.success === false || resData?.error) {
                 toast.error(resData.error || "Failed to load products");
                 setData([]);
-                // Don't reset totalRows on error — keeps pagination intact
                 return;
             }
 
             if (resData?.data) {
                 setData(resData.data);
-                
-                // Use the total count from the backend response
+
                 const count = resData.pagination?.totalCount ?? resData.item_count ?? resData.totalRows ?? resData.data.length;
-                
+
                 if (count > 0 || pageNo === 1) {
                     setTotalRows(count);
                 }
@@ -178,7 +196,6 @@ const ProductMaster = () => {
             console.error("Error fetching products:", err);
             toast.error("Failed to load products");
             setData([]);
-            // Don't reset totalRows on network error — keeps pagination intact
         } finally {
             setIsLoading(false);
         }

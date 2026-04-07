@@ -208,7 +208,7 @@ const WebsiteUsers = () => {
           {row.profileImage ? (
             <img
               src={`${apiUrl}/${row.profileImage}`}
-              alt={row.firstName}
+              alt={row.name}
               className="rounded-circle me-2"
               style={{ width: "32px", height: "32px", objectFit: "cover" }}
             />
@@ -218,12 +218,12 @@ const WebsiteUsers = () => {
               style={{ width: "32px", height: "32px" }}
             >
               <span className="text-primary fw-medium">
-                {row.firstName?.charAt(0)}{row.lastName?.charAt(0)}
+                {row.name?.charAt(0)}{row.lastName?.charAt(0)}
               </span>
             </div>
           )}
           <div>
-            <p className="mb-0 fw-medium">{row.firstName} {row.lastName}</p>
+            <p className="mb-0 fw-medium">{row.name} {row.lastName}</p>
           </div>
         </div>
       ),
@@ -285,7 +285,7 @@ const WebsiteUsers = () => {
           <div className="d-flex gap-2">
             <button
               className="btn btn-sm btn-info view-item-btn"
-              onClick={() => handleViewUser(row.id)}
+              onClick={() => handleViewUser(row._id)}
               disabled={isLoading}
             >
               View
@@ -293,7 +293,7 @@ const WebsiteUsers = () => {
             {currentPagePermissions?.edit && (
               <button
                 className={`btn btn-sm ${row.isActive ? 'btn-warning' : 'btn-success'}`}
-                onClick={() => handleToggleStatus(row.id, !row.isActive)}
+                onClick={() => handleToggleStatus(row._id, !row.isActive)}
                 disabled={isLoading}
               >
                 {row.isActive ? 'Deactivate' : 'Activate'}
@@ -469,17 +469,17 @@ const WebsiteUsers = () => {
 
   // Fetch orders when selectedUser, pagination or search changes
   useEffect(() => {
-    if (selectedUser?.id && showDetails) {
-      fetchUserOrders(selectedUser.id);
+    if (selectedUser?._id && showDetails) {
+      fetchUserOrders(selectedUser._id);
     }
-  }, [selectedUser?.id, showDetails, fetchUserOrders]);
+  }, [selectedUser?._id, showDetails, fetchUserOrders]);
 
   // Fetch wishlist when selectedUser, pagination or search changes
   useEffect(() => {
-    if (selectedUser?.id && showDetails) {
-      fetchUserWishlist(selectedUser.id);
+    if (selectedUser?._id && showDetails) {
+      fetchUserWishlist(selectedUser._id);
     }
-  }, [selectedUser?.id, showDetails, fetchUserWishlist]);
+  }, [selectedUser?._id, showDetails, fetchUserWishlist]);
 
   // Toggle user status
   const handleToggleStatus = async (userId, newStatus) => {
@@ -617,7 +617,7 @@ const WebsiteUsers = () => {
                 {selectedUser.profileImage ? (
                   <img
                     src={`${apiUrl}/${selectedUser.profileImage}`}
-                    alt={selectedUser.firstName}
+                    alt={selectedUser.name}
                     className="rounded-circle"
                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
                   />
@@ -627,7 +627,7 @@ const WebsiteUsers = () => {
                     style={{ width: "100px", height: "100px" }}
                   >
                     <span className="text-primary fw-bold fs-1">
-                      {selectedUser.firstName?.charAt(0)}{selectedUser.lastName?.charAt(0)}
+                      {selectedUser.name?.charAt(0)}{selectedUser.lastName?.charAt(0)}
                     </span>
                   </div>
                 )}
@@ -635,7 +635,7 @@ const WebsiteUsers = () => {
               <Col md={10}>
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <h4 className="mb-1">{selectedUser.firstName} {selectedUser.lastName}</h4>
+                    <h4 className="mb-1">{selectedUser.name} {selectedUser.lastName}</h4>
                     <p className="text-muted mb-2">{selectedUser.email}</p>
                     <div className="d-flex gap-3">
                       <span><i className="ri-phone-line me-1"></i> {selectedUser.phone || "Not provided"}</span>
@@ -830,7 +830,7 @@ const WebsiteUsers = () => {
   };
 
   const exportColumns = [
-    { header: "First Name", key: "firstName" },
+    { header: "Name", key: "name" },
     { header: "Last Name", key: "lastName" },
     { header: "Email", key: "email" },
     { header: "Phone", key: "phone" },
