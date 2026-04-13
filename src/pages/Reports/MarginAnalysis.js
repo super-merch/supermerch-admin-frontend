@@ -68,7 +68,7 @@ const MarginAnalysis = () => {
             <Col md={6}>
               <Card className="card-animate">
                 <CardBody>
-                  <p className="text-muted mb-1">Total Revenue (Paid Orders)</p>
+                  <p className="text-muted mb-1">Total Revenue</p>
                   <h4 className="mb-0">{fmt(overall.totalRevenue)}</h4>
                 </CardBody>
               </Card>
@@ -76,7 +76,7 @@ const MarginAnalysis = () => {
             <Col md={6}>
               <Card className="card-animate">
                 <CardBody>
-                  <p className="text-muted mb-1">Total Orders (Paid)</p>
+                  <p className="text-muted mb-1">Total Orders</p>
                   <h4 className="mb-0">{overall.totalOrders}</h4>
                 </CardBody>
               </Card>

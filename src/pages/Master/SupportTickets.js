@@ -584,7 +584,7 @@ const SupportTickets = () => {
                             <Card>
                                 <CardHeader>
                                     <Row className="g-3 align-items-center">
-                                        <Col md={3}>
+                                        <Col xl={3} lg={4} md={6}>
                                             <div className="search-box">
                                                 <Input
                                                     type="text"
@@ -597,7 +597,7 @@ const SupportTickets = () => {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </Col>
-                                        <Col md={2}>
+                                        <Col xl={2} lg={4} md={6}>
                                             <Input
                                                 type="select"
                                                 value={statusFilter}
@@ -624,7 +624,7 @@ const SupportTickets = () => {
                                                 </option>
                                             </Input>
                                         </Col>
-                                        <Col md={2}>
+                                        <Col xl={2} lg={4} md={6}>
                                             <Input
                                                 type="select"
                                                 value={categoryFilter}
@@ -657,7 +657,7 @@ const SupportTickets = () => {
                                                 </option>
                                             </Input>
                                         </Col>
-                                        <Col md={2}>
+                                        <Col xl={2} lg={4} md={6}>
                                             <Input
                                                 type="date"
                                                 placeholder="From Date"
@@ -667,7 +667,7 @@ const SupportTickets = () => {
                                                 }
                                             />
                                         </Col>
-                                        <Col md={2}>
+                                        <Col xl={2} lg={4} md={6}>
                                             <Input
                                                 type="date"
                                                 placeholder="To Date"
@@ -677,7 +677,12 @@ const SupportTickets = () => {
                                                 }
                                             />
                                         </Col>
-                                        <Col md={1} className="d-flex align-items-center gap-2">
+                                        <Col
+                                            xl="auto"
+                                            lg={4}
+                                            md={6}
+                                            className="d-flex align-items-center justify-content-xl-end flex-wrap gap-2"
+                                        >
                                             <ExportButtons
                                                 data={tickets}
                                                 columns={exportColumns}

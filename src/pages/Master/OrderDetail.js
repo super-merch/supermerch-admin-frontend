@@ -436,7 +436,10 @@ const OrderDetail = () => {
             );
 
             if (response.data.success) {
-                setItemProofs(response.data.data);
+                const proofs = Array.isArray(response.data.data)
+                    ? response.data.data
+                    : response.data.data?.proofs || [];
+                setItemProofs({ proofs });
             }
         } catch (error) {
             console.error("Error fetching proofs:", error);
@@ -587,6 +590,8 @@ const OrderDetail = () => {
             url = item.product.images[0].imageUrl;
         } else if (item.itemType === "DEAL" && item.deal?.bannerImage) {
             url = item.deal.bannerImage;
+        } else if (item.image) {
+            url = item.image;
         }
 
         if (!url) return null;
@@ -1999,7 +2004,7 @@ const OrderDetail = () => {
                                             {order.shippingAddress?.lastName}
                                         </strong>
                                         <br />
-                                        {order.shippingAddress?.addressLine1}
+                                        {order.shippingAddress?.addressLine1 || order.shippingAddress?.addressLine}
                                         {order.shippingAddress
                                             ?.addressLine2 && (
                                             <>
@@ -2010,14 +2015,20 @@ const OrderDetail = () => {
                                                 }
                                             </>
                                         )}
+                                        {order.shippingAddress?.companyName && (
+                                            <>
+                                                <br />
+                                                {order.shippingAddress.companyName}
+                                            </>
+                                        )}
                                         <br />
-                                        {order.shippingAddress?.cityName},{" "}
-                                        {order.shippingAddress?.stateName}
+                                        {order.shippingAddress?.cityName || order.shippingAddress?.city},{" "}
+                                        {order.shippingAddress?.stateName || order.shippingAddress?.state}
                                         <br />
-                                        {order.shippingAddress?.countryName}
+                                        {order.shippingAddress?.countryName || order.shippingAddress?.country}
                                         <br />
                                         <strong>
-                                            {order.shippingAddress?.pincode}
+                                            {order.shippingAddress?.pincode || order.shippingAddress?.postalCode}
                                         </strong>
                                     </address>
                                 </CardBody>
@@ -2767,7 +2778,7 @@ const OrderDetail = () => {
                         <div className="proof-history">
                             {itemProofs.proofs?.map((proof, index) => (
                                 <div
-                                    key={proof.id}
+                                    key={proof.id || proof._id}
                                     className={`mb-4 p-3 border rounded ${
                                         proof.status === "SUPERSEDED"
                                             ? "bg-light opacity-75"
@@ -2828,7 +2839,7 @@ const OrderDetail = () => {
                                     {/* Proof file preview/link */}
                                     <div className="mb-3">
                                         <a
-                                            href={`${apiUrl}${proof.proofFileUrl}`}
+                                            href={proof.proofFileUrl?.startsWith("http") ? proof.proofFileUrl : `${apiUrl}${proof.proofFileUrl}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="btn btn-outline-primary btn-sm"
@@ -2883,9 +2894,10 @@ const OrderDetail = () => {
                                                     {proof.comments.map(
                                                         (comment) => (
                                                             <div
-                                                                key={comment.id}
+                                                                key={comment.id || comment._id}
                                                                 className={`mb-2 p-2 rounded ${
-                                                                    comment.authorType ===
+                                                                    (comment.authorType ||
+                                                                        comment.senderType) ===
                                                                     "ADMIN"
                                                                         ? "bg-primary bg-opacity-10 ms-4"
                                                                         : "bg-light me-4"
@@ -2894,7 +2906,9 @@ const OrderDetail = () => {
                                                                 <div className="d-flex justify-content-between">
                                                                     <small className="fw-medium">
                                                                         {comment.authorName ||
-                                                                            (comment.authorType ===
+                                                                            comment.senderName ||
+                                                                            ((comment.authorType ||
+                                                                                comment.senderType) ===
                                                                             "ADMIN"
                                                                                 ? "Admin"
                                                                                 : "Customer")}
@@ -2920,7 +2934,7 @@ const OrderDetail = () => {
                                                                 </p>
                                                                 {comment.attachmentUrl && (
                                                                     <a
-                                                                        href={`${apiUrl}${comment.attachmentUrl}`}
+                                                                        href={comment.attachmentUrl?.startsWith("http") ? comment.attachmentUrl : `${apiUrl}${comment.attachmentUrl}`}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="small"
@@ -2953,7 +2967,8 @@ const OrderDetail = () => {
                                                     onKeyPress={(e) =>
                                                         e.key === "Enter" &&
                                                         handleAddProofComment(
-                                                            proof.id
+                                                            proof.id ||
+                                                                proof._id
                                                         )
                                                     }
                                                 />
@@ -2963,7 +2978,8 @@ const OrderDetail = () => {
                                                 size="sm"
                                                 onClick={() =>
                                                     handleAddProofComment(
-                                                        proof.id
+                                                        proof.id ||
+                                                            proof._id
                                                     )
                                                 }
                                                 disabled={

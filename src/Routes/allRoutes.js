@@ -39,6 +39,7 @@ import BankHolidays from "../pages/Master/BankHolidays";
 import WebsiteUsers from "../pages/Master/WebsiteUsers";
 import Orders from "../pages/Master/Orders";
 import OrderDetail from "../pages/Master/OrderDetail";
+import CreateOrder from "../pages/Master/CreateOrder";
 // VatMaster removed (dead weight)
 // LogisticMaster removed
 import CouponMaster from "../pages/Master/CouponMaster";
@@ -132,6 +133,7 @@ const authProtectedRoutes = [
     { path: "/bank-holidays", component: <BankHolidays /> },
     { path: "/website-users", component: <WebsiteUsers /> },
     { path: "/orders", component: <Orders /> },
+    { path: "/orders/create", component: <CreateOrder /> },
     { path: "/orders/:id", component: <OrderDetail /> },
     // logistic-master route removed
     { path: "/coupon-master", component: <CouponMaster /> },

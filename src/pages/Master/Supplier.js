@@ -34,6 +34,12 @@ import {
   getSupplierDiscounts,
   addSupplierDiscount,
 } from "../../functions/Pricing/discountFunc";
+import {
+  getSupplierLeadTimes,
+  saveSupplierLeadTime,
+  deleteSupplierLeadTime,
+  getPromodataLeadTimeDefaults,
+} from "../../functions/Pricing/leadTimeFunc";
 
 const Supplier = () => {
   const { adminData } = useContext(AuthContext);
@@ -79,11 +85,14 @@ const Supplier = () => {
   const [referenceModal, setReferenceModal] = useState(false);
   const [referenceData, setReferenceData] = useState(null);
 
-  // ── Inline margin/discount states ──
+  // ── Inline margin/discount/lead-time states ──
   const [marginMap, setMarginMap] = useState({});       // { supplierId: margin% }
   const [discountMap, setDiscountMap] = useState({});    // { supplierId: discount% }
   const [marginInputs, setMarginInputs] = useState({});
   const [discountInputs, setDiscountInputs] = useState({});
+  const [leadTimeMap, setLeadTimeMap] = useState({});       // { supplierId: leadTime }
+  const [leadTimeInputs, setLeadTimeInputs] = useState({});
+  const [promodataLeadTimes, setPromodataLeadTimes] = useState({}); // defaults from promodata
 
   const {currentPagePermissions} = useContext(MenuContext);
 
@@ -173,6 +182,45 @@ const Supplier = () => {
         );
       },
     },
+    {
+      name: "Lead Time",
+      width: "250px",
+      cell: (row) => {
+        const sid = row._id;
+        const existing = leadTimeMap[sid];
+        const promoDefault = promodataLeadTimes[sid];
+        return (
+          <div className="d-flex flex-column gap-1">
+            <div className="d-flex align-items-center gap-1">
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                style={{ width: 130 }}
+                placeholder={promoDefault || "e.g. 5-7 days"}
+                value={leadTimeInputs[sid] ?? ""}
+                onChange={(e) =>
+                  setLeadTimeInputs((prev) => ({ ...prev, [sid]: e.target.value }))
+                }
+              />
+              <Button color="success" size="sm" className="btn-icon" onClick={() => handleLeadTimeSave(sid)} title="Save">
+                <i className="ri-save-line"></i>
+              </Button>
+              {existing && (
+                <Button color="soft-danger" size="sm" className="btn-icon" onClick={() => handleLeadTimeDelete(sid)} title="Remove">
+                  <i className="ri-delete-bin-line"></i>
+                </Button>
+              )}
+            </div>
+            {existing && (
+              <small className="text-muted">Current: <strong>{existing}</strong></small>
+            )}
+            {!existing && promoDefault && (
+              <small className="text-info">Promodata: {promoDefault}</small>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   const fetchSupplierMaster = useCallback(async () => {
@@ -249,10 +297,28 @@ const Supplier = () => {
     fetchSupplierMaster();
   }, [fetchSupplierMaster]);
 
+  const fetchLeadTimes = useCallback(async () => {
+    try {
+      const res = await getSupplierLeadTimes({ limit: 10000 });
+      const list = res.data?.data || [];
+      const ltMap = {};
+      const ltInputs = {};
+      list.forEach((item) => {
+        ltMap[item.supplierId] = item.leadTime;
+        ltInputs[item.supplierId] = item.leadTime;
+      });
+      setLeadTimeMap(ltMap);
+      setLeadTimeInputs(ltInputs);
+    } catch (err) {
+      console.error("Error fetching supplier lead times:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchMargins();
     fetchDiscounts();
-  }, [fetchMargins, fetchDiscounts]);
+    fetchLeadTimes();
+  }, [fetchMargins, fetchDiscounts, fetchLeadTimes]);
 
   // ── Inline margin/discount handlers ──
   const handleMarginSave = async (supplierId) => {
@@ -301,6 +367,65 @@ const Supplier = () => {
       toast.error("Failed to save discount");
     }
   };
+
+  // ── Lead time handlers ──
+  const handleLeadTimeSave = async (supplierId) => {
+    const val = (leadTimeInputs[supplierId] || "").trim();
+    if (!val) {
+      toast.error("Enter a valid lead time");
+      return;
+    }
+    try {
+      const res = await saveSupplierLeadTime({ supplierId, leadTime: val });
+      if (res.data?.success !== false) {
+        toast.success("Lead time saved");
+        setLeadTimeMap((prev) => ({ ...prev, [supplierId]: val }));
+      }
+    } catch (err) {
+      toast.error("Failed to save lead time");
+    }
+  };
+
+  const handleLeadTimeDelete = async (supplierId) => {
+    try {
+      const res = await deleteSupplierLeadTime(supplierId);
+      if (res.data?.success !== false) {
+        toast.success("Lead time removed");
+        setLeadTimeMap((prev) => { const n = { ...prev }; delete n[supplierId]; return n; });
+        setLeadTimeInputs((prev) => { const n = { ...prev }; delete n[supplierId]; return n; });
+      }
+    } catch (err) {
+      toast.error("Failed to delete lead time");
+    }
+  };
+
+  // ── Fetch promodata lead time defaults when supplier data loads ──
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+    const ids = data.map((s) => s._id).filter(Boolean).join(",");
+    if (!ids) return;
+    const fetchDefaults = async () => {
+      try {
+        const res = await getPromodataLeadTimeDefaults(ids);
+        if (res.data?.success) {
+          setPromodataLeadTimes(res.data.data || {});
+          // Pre-fill inputs with promodata defaults where admin hasn't set a custom value
+          setLeadTimeInputs((prev) => {
+            const updated = { ...prev };
+            Object.entries(res.data.data || {}).forEach(([sid, lt]) => {
+              if (!updated[sid] && !leadTimeMap[sid]) {
+                updated[sid] = lt;
+              }
+            });
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching promodata lead time defaults:", err);
+      }
+    };
+    fetchDefaults();
+  }, [data]);
 
   // ── Export columns & fetchAll for ExportButtons ──
   const exportColumns = [

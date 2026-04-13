@@ -414,7 +414,15 @@ const Orders = () => {
       <div className="page-content">
         {isLoading && <LoadingOverlay />}
         <Container fluid>
-          <BreadCrumb maintitle="Master" title="Orders" pageTitle="Master" />
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <BreadCrumb maintitle="Master" title="Orders" pageTitle="Master" />
+            <Button
+              color="success"
+              onClick={() => navigate("/orders/create")}
+            >
+              <i className="ri-add-line me-1"></i>Create Order
+            </Button>
+          </div>
 
           {/* Stats Cards */}
           <Row className="mb-4">
