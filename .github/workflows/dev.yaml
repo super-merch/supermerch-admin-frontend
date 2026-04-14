@@ -1,37 +1,27 @@
-name: Deploy React Admin via FTP
+name: Deploy Frontend/Admin Build
 
 on:
-    push:
-        branches:
-            - redacted
+  push:
+    branches:
+      - production
 
 jobs:
-    deploy-admin:
-        runs-on: ubuntu-latest
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+      - name: Deploy Build via rsync
+        run: |
+          sudo apt-get update && sudo apt-get install -y rsync sshpass
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 16.15.0
-
-            - name: Install dependencies
-              run: npm install --legacy-peer-deps
-
-            - name: Build React project
-              run: CI=false npm run build
-
-            - name: Deploy React files via SFTP
-              uses: appleboy/scp-action@v0.1.7
-              with:
-                  host: ${{ secrets.FTP_SERVER }}
-                  username: ${{ secrets.SSH_USER }}
-                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: 22
-                  source: "./build/*"
-                  target: "/home/${{ secrets.FTP_USERNAME_TEST }}/public_html/out/admin/"
-                  overwrite: true
-                  rm: false
+          sshpass -p "${{ secrets.SSH_PASSWORD_TEST }}" rsync -avz \
+            --no-perms \
+            --no-owner \
+            --no-group \
+            --omit-dir-times \
+            --chmod=D755,F644 \
+            -e "ssh -p 22 -o StrictHostKeyChecking=no" \
+            ./build/ ${{ secrets.SSH_USER_TEST }}@${{ secrets.SSH_HOST_TEST }}:/home/${{ secrets.FTP_USERNAME_TEST }}/public_html/

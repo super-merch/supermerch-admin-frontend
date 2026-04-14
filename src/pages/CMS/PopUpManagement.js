@@ -289,7 +289,7 @@ const PopUpManagement = () => {
                     </div>
                   </Col>
                 </Row>
-                <FormsFooter isLoading={isLoading} updateForm={updateForm} handleClose={handleList} />
+                <FormsFooter handleSubmit={handleSubmit} handleSubmitCancel={handleList} />
               </Form>
             </div>
           </CardBody>
@@ -310,8 +310,8 @@ const PopUpManagement = () => {
                   <h5 className="card-title mb-0">Pop-Ups</h5>
                   <div className="d-flex gap-2">
                     <Input bsSize="sm" placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: 200 }} />
-                    <button className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
-                      <i className="ri-add-line me-1"></i>Add Pop-Up
+                    <button className="btn btn-success btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
+                      <i className="ri-add-line me-1"></i>Add
                     </button>
                   </div>
                 </CardHeader>

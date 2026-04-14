@@ -215,9 +215,8 @@ const PartnerBrands = () => {
                   </Col>
                 </Row>
                 <FormsFooter
-                  isLoading={isLoading}
-                  updateForm={updateForm}
-                  handleClose={resetForm}
+                  handleSubmit={handleSubmit}
+                  handleSubmitCancel={resetForm}
                 />
               </Form>
             </div>
@@ -270,13 +269,13 @@ const PartnerBrands = () => {
                       style={{ width: 200 }}
                     />
                     <button
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-success btn-sm"
                       onClick={() => {
                         resetForm();
                         setShowForm(true);
                       }}
                     >
-                      <i className="ri-add-line me-1"></i>Add Brand
+                      <i className="ri-add-line me-1"></i>Add
                     </button>
                   </div>
                 </CardHeader>
