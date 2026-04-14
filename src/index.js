@@ -10,7 +10,7 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Provider store={configureStore({})}>
     <React.Fragment>
-      <BrowserRouter basename="/admin">
+      <BrowserRouter>
         <App />
       </BrowserRouter>
     </React.Fragment>

@@ -52,7 +52,7 @@ axios.interceptors.response.use(
     ) {
       localStorage.removeItem("aToken");
       localStorage.removeItem("_id");
-      window.location.replace("/admin");
+      window.location.replace("/");
     }
     // Normalize _id → id in response data
     if (response.data && response.data.data) {
