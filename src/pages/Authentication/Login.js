@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import withRouter from "../../Components/Common/withRouter";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
-import logo from "../../assets/images/image.png";
+import logo from "../../assets/images/logo.png";
 import { MenuContext } from "../../context/MenuContext";
 
 const initialState = {
@@ -31,6 +31,7 @@ const Login = () => {
     const [formErrors, setFormErrors] = useState({});
     const [isSubmit, setIsSubmit] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [errEmail, setErrEmail] = useState(false);
     const [errPassword, setErrPassword] = useState(false);
 
@@ -118,7 +119,7 @@ const Login = () => {
             if (response.data.success) {
                 localStorage.setItem("aToken", response.data.token);
                 setAdminData({ email: response.data.email });
-                fetchMenus();
+                await fetchMenus();
                 navigate("/dashboard");
                 toast.success("Login successful!");
             } else {
@@ -292,6 +293,134 @@ const Login = () => {
 
     document.title = `Sign in | Super Merch`;
 
+    const pageStyles = {
+        wrapper: {
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "32px 16px",
+            background:
+                "linear-gradient(135deg, #f7f9ff 0%, #eef3ff 52%, #f7fbff 100%)",
+        },
+        card: {
+            width: "100%",
+            maxWidth: "470px",
+            backgroundColor: "#ffffff",
+            borderRadius: "18px",
+            boxShadow: "0 24px 60px rgba(15, 23, 42, 0.12)",
+            padding: "36px 28px 34px",
+        },
+        logoWrap: {
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "18px",
+        },
+        logo: {
+            width: "100%",
+            maxWidth: "250px",
+            height: "auto",
+            objectFit: "contain",
+        },
+        title: {
+            fontSize: "34px",
+            lineHeight: 1.1,
+            fontWeight: 700,
+            color: "#2f6df6",
+            textAlign: "center",
+            marginBottom: "6px",
+        },
+        subtitle: {
+            textAlign: "center",
+            color: "#8a94a6",
+            fontSize: "14px",
+            marginBottom: "26px",
+        },
+        label: {
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#3b4558",
+            marginBottom: "10px",
+        },
+        input: {
+            width: "100%",
+            borderRadius: "10px",
+            border: "1px solid #d7dce6",
+            padding: "14px 16px",
+            fontSize: "15px",
+            color: "#1f2937",
+            backgroundColor: "#ffffff",
+            outline: "none",
+            boxShadow: "none",
+            transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+        },
+        inputFocus: {
+            borderColor: "#2f6df6",
+            boxShadow: "0 0 0 3px rgba(47, 109, 246, 0.14)",
+        },
+        passwordWrap: {
+            position: "relative",
+        },
+        passwordInput: {
+            width: "100%",
+            borderRadius: "10px",
+            border: "1px solid #d7dce6",
+            padding: "14px 48px 14px 16px",
+            fontSize: "15px",
+            color: "#1f2937",
+            backgroundColor: "#ffffff",
+            outline: "none",
+            boxShadow: "none",
+            transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+        },
+        eyeButton: {
+            position: "absolute",
+            top: "50%",
+            right: "12px",
+            transform: "translateY(-50%)",
+            border: "none",
+            background: "transparent",
+            color: "#7a869a",
+            padding: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        rememberRow: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginTop: "18px",
+        },
+        checkbox: {
+            width: "16px",
+            height: "16px",
+            accentColor: "#2f6df6",
+        },
+        rememberLabel: {
+            fontSize: "14px",
+            color: "#64748b",
+            userSelect: "none",
+        },
+        submitButton: {
+            width: "100%",
+            marginTop: "24px",
+            padding: "15px 18px",
+            border: "none",
+            borderRadius: "10px",
+            background: "linear-gradient(90deg, #2f6df6 0%, #2355db 100%)",
+            color: "#ffffff",
+            fontSize: "16px",
+            fontWeight: 600,
+            boxShadow: "0 10px 22px rgba(35, 85, 219, 0.28)",
+        },
+        errorText: {
+            marginTop: "8px",
+            color: "#dc2626",
+            fontSize: "13px",
+        },
+    };
+
     // Render forgot password form based on current step
     const renderForgotPasswordForm = () => {
         switch (forgotPasswordStep) {
@@ -348,18 +477,20 @@ const Login = () => {
                             </div>
                             <div className="mt-3 text-center">
                                 <p className="mb-0">
-                                    <a
-                                        href="#"
-                                        style={{ color: "#f3b11c" }}
-                                        className="fw-medium"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleBackToLogin();
+                                    <button
+                                        type="button"
+                                        style={{
+                                            color: "#f3b11c",
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: 0,
                                         }}
+                                        className="fw-medium"
+                                        onClick={handleBackToLogin}
                                         disabled={isSendOtpLoading}
                                     >
                                         Back to Login
-                                    </a>
+                                    </button>
                                 </p>
                             </div>
                         </div>
@@ -458,42 +589,46 @@ const Login = () => {
                             </div>
                             <div className="mt-3 d-flex justify-content-between">
                                 <p className="mb-0">
-                                    <a
-                                        href="#"
+                                    <button
+                                        type="button"
                                         className="fw-medium text-white"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            setForgotPasswordStep(1);
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: 0,
                                         }}
+                                        onClick={() => setForgotPasswordStep(1)}
                                         disabled={isResetPasswordLoading}
                                     >
                                         Back
-                                    </a>
+                                    </button>
                                 </p>
                                 <p className="mb-0">
-                                    <a
-                                        href="#"
+                                    <button
+                                        type="button"
                                         className={`fw-medium ${
                                             otpResendDisabled ||
                                             isResendOtpLoading
                                                 ? "text-muted"
                                                 : "text-white"
                                         }`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: 0,
+                                            cursor:
+                                                otpResendDisabled ||
+                                                isResendOtpLoading
+                                                    ? "default"
+                                                    : "pointer",
+                                        }}
+                                        onClick={() => {
                                             if (
                                                 !otpResendDisabled &&
                                                 !isResendOtpLoading
                                             ) {
                                                 handleResendOTP();
                                             }
-                                        }}
-                                        style={{
-                                            cursor:
-                                                otpResendDisabled ||
-                                                isResendOtpLoading
-                                                    ? "default"
-                                                    : "pointer",
                                         }}
                                     >
                                         {isResendOtpLoading ? (
@@ -508,7 +643,7 @@ const Login = () => {
                                         ) : (
                                             "Resend OTP"
                                         )}
-                                    </a>
+                                    </button>
                                 </p>
                             </div>
                         </div>
@@ -520,184 +655,126 @@ const Login = () => {
     };
 
     return (
-        <div className="auth-wrapper d-flex" style={{ height: "100vh" }}>
-            <div
-                className="left-panel d-flex align-items-center justify-content-center"
-                style={{
-                    backgroundColor: "#00124e",
-                    width: "50%",
-                    height: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
-                <img src={logo} alt="login" height={130} />
-            </div>
-            <div
-                className="right-panel d-flex align-items-center justify-content-center"
-                style={{
-                    width: "50%",
-                    backgroundColor: "#f3b11c",
-                    height: "100vh",
-                }}
-            >
-                <Container>
-                    <Row className="justify-content-center">
-                        <Col md={8} lg={6} xl={7}>
-                            <Card className="overflow-hidden shadow-2xl">
-                                <CardBody className="p-4" style={{backgroundColor:"#00124e"}}>
-                                    {!forgotPasswordMode ? (
-                                        <>
-                                            <div className="text-center">
-                                                <h2 className="text-white">
-                                                    LOGIN
-                                                </h2>
-                                            </div>
-                                            <Form>
-                                                <div className="p-2 mt-4">
-                                                    <div className="mb-3">
-                                                        <Label
-                                                            htmlFor="email"
-                                                            className="form-label text-white"
-                                                        >
-                                                            Email
-                                                        </Label>
-                                                        <Input
-                                                            onSubmit={login}
-                                                            name="email"
-                                                            className={
-                                                                errEmail &&
-                                                                isSubmit
-                                                                    ? "form-control is-invalid"
-                                                                    : "form-control"
-                                                            }
-                                                            placeholder="Enter email"
-                                                            type="email"
-                                                            onChange={
-                                                                handleChange
-                                                            }
-                                                            value={values.email}
-                                                        />
-                                                        {isSubmit &&
-                                                            formErrors.email && (
-                                                                <p className="text-danger">
-                                                                    {
-                                                                        formErrors.email
-                                                                    }
-                                                                </p>
-                                                            )}
-                                                    </div>
-                                                    <div className="mb-3">
-                                                        <Label
-                                                            className="form-label text-white"
-                                                            htmlFor="password-input"
-                                                        >
-                                                            Password
-                                                        </Label>
-                                                        <div className="position-relative auth-pass-inputgroup mb-3">
-                                                            <Input
-                                                                onSubmit={login}
-                                                                name="password"
-                                                                type={
-                                                                    showPassword
-                                                                        ? "text"
-                                                                        : "password"
-                                                                }
-                                                                className={
-                                                                    errPassword &&
-                                                                    isSubmit
-                                                                        ? "form-control is-invalid"
-                                                                        : "form-control pe-5"
-                                                                }
-                                                                placeholder="Enter Password"
-                                                                onChange={
-                                                                    handleChange
-                                                                }
-                                                                value={
-                                                                    values.password
-                                                                }
-                                                            />
-                                                            <button
-                                                                className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setShowPassword(
-                                                                        !showPassword
-                                                                    )
-                                                                }
-                                                            >
-                                                                {showPassword ? (
-                                                                    <i className="ri-eye-off-fill align-middle"></i>
-                                                                ) : (
-                                                                    <i className="ri-eye-fill align-middle"></i>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                        {isSubmit &&
-                                                            formErrors.password && (
-                                                                <p className="text-danger">
-                                                                    {
-                                                                        formErrors.password
-                                                                    }
-                                                                </p>
-                                                            )}
-                                                        <div className="text-end mb-2">
-                                                            <a
-                                                                style={{color:"#f3b11c"}}
-                                                                className="fw-bold"
-                                                                href="#"
-                                                                onClick={(
-                                                                    e
-                                                                ) => {
-                                                                    e.preventDefault();
-                                                                    setForgotPasswordMode(
-                                                                        true
-                                                                    );
-                                                                }}
-                                                            >
-                                                                Forgot Password?
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-4">
-                                                        <Button
-                                                            type="submit"
-                                                            // color="primary"
-                                                            className="w-100 border-0 fw-bold"
-                                                            onClick={login}
-                                                            disabled={
-                                                                isLoginLoading
-                                                            }
-                                                            style={{backgroundColor:"#f3b11c"}}
-                                                        >
-                                                            {isLoginLoading ? (
-                                                                <>
-                                                                    <span
-                                                                        className="spinner-border spinner-border-sm me-2"
-                                                                        role="status"
-                                                                        aria-hidden="true"
-                                                                    ></span>
-                                                                    Logging
-                                                                    in...
-                                                                </>
-                                                            ) : (
-                                                                "Login"
-                                                            )}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </Form>
-                                        </>
-                                    ) : (
-                                        renderForgotPasswordForm()
-                                    )}
-                                </CardBody>
-                            </Card>
-                        </Col>
-                    </Row>
-                </Container>
-            </div>
+        <div style={pageStyles.wrapper}>
+            <Card style={pageStyles.card} className="border-0">
+                <CardBody className="p-0">
+                    {!forgotPasswordMode ? (
+                        <Form onSubmit={login}>
+                            <div style={pageStyles.logoWrap}>
+                                <img src={logo} alt="Super Merch" style={pageStyles.logo} />
+                            </div>
+
+                            <div className="text-center">
+                                <div style={pageStyles.title}>Login</div>
+                                <div style={pageStyles.subtitle}>
+                                    Welcome back! Please login to continue
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <Label htmlFor="email" style={pageStyles.label}>
+                                    Email Address
+                                </Label>
+                                <Input
+                                    id="email"
+                                    onSubmit={login}
+                                    name="email"
+                                    className={
+                                        errEmail && isSubmit
+                                            ? "form-control is-invalid"
+                                            : "form-control"
+                                    }
+                                    placeholder="Enter your email"
+                                    type="email"
+                                    onChange={handleChange}
+                                    value={values.email}
+                                    style={pageStyles.input}
+                                />
+                                {isSubmit && formErrors.email && (
+                                    <p style={pageStyles.errorText}>
+                                        {formErrors.email}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="mb-3">
+                                <Label htmlFor="password-input" style={pageStyles.label}>
+                                    Password
+                                </Label>
+                                <div style={pageStyles.passwordWrap}>
+                                    <Input
+                                        id="password-input"
+                                        onSubmit={login}
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        className={
+                                            errPassword && isSubmit
+                                                ? "form-control is-invalid"
+                                                : "form-control"
+                                        }
+                                        placeholder="Enter your password"
+                                        onChange={handleChange}
+                                        value={values.password}
+                                        style={pageStyles.passwordInput}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={pageStyles.eyeButton}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        <i className={showPassword ? "ri-eye-off-line fs-5" : "ri-eye-line fs-5"}></i>
+                                    </button>
+                                </div>
+                                {isSubmit && formErrors.password && (
+                                    <p style={pageStyles.errorText}>
+                                        {formErrors.password}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div style={pageStyles.rememberRow}>
+                                <input
+                                    type="checkbox"
+                                    id="rememberMe"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    style={pageStyles.checkbox}
+                                />
+                                <Label
+                                    htmlFor="rememberMe"
+                                    style={pageStyles.rememberLabel}
+                                    className="mb-0"
+                                >
+                                    Remember me
+                                </Label>
+                            </div>
+
+                            <Button
+                                type="submit"
+                                onClick={login}
+                                disabled={isLoginLoading}
+                                style={pageStyles.submitButton}
+                            >
+                                {isLoginLoading ? (
+                                    <>
+                                        <span
+                                            className="spinner-border spinner-border-sm me-2"
+                                            role="status"
+                                            aria-hidden="true"
+                                        ></span>
+                                        Logging in...
+                                    </>
+                                ) : (
+                                    "Login"
+                                )}
+                            </Button>
+                        </Form>
+                    ) : (
+                        renderForgotPasswordForm()
+                    )}
+                </CardBody>
+            </Card>
         </div>
     );
 };
