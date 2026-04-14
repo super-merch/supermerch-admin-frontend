@@ -3,7 +3,7 @@ name: Deploy Frontend/Admin Build
 on:
   push:
     branches:
-      - production
+      - development
 
 jobs:
   deploy-frontend:
