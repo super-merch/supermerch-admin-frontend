@@ -80,6 +80,7 @@ import EmailSubscriptions from "../pages/Users/EmailSubscriptions";
 // Reviews & Notifications (orphaned pages — now wired)
 import ProductReviews from "../pages/Master/ProductReviews";
 import PushNotificationSettings from "../pages/Setup/PushNotificationSettings";
+import XeroIntegration from "../pages/Setup/XeroIntegration";
 import Notifications from "../pages/Master/Notifications";
 
 // Section 3 — CMS, Tags, Reports
@@ -172,6 +173,7 @@ const authProtectedRoutes = [
     { path: "/product-reviews", component: <ProductReviews /> },
     { path: "/push-notification-settings", component: <PushNotificationSettings /> },
     { path: "/notifications", component: <Notifications /> },
+    { path: "/xero-integration", component: <XeroIntegration /> },
 
     // Section 3 — CMS, Tags, Reports
     { path: "/seo-management", component: <SeoManagement /> },
