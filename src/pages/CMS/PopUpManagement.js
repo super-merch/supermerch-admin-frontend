@@ -16,7 +16,6 @@ import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -176,13 +175,136 @@ const PopUpManagement = () => {
 
   document.title = "Pop-Up Management | SuperMerch Admin";
 
+  const handleList = () => {
+    resetForm();
+  };
+
+  const renderForm = () => (
+    <CardBody>
+      <Col xxl={12}>
+        <Card>
+          <CardBody>
+            <div className="live-preview">
+              <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col lg={12}>
+                    <div className="mb-3">
+                      <Label>Title *</Label>
+                      <Input name="title" value={values.title} onChange={handleChange} required />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Type</Label>
+                      <Input type="select" name="type" value={values.type} onChange={handleChange}>
+                        <option value="FIRST_VISIT">First Visit</option>
+                        <option value="EXIT_INTENT">Exit Intent</option>
+                        <option value="TIMED">Timed</option>
+                      </Input>
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Frequency</Label>
+                      <Input type="select" name="displayFrequency" value={values.displayFrequency} onChange={handleChange}>
+                        <option value="ONCE">Once</option>
+                        <option value="EVERY_VISIT">Every Visit</option>
+                        <option value="ONCE_PER_DAY">Once Per Day</option>
+                      </Input>
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Heading</Label>
+                      <Input name="heading" value={values.heading} onChange={handleChange} />
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Coupon Code</Label>
+                      <Input name="couponCode" value={values.couponCode} onChange={handleChange} placeholder="Optional" />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={12}>
+                    <div className="mb-3">
+                      <Label>Description</Label>
+                      <Input type="textarea" name="description" value={values.description} onChange={handleChange} rows={3} />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={12}>
+                    <div className="mb-3">
+                      <Label>Image</Label>
+                      <Input type="file" accept="image/*" onChange={handleImageChange} innerRef={imageRef} />
+                      {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 rounded" style={{ maxHeight: 120 }} />}
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>CTA Text</Label>
+                      <Input name="ctaText" value={values.ctaText} onChange={handleChange} />
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>CTA Link</Label>
+                      <Input name="ctaLink" value={values.ctaLink} onChange={handleChange} />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Start Date</Label>
+                      <Input type="date" name="startDate" value={values.startDate} onChange={handleChange} />
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>End Date</Label>
+                      <Input type="date" name="endDate" value={values.endDate} onChange={handleChange} />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Delay (seconds)</Label>
+                      <Input type="number" name="delaySeconds" value={values.delaySeconds} onChange={handleChange} min={0} />
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3 form-check form-switch mt-4">
+                      <Input type="checkbox" className="form-check-input" name="isActive" checked={values.isActive} onChange={handleChange} />
+                      <Label className="form-check-label">Active</Label>
+                    </div>
+                  </Col>
+                </Row>
+                <FormsFooter isLoading={isLoading} updateForm={updateForm} handleClose={handleList} />
+              </Form>
+            </div>
+          </CardBody>
+        </Card>
+      </Col>
+    </CardBody>
+  );
+
   return (
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
           <BreadCrumb title="Pop-Up Management" pageTitle="CMS" />
           <Row>
-            <Col lg={showForm ? 7 : 12}>
+            <Col lg={12}>
               <Card>
                 <CardHeader className="d-flex align-items-center justify-content-between">
                   <h5 className="card-title mb-0">Pop-Ups</h5>
@@ -193,106 +315,19 @@ const PopUpManagement = () => {
                     </button>
                   </div>
                 </CardHeader>
-                <CardBody>
-                  <LoadingOverlay isLoading={loading}>
-                    <DataTable columns={columns} data={data} pagination paginationServer paginationTotalRows={totalRows} paginationPerPage={perPage}
-                      onChangePage={(p) => setPageNo(p - 1)} onChangeRowsPerPage={(n) => { setPerPage(n); setPageNo(0); }}
-                      customStyles={tableCustomStyles} highlightOnHover striped responsive />
-                  </LoadingOverlay>
-                </CardBody>
+                {showForm || updateForm ? (
+                  renderForm()
+                ) : (
+                  <CardBody>
+                    <LoadingOverlay isLoading={loading}>
+                      <DataTable columns={columns} data={data} pagination paginationServer paginationTotalRows={totalRows} paginationPerPage={perPage}
+                        onChangePage={(p) => setPageNo(p - 1)} onChangeRowsPerPage={(n) => { setPerPage(n); setPageNo(0); }}
+                        customStyles={tableCustomStyles} highlightOnHover striped responsive />
+                    </LoadingOverlay>
+                  </CardBody>
+                )}
               </Card>
             </Col>
-            {showForm && (
-              <Col lg={5}>
-                <Card>
-                  <FormsHeader title={updateForm ? "Edit Pop-Up" : "Add Pop-Up"} handleClose={resetForm} />
-                  <CardBody>
-                    <Form onSubmit={handleSubmit}>
-                      <div className="mb-3">
-                        <Label>Title *</Label>
-                        <Input name="title" value={values.title} onChange={handleChange} required />
-                      </div>
-                      <Row>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>Type</Label>
-                            <Input type="select" name="type" value={values.type} onChange={handleChange}>
-                              <option value="FIRST_VISIT">First Visit</option>
-                              <option value="EXIT_INTENT">Exit Intent</option>
-                              <option value="TIMED">Timed</option>
-                            </Input>
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>Frequency</Label>
-                            <Input type="select" name="displayFrequency" value={values.displayFrequency} onChange={handleChange}>
-                              <option value="ONCE">Once</option>
-                              <option value="EVERY_VISIT">Every Visit</option>
-                              <option value="ONCE_PER_DAY">Once Per Day</option>
-                            </Input>
-                          </div>
-                        </Col>
-                      </Row>
-                      <div className="mb-3">
-                        <Label>Heading</Label>
-                        <Input name="heading" value={values.heading} onChange={handleChange} />
-                      </div>
-                      <div className="mb-3">
-                        <Label>Description</Label>
-                        <Input type="textarea" name="description" value={values.description} onChange={handleChange} rows={3} />
-                      </div>
-                      <div className="mb-3">
-                        <Label>Image</Label>
-                        <Input type="file" accept="image/*" onChange={handleImageChange} innerRef={imageRef} />
-                        {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 rounded" style={{ maxHeight: 120 }} />}
-                      </div>
-                      <Row>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>CTA Text</Label>
-                            <Input name="ctaText" value={values.ctaText} onChange={handleChange} />
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>CTA Link</Label>
-                            <Input name="ctaLink" value={values.ctaLink} onChange={handleChange} />
-                          </div>
-                        </Col>
-                      </Row>
-                      <div className="mb-3">
-                        <Label>Coupon Code</Label>
-                        <Input name="couponCode" value={values.couponCode} onChange={handleChange} placeholder="Optional" />
-                      </div>
-                      <Row>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>Start Date</Label>
-                            <Input type="date" name="startDate" value={values.startDate} onChange={handleChange} />
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div className="mb-3">
-                            <Label>End Date</Label>
-                            <Input type="date" name="endDate" value={values.endDate} onChange={handleChange} />
-                          </div>
-                        </Col>
-                      </Row>
-                      <div className="mb-3">
-                        <Label>Delay (seconds)</Label>
-                        <Input type="number" name="delaySeconds" value={values.delaySeconds} onChange={handleChange} min={0} />
-                      </div>
-                      <div className="mb-3 form-check form-switch">
-                        <Input type="checkbox" className="form-check-input" name="isActive" checked={values.isActive} onChange={handleChange} />
-                        <Label className="form-check-label">Active</Label>
-                      </div>
-                      <FormsFooter isLoading={isLoading} updateForm={updateForm} handleClose={resetForm} />
-                    </Form>
-                  </CardBody>
-                </Card>
-              </Col>
-            )}
           </Row>
         </Container>
       </div>
