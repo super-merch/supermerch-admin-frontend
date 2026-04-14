@@ -1380,7 +1380,7 @@ const ProductMaster = () => {
                                                         <tbody>
                                                             {pg.base_price.price_breaks.map((pb, j) => (
                                                                 <tr key={j}>
-                                                                    <td>{pb.quantity}+</td>
+                                                                    <td>{pb.quantity ?? pb.qty ?? "-"}+</td>
                                                                     <td>A${typeof pb.price === "number" ? pb.price.toFixed(2) : pb.price}</td>
                                                                 </tr>
                                                             ))}
@@ -1415,7 +1415,7 @@ const ProductMaster = () => {
                                                                         <tbody>
                                                                             {add.price_breaks.map((ab, l) => (
                                                                                 <tr key={l}>
-                                                                                    <td>{ab.quantity}+</td>
+                                                                                    <td>{ab.quantity ?? ab.qty ?? "-"}+</td>
                                                                                     <td>A${typeof ab.price === "number" ? ab.price.toFixed(2) : ab.price}</td>
                                                                                 </tr>
                                                                             ))}
