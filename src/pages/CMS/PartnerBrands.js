@@ -16,7 +16,6 @@ import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -138,6 +137,96 @@ const PartnerBrands = () => {
     setUpdateForm(false);
   };
 
+  const renderForm = () => (
+    <CardBody>
+      <Col xxl={12}>
+        <Card>
+          <CardBody>
+            <div className="live-preview">
+              <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Name *</Label>
+                      <Input
+                        name="name"
+                        value={values.name}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Website URL</Label>
+                      <Input
+                        name="websiteUrl"
+                        value={values.websiteUrl}
+                        onChange={handleChange}
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Logo</Label>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        innerRef={imageRef}
+                      />
+                      {imagePreview && (
+                        <img
+                          src={imagePreview}
+                          alt="preview"
+                          className="mt-2 rounded"
+                          style={{ maxHeight: 80 }}
+                        />
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={6}>
+                    <div className="mb-3">
+                      <Label>Sort Order</Label>
+                      <Input
+                        type="number"
+                        name="sortOrder"
+                        value={values.sortOrder}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col lg={12}>
+                    <div className="mb-3 form-check form-switch">
+                      <Input
+                        type="checkbox"
+                        className="form-check-input"
+                        name="isActive"
+                        checked={values.isActive}
+                        onChange={handleChange}
+                      />
+                      <Label className="form-check-label">Active</Label>
+                    </div>
+                  </Col>
+                </Row>
+                <FormsFooter
+                  isLoading={isLoading}
+                  updateForm={updateForm}
+                  handleClose={resetForm}
+                />
+              </Form>
+            </div>
+          </CardBody>
+        </Card>
+      </Col>
+    </CardBody>
+  );
+
   const columns = [
     {
       name: "Logo",
@@ -168,60 +257,58 @@ const PartnerBrands = () => {
         <Container fluid>
           <BreadCrumb title="Partner Brands" pageTitle="CMS" />
           <Row>
-            <Col lg={showForm ? 8 : 12}>
+            <Col xl={12}>
               <Card>
                 <CardHeader className="d-flex align-items-center justify-content-between">
                   <h5 className="card-title mb-0">Partner Brands</h5>
                   <div className="d-flex gap-2">
-                    <Input bsSize="sm" placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: 200 }} />
-                    <button className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
+                    <Input
+                      bsSize="sm"
+                      placeholder="Search..."
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      style={{ width: 200 }}
+                    />
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        resetForm();
+                        setShowForm(true);
+                      }}
+                    >
                       <i className="ri-add-line me-1"></i>Add Brand
                     </button>
                   </div>
                 </CardHeader>
-                <CardBody>
-                  <LoadingOverlay isLoading={loading}>
-                    <DataTable columns={columns} data={data} pagination paginationServer paginationTotalRows={totalRows} paginationPerPage={perPage}
-                      onChangePage={(p) => setPageNo(p - 1)} onChangeRowsPerPage={(n) => { setPerPage(n); setPageNo(0); }}
-                      customStyles={tableCustomStyles} highlightOnHover striped responsive />
-                  </LoadingOverlay>
-                </CardBody>
+                {showForm || updateForm ? (
+                  renderForm()
+                ) : (
+                  <CardBody>
+                    <LoadingOverlay isLoading={loading}>
+                      <DataTable
+                        columns={columns}
+                        data={data}
+                        pagination
+                        paginationServer
+                        paginationTotalRows={totalRows}
+                        paginationPerPage={perPage}
+                        onChangePage={(p) => setPageNo(p - 1)}
+                        onChangeRowsPerPage={(n) => {
+                          setPerPage(n);
+                          setPageNo(0);
+                        }}
+                        customStyles={tableCustomStyles}
+                        highlightOnHover
+                        striped
+                        responsive
+                      />
+                    </LoadingOverlay>
+                  </CardBody>
+                )}
               </Card>
             </Col>
-            {showForm && (
-              <Col lg={4}>
-                <Card>
-                  <FormsHeader title={updateForm ? "Edit Partner Brand" : "Add Partner Brand"} handleClose={resetForm} />
-                  <CardBody>
-                    <Form onSubmit={handleSubmit}>
-                      <div className="mb-3">
-                        <Label>Name *</Label>
-                        <Input name="name" value={values.name} onChange={handleChange} required />
-                      </div>
-                      <div className="mb-3">
-                        <Label>Logo</Label>
-                        <Input type="file" accept="image/*" onChange={handleImageChange} innerRef={imageRef} />
-                        {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 rounded" style={{ maxHeight: 80 }} />}
-                      </div>
-                      <div className="mb-3">
-                        <Label>Website URL</Label>
-                        <Input name="websiteUrl" value={values.websiteUrl} onChange={handleChange} placeholder="https://..." />
-                      </div>
-                      <div className="mb-3">
-                        <Label>Sort Order</Label>
-                        <Input type="number" name="sortOrder" value={values.sortOrder} onChange={handleChange} />
-                      </div>
-                      <div className="mb-3 form-check form-switch">
-                        <Input type="checkbox" className="form-check-input" name="isActive" checked={values.isActive} onChange={handleChange} />
-                        <Label className="form-check-label">Active</Label>
-                      </div>
-                      <FormsFooter isLoading={isLoading} updateForm={updateForm} handleClose={resetForm} />
-                    </Form>
-                  </CardBody>
-                </Card>
-              </Col>
-            )}
           </Row>
+
         </Container>
       </div>
       <DeleteModal show={deleteModal} onDeleteClick={handleDelete} onCloseClick={() => setDeleteModal(false)} />
