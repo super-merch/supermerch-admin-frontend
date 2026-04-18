@@ -14,7 +14,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";

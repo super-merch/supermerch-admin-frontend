@@ -22,14 +22,14 @@ import classnames from "classnames";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+
 
 const apiUrl = config.api.API_URL;
 
@@ -937,23 +937,19 @@ const WebsiteUsers = () => {
               <Card>
                 <CardHeader>
                   {!showDetails && (
-                    <div className="d-flex justify-content-between align-items-center">
-                    <FormsHeader
-                      formName="Website Users"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      setQuery={setSearchTerm}
-                      showForm={false}
-                      updateForm={false}
-                      showAddButton={false}
-                    />
-                    <ExportButtons
-                      data={data}
-                      columns={exportColumns}
-                      fileName="website-users"
-                      fetchAll={fetchAllForExport}
-                    />
-                    </div>
+                    <PageHeader
+                    formName="Website Users"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    setQuery={setSearchTerm}
+                    updateForm={false}
+                    showForm={false}
+                    showAddButton={false}
+                    data={data}
+                    exportColumns={exportColumns}
+                    fileName="website-users"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                   )}
                 </CardHeader>
 

@@ -53,6 +53,9 @@ import ProductMaster from "../pages/Master/ProductMaster";
 // Pricing & Margins
 import GlobalPricing from "../pages/Pricing/GlobalPricing";
 import CategoryMargin from "../pages/Pricing/CategoryMargin";
+import GlobalDiscount from "../pages/Pricing/GlobalDiscount";
+import ProductDiscount from "../pages/Pricing/ProductDiscount";
+import SupplierDiscount from "../pages/Pricing/SupplierDiscount";
 
 // Curation
 import Trending from "../pages/Curation/Trending";
@@ -145,6 +148,9 @@ const authProtectedRoutes = [
     // Pricing & Margins
     { path: "/pricing/global", component: <GlobalPricing /> },
     { path: "/pricing/category-margin", component: <CategoryMargin /> },
+    { path: "/pricing/global-discount", component: <GlobalDiscount /> },
+    { path: "/pricing/product-discount", component: <ProductDiscount /> },
+    { path: "/pricing/supplier-discount", component: <SupplierDiscount /> },
 
     // Curation
     { path: "/curation/trending", component: <Trending /> },

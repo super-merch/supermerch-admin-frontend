@@ -39,6 +39,9 @@ const SM_STATIC_MENUS = [
         menus: [
             { id: "sm-global-pricing", menuName: "Global Pricing", url: "/pricing/global", isActive: true, sequence: 1 },
             { id: "sm-category-margin", menuName: "Category Margin", url: "/pricing/category-margin", isActive: true, sequence: 2 },
+            { id: "sm-global-discount", menuName: "Global Discount", url: "/pricing/global-discount", isActive: true, sequence: 3 },
+            { id: "sm-product-discount", menuName: "Product Discount", url: "/pricing/product-discount", isActive: true, sequence: 4 },
+            { id: "sm-supplier-discount", menuName: "Supplier Discount", url: "/pricing/supplier-discount", isActive: true, sequence: 5 },
         ],
     },
     {

@@ -27,7 +27,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+import PageHeader from "../../Components/Common/PageHeader";
+
 
 const initialState = {
     menugroupName: "",
@@ -402,22 +403,18 @@ const MenuGroup = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <FormsHeader
-                      formName="Menu Group"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={tog_list}
-                      setQuery={setQuery}
-                      showAddButton={isSuperAdmin}
-                    />
-                    <ExportButtons
-                      data={departments}
-                      columns={exportColumns}
-                      fileName="MenuGroups"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Menu Group"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={tog_list}
+                    setQuery={setQuery}
+                    showAddButton={isSuperAdmin}
+                    data={departments}
+                    exportColumns={exportColumns}
+                    fileName="MenuGroups"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 <CardBody>

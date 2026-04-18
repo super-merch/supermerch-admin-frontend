@@ -25,7 +25,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { toast, ToastContainer } from "react-toastify";
 import { AuthContext } from "../../context/AuthContext";
@@ -34,7 +34,7 @@ import { MenuContext } from "../../context/MenuContext";
 import classnames from "classnames";
 import { api } from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+
 
 const initialState = {
     title: "",
@@ -1138,27 +1138,23 @@ const CouponBannerMaster = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                    <FormsHeader
-                                        formName="Coupon Banner"
-                                        filter={filter}
-                                        handleFilter={handleFilter}
-                                        tog_list={() => handleList()}
-                                        setQuery={setQuery}
-                                        initialState={initialState}
-                                        setValues={setValues}
-                                        updateForm={updateForm}
-                                        showForm={showForm}
-                                        setShowForm={setShowForm}
-                                        setUpdateForm={setUpdateForm}
-                                    />
-                                    <ExportButtons
-                                        data={banners}
-                                        columns={exportColumns}
-                                        fileName="coupon-banners"
-                                        fetchAll={fetchAllForExport}
-                                    />
-                                    </div>
+                                    <PageHeader
+                    formName="Coupon Banner"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={() => handleList()}
+                    setQuery={setQuery}
+                    initialState={initialState}
+                    setValues={setValues}
+                    updateForm={updateForm}
+                    showForm={showForm}
+                    setShowForm={setShowForm}
+                    setUpdateForm={setUpdateForm}
+                    data={banners}
+                    exportColumns={exportColumns}
+                    fileName="coupon-banners"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                                 </CardHeader>
 
                                 {showForm || updateForm ? (

@@ -24,7 +24,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -33,7 +33,7 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import { api } from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+
 
 const Deal = () => {
   const { adminData } = useContext(AuthContext);
@@ -83,8 +83,10 @@ const Deal = () => {
   // Dropdown data states
   const [products, setProducts] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedSlotCategory, setSelectedSlotCategory] = useState(null);
+  const [selectedSlotSupplier, setSelectedSlotSupplier] = useState(null);
   const [productSearchLoading, setProductSearchLoading] = useState(false);
   const [productInputValue, setProductInputValue] = useState("");
   const [preloadedProducts, setPreloadedProducts] = useState([]); // For edit mode
@@ -348,7 +350,7 @@ const Deal = () => {
   }, [pageNo, perPage, query]);
 
   // API function to search products by params
-  const searchProductsByParams = async (searchText = "", categoryId = null, page = 1, limit = 50) => {
+  const searchProductsByParams = async (searchText = "", categoryId = null, supplierId = null, page = 1, limit = 50) => {
     try {
       setProductSearchLoading(true);
       const params = {
@@ -356,13 +358,17 @@ const Deal = () => {
         limit,
         isActive: true
       };
-      
+
       if (searchText.trim()) {
         params.search = searchText.trim();
       }
-      
+
       if (categoryId) {
         params.mainCategoryId = categoryId;
+      }
+
+      if (supplierId) {
+        params.supplierId = supplierId;
       }
       
       const response = await axios.get('/api/list-products-by-params-dropdown', {
@@ -390,7 +396,7 @@ const Deal = () => {
       if (selectedSlotCategory && productInputValue) {
         setProductSearchLoading(true);
         try {
-          const products = await searchProductsByParams(productInputValue, selectedSlotCategory);
+          const products = await searchProductsByParams(productInputValue, selectedSlotCategory, selectedSlotSupplier);
           setFilteredProducts(products);
         } catch (error) {
           console.error('Error in debounced search:', error);
@@ -401,7 +407,7 @@ const Deal = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [productInputValue, selectedSlotCategory]);
+  }, [productInputValue, selectedSlotCategory, selectedSlotSupplier]);
 
   // Function to preload specific products by IDs (for edit mode)
   const preloadProductsByIds = async (productIds) => {
@@ -448,13 +454,30 @@ const Deal = () => {
           },
         }
       );
-      
+
       if (response.data.success) {
         setMainCategories(response.data.data);
       }
     } catch (error) {
       console.error("Error fetching main categories:", error);
       toast.error("Failed to fetch main categories");
+    }
+  }, []);
+
+  const fetchSuppliers = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/suppliers', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data.success) {
+        setSuppliers(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      toast.error("Failed to fetch suppliers");
     }
   }, []);
 
@@ -521,10 +544,11 @@ const Deal = () => {
   useEffect(() => {
     fetchProducts();
     fetchMainCategories();
+    fetchSuppliers();
     fetchCustomizationMethods();
     fetchCustomizationPositions();
     fetchDeliveryTypes();
-  }, [fetchProducts, fetchMainCategories, fetchCustomizationMethods, fetchCustomizationPositions, fetchDeliveryTypes]);
+  }, [fetchProducts, fetchMainCategories, fetchSuppliers, fetchCustomizationMethods, fetchCustomizationPositions, fetchDeliveryTypes]);
 
   useEffect(() => {
     fetchDeals();
@@ -606,25 +630,34 @@ const Deal = () => {
   };
 
   // Handle category selection for product slot
-  // Handle category selection for product slot
   const handleSlotCategorySelect = async (categoryId) => {
     setSelectedSlotCategory(categoryId);
     setProductInputValue(""); // Reset search input
-    
+
     if (categoryId) {
-      // Load products for this category
-      const categoryProducts = await searchProductsByParams("", categoryId);
+      // Load products for this category + supplier if selected
+      const categoryProducts = await searchProductsByParams("", categoryId, selectedSlotSupplier);
       setFilteredProducts(categoryProducts);
     } else {
       setFilteredProducts([]);
     }
-    
+
     // Reset selected products when category changes
     setProductSlotForm({
       ...productSlotForm,
       allowedProductIds: []
     });
     setPreloadedProducts([]); // Clear preloaded products
+  };
+
+  const handleSlotSupplierSelect = async (supplierId) => {
+    setSelectedSlotSupplier(supplierId);
+
+    if (selectedSlotCategory) {
+      // Reload products with new supplier filter
+      const products = await searchProductsByParams(productInputValue, selectedSlotCategory, supplierId);
+      setFilteredProducts(products);
+    }
   };
 
   const addProductSlot = async () => {
@@ -821,7 +854,7 @@ const Deal = () => {
         productDetails.push({
           id: product.id,
           name: product.name || product.productName || 'Unknown Product',
-          code: product.productCode || product.code || 'N/A'
+          code: product.code || product.code || 'N/A'
         });
       } else {
         // Still not found - show placeholder
@@ -1269,6 +1302,18 @@ const Deal = () => {
     const errors = validate(values);
     setFormErrors(errors);
     setIsSubmit(true);
+
+    if (Object.keys(errors).length !== 0) {
+      // Show error toast to user
+      toast.error("Please fill all required fields in Basic Information tab");
+
+      // Switch to Basic Information tab
+      setActiveTab("1");
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     if (Object.keys(errors).length === 0) {
       try {
@@ -1800,6 +1845,20 @@ const Deal = () => {
 
                               <Col lg={6}>
                                 <div className="mb-3">
+                                  <Label className="form-label">Filter by Supplier (Optional)</Label>
+                                  <Select
+                                    name="slotSupplier"
+                                    value={suppliers.map(s => ({ value: s.id, label: s.name })).find(option => option.value === selectedSlotSupplier)}
+                                    onChange={(option) => handleSlotSupplierSelect(option?.value)}
+                                    options={suppliers.map(s => ({ value: s.id, label: s.name }))}
+                                    placeholder="All suppliers..."
+                                    isClearable
+                                  />
+                                </div>
+                              </Col>
+
+                              <Col lg={6}>
+                                <div className="mb-3">
                                   <Label className="form-label">Allowed Products</Label>
                                   <Select
                                     isMulti
@@ -1810,7 +1869,7 @@ const Deal = () => {
                                         .filter(product => productSlotForm.allowedProductIds.includes(product.id))
                                         .map(product => ({ 
                                           value: product.id, 
-                                          label: `${product.name} - ${product.productCode}` 
+                                          label: `${product.name} - ${product.code}` 
                                         })),
                                       // Then show filtered products that aren't already in preloaded
                                       ...filteredProducts
@@ -1820,7 +1879,7 @@ const Deal = () => {
                                         )
                                         .map(product => ({ 
                                           value: product.id, 
-                                          label: `${product.name} - ${product.productCode}` 
+                                          label: `${product.name} - ${product.code}` 
                                         }))
                                     ]}
                                     onChange={handleSlotSelectChange}
@@ -1828,13 +1887,13 @@ const Deal = () => {
                                       // Combine preloaded and filtered products for options
                                       ...preloadedProducts.map(product => ({ 
                                         value: product.id, 
-                                        label: `${product.name} - ${product.productCode}` 
+                                        label: `${product.name} - ${product.code}` 
                                       })),
                                       ...filteredProducts
                                         .filter(product => !preloadedProducts.find(p => p.id === product.id))
                                         .map(product => ({ 
                                           value: product.id, 
-                                          label: `${product.name} - ${product.productCode}` 
+                                          label: `${product.name} - ${product.code}` 
                                         }))
                                     ]}
                                     placeholder={selectedSlotCategory ? "Search products..." : "Select category first"}
@@ -1885,20 +1944,29 @@ const Deal = () => {
                                     </Label>
                                   </div>
                                   {productSlotForm.hasCustomization && (
-                                    <div className="form-check mt-2 ms-4">
-                                      <Input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="isFreeCustomization"
-                                        name="isFreeCustomization"
-                                        checked={productSlotForm.isFreeCustomization}
-                                        onChange={handleProductSlotFormChange}
-                                      />
-                                      <Label className="form-check-label text-success" htmlFor="isFreeCustomization">
-                                        <i className="ri-gift-line me-1"></i>
-                                        Free Customization (All customization options for this slot are free)
-                                      </Label>
-                                    </div>
+                                    <>
+                                      <div className="form-check mt-2 ms-4">
+                                        <Input
+                                          className="form-check-input"
+                                          type="checkbox"
+                                          id="isFreeCustomization"
+                                          name="isFreeCustomization"
+                                          checked={productSlotForm.isFreeCustomization}
+                                          onChange={handleProductSlotFormChange}
+                                        />
+                                        <Label className="form-check-label text-success" htmlFor="isFreeCustomization">
+                                          <i className="ri-gift-line me-1"></i>
+                                          Free Customization (All customization options for this slot are free)
+                                        </Label>
+                                      </div>
+                                      <div className="alert alert-info mt-2 mb-0">
+                                        <small>
+                                          <i className="ri-information-line me-1"></i>
+                                          <strong>Note:</strong> After adding this slot, you can configure specific customization methods
+                                          and positions in the "Slot Customization" section below.
+                                        </small>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               </Col>
@@ -1979,15 +2047,23 @@ const Deal = () => {
                                         </small>
                                         {slot.allowedProductIds.map((productId) => {
                                           const product = getProductDetails([productId])[0];
-                                          const availableColors = productColors[`slot_${index}_product_${productId}`] || [];
+                                          const availableColors = productColors[`slot_${index}_product_${productId}`];
                                           const selectedColorIds = selectedColors[`slot_${index}_product_${productId}`] || [];
+                                          const isLoadingColors = availableColors === undefined;
+
                                           return (
                                             <div key={productId} className="border rounded p-2 mb-2 bg-light">
                                               <div className="mb-2">
-                                                <strong>{product?.name || 'Unknown Product'}</strong> - {product?.code || 'N/A'}
+                                                <strong>{product?.name || 'Loading...'}</strong> {product?.code && `- ${product.code}`}
                                               </div>
-                                              
-                                              {availableColors.length > 0 ? (
+
+                                              {isLoadingColors ? (
+                                                <div className="text-muted">
+                                                  <small>
+                                                    <i className="ri-loader-4-line"></i> Loading colors...
+                                                  </small>
+                                                </div>
+                                              ) : availableColors && availableColors.length > 0 ? (
                                                 <div className="mb-2">
                                                   <Label className="form-label small mb-1">
                                                     Select Colors (Only colors with stock shown):
@@ -1998,12 +2074,12 @@ const Deal = () => {
                                                       .filter(color => selectedColorIds.includes(color.id))
                                                       .map(color => ({
                                                         value: color.id,
-                                                        label: color.name
+                                                        label: `${color.name}${color.stockTotal ? ` (Stock: ${color.stockTotal})` : ''}`
                                                       }))}
                                                     onChange={(selected) => handleColorSelection(index, productId, selected)}
                                                     options={availableColors.map(color => ({
                                                       value: color.id,
-                                                      label: color.name
+                                                      label: `${color.name}${color.stockTotal ? ` (Stock: ${color.stockTotal})` : ''}`
                                                     }))}
                                                     placeholder="Select colors for this product..."
                                                     className="react-select-container"
@@ -2011,7 +2087,10 @@ const Deal = () => {
                                                   />
                                                 </div>
                                               ) : (
-                                                <small className="text-muted">No colors with stock available</small>
+                                                <small className="text-warning">
+                                                  <i className="ri-alert-line me-1"></i>
+                                                  No colors with stock available for this product
+                                                </small>
                                               )}
                                               
                                               {selectedColorIds.length > 0 && (
@@ -2477,29 +2556,25 @@ const Deal = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <FormsHeader
-                      formName="Deal"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={handleList}
-                      setQuery={setSearchTerm}
-                      initialState={initialState}
-                      setValues={setValues}
-                      updateForm={updateForm}
-                      showForm={showForm}
-                      setShowForm={setShowForm}
-                      setUpdateForm={setUpdateForm}
-                      openAddForm={openAddForm}
-                      showAddButton={currentPagePermissions?.write}
-                    />
-                    <ExportButtons
-                      data={data}
-                      columns={exportColumns}
-                      fileName="Deals"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Deal"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={handleList}
+                    setQuery={setSearchTerm}
+                    initialState={initialState}
+                    setValues={setValues}
+                    updateForm={updateForm}
+                    showForm={showForm}
+                    setShowForm={setShowForm}
+                    setUpdateForm={setUpdateForm}
+                    showAddButton={currentPagePermissions?.write}
+                    openAddForm={openAddForm}
+                    data={data}
+                    exportColumns={exportColumns}
+                    fileName="Deals"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 {(showForm || updateForm) ? (
