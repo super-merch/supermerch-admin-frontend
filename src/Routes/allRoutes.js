@@ -53,6 +53,9 @@ import ProductMaster from "../pages/Master/ProductMaster";
 // Pricing & Margins
 import GlobalPricing from "../pages/Pricing/GlobalPricing";
 import CategoryMargin from "../pages/Pricing/CategoryMargin";
+import GlobalDiscount from "../pages/Pricing/GlobalDiscount";
+import ProductDiscount from "../pages/Pricing/ProductDiscount";
+import SupplierDiscount from "../pages/Pricing/SupplierDiscount";
 
 // Curation
 import Trending from "../pages/Curation/Trending";
@@ -80,6 +83,7 @@ import EmailSubscriptions from "../pages/Users/EmailSubscriptions";
 // Reviews & Notifications (orphaned pages — now wired)
 import ProductReviews from "../pages/Master/ProductReviews";
 import PushNotificationSettings from "../pages/Setup/PushNotificationSettings";
+import XeroIntegration from "../pages/Setup/XeroIntegration";
 import Notifications from "../pages/Master/Notifications";
 
 // Section 3 — CMS, Tags, Reports
@@ -144,6 +148,9 @@ const authProtectedRoutes = [
     // Pricing & Margins
     { path: "/pricing/global", component: <GlobalPricing /> },
     { path: "/pricing/category-margin", component: <CategoryMargin /> },
+    { path: "/pricing/global-discount", component: <GlobalDiscount /> },
+    { path: "/pricing/product-discount", component: <ProductDiscount /> },
+    { path: "/pricing/supplier-discount", component: <SupplierDiscount /> },
 
     // Curation
     { path: "/curation/trending", component: <Trending /> },
@@ -172,6 +179,7 @@ const authProtectedRoutes = [
     { path: "/product-reviews", component: <ProductReviews /> },
     { path: "/push-notification-settings", component: <PushNotificationSettings /> },
     { path: "/notifications", component: <Notifications /> },
+    { path: "/xero-integration", component: <XeroIntegration /> },
 
     // Section 3 — CMS, Tags, Reports
     { path: "/seo-management", component: <SeoManagement /> },

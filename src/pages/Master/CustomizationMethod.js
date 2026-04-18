@@ -14,7 +14,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -23,7 +23,7 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+
 
 const apiUrl = config.api.API_URL;
 
@@ -499,27 +499,23 @@ const CustomizationMethod = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <FormsHeader
-                      formName="Customization Method"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={() => handleList()}
-                      setQuery={setQuery}
-                      initialState={initialState}
-                      setValues={setValues}
-                      updateForm={updateForm}
-                      showForm={showForm}
-                      setShowForm={setShowForm}
-                      setUpdateForm={setUpdateForm}
-                    />
-                    <ExportButtons
-                      data={data}
-                      columns={exportColumns}
-                      fileName="CustomizationMethods"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Customization Method"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={() => handleList()}
+                    setQuery={setQuery}
+                    initialState={initialState}
+                    setValues={setValues}
+                    updateForm={updateForm}
+                    showForm={showForm}
+                    setShowForm={setShowForm}
+                    setUpdateForm={setUpdateForm}
+                    data={data}
+                    exportColumns={exportColumns}
+                    fileName="CustomizationMethods"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 {(showForm || updateForm) ? (

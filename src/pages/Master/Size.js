@@ -27,7 +27,8 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import Select from "react-select";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+import PageHeader from "../../Components/Common/PageHeader";
+
 
 const initialState = {
     name: "",
@@ -433,25 +434,18 @@ const Size = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
-                                    <div className="d-flex align-items-center justify-content-between">
-                                        <FormsHeader
-                                            formName="Sizes"
-                                            filter={filter}
-                                            handleFilter={handleFilter}
-                                            tog_list={tog_list}
-                                            setQuery={setQuery}
-                                            currentPagePermissions={
-                                                currentPagePermissions
-                                            }
-                                            showAddButton={false}
-                                        />
-                                        <ExportButtons
-                                            data={sizes}
-                                            columns={exportColumns}
-                                            fileName="sizes"
-                                            fetchAll={fetchAllForExport}
-                                        />
-                                    </div>
+                                    <PageHeader
+                    formName="Sizes"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={tog_list}
+                    setQuery={setQuery}
+                    showAddButton={false}
+                    data={sizes}
+                    exportColumns={exportColumns}
+                    fileName="sizes"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                                 </CardHeader>
 
                                 <CardBody>

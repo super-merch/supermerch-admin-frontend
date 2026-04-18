@@ -14,10 +14,9 @@ import {
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -434,7 +433,7 @@ const ProductTags = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <FormsHeader
+                  <PageHeader
                     formName="Product Tags"
                     filter={filter}
                     handleFilter={handleFilter}
@@ -446,12 +445,10 @@ const ProductTags = () => {
                     showForm={showForm}
                     setShowForm={setShowForm}
                     setUpdateForm={setUpdateForm}
-                  />
-                  <ExportButtons
                     data={data}
-                    columns={exportColumns}
+                    exportColumns={exportColumns}
                     fileName="product_tags"
-                    fetchAll={fetchAllForExport}
+                    fetchAllForExport={fetchAllForExport}
                   />
                 </CardHeader>
 

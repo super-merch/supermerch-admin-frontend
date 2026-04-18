@@ -14,7 +14,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -23,7 +23,6 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import { ColorPicker } from "@vtaits/react-color-picker";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
 
 const Color = () => {
   const { adminData } = useContext(AuthContext);
@@ -694,28 +693,24 @@ const Color = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <FormsHeader
-                      formName="Color"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={() => handleList()}
-                      setQuery={setQuery}
-                      initialState={initialState}
-                      setValues={setValues}
-                      updateForm={updateForm}
-                      showForm={showForm}
-                      setShowForm={setShowForm}
-                      setUpdateForm={setUpdateForm}
-                      showAddButton={false}
-                    />
-                    <ExportButtons
-                      data={data}
-                      columns={exportColumns}
-                      fileName="colors"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Color"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={() => handleList()}
+                    setQuery={setQuery}
+                    initialState={initialState}
+                    setValues={setValues}
+                    updateForm={updateForm}
+                    showForm={showForm}
+                    setShowForm={setShowForm}
+                    setUpdateForm={setUpdateForm}
+                    showAddButton={false}
+                    data={data}
+                    exportColumns={exportColumns}
+                    fileName="colors"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 <CardBody>

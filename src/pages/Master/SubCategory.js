@@ -14,7 +14,7 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import axios from "axios";
 import DeleteModal from "../../Components/Common/DeleteModal";
-import FormsHeader from "../../Components/Common/FormsHeader";
+import PageHeader from "../../Components/Common/PageHeader";
 import FormsFooter from "../../Components/Common/FormAddFooter";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -23,7 +23,7 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+
 
 const apiUrl = config.api.API_URL;
 
@@ -96,7 +96,7 @@ const SubCategory = () => {
     },
     {
       name: "Main Category",
-      selector: (row) => <p className="text-wrap">{row.mainCategory?.name || '-'}</p>,
+      selector: (row) => <p className="text-wrap">{row.mainCategoryId?.name || '-'}</p>,
       minWidth: "150px",
     },
     {
@@ -133,7 +133,7 @@ const SubCategory = () => {
 
   const exportColumns = [
     { header: "Name", key: "name" },
-    { header: "Main Category", key: "mainCategory.name" },
+    { header: "Main Category", key: "mainCategoryId.name" },
     { header: "Slug", key: "slug" },
     { header: "Sort Order", key: "sortOrder" },
     { header: "Active", key: "isActive" },
@@ -821,28 +821,24 @@ const SubCategory = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <FormsHeader
-                      formName="Sub Category"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={() => handleList()}
-                      setQuery={setQuery}
-                      initialState={initialState}
-                      setValues={setValues}
-                      updateForm={updateForm}
-                      showForm={showForm}
-                      setShowForm={setShowForm}
-                      setUpdateForm={setUpdateForm}
-                      showAddButton={false}
-                    />
-                    <ExportButtons
-                      data={data}
-                      columns={exportColumns}
-                      fileName="sub_categories"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Sub Category"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={() => handleList()}
+                    setQuery={setQuery}
+                    initialState={initialState}
+                    setValues={setValues}
+                    updateForm={updateForm}
+                    showForm={showForm}
+                    setShowForm={setShowForm}
+                    setUpdateForm={setUpdateForm}
+                    showAddButton={false}
+                    data={data}
+                    exportColumns={exportColumns}
+                    fileName="sub_categories"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 <CardBody>

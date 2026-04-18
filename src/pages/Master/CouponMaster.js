@@ -27,7 +27,8 @@ import { AuthContext } from "../../context/AuthContext";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+import PageHeader from "../../Components/Common/PageHeader";
+
 
 const initialState = {
     title: "",
@@ -871,28 +872,20 @@ const CouponMaster = () => {
                         <Col lg={12}>
                             <Card>
                                 <CardHeader>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                    <FormsHeader
-                                        formName="Coupon"
-                                        filter={filter}
-                                        handleFilter={handleFilter}
-                                        tog_list={tog_list}
-                                        setQuery={setQuery}
-                                        currentPagePermissions={
-                                            currentPagePermissions
-                                        }
-                                        showAddButton={
+                                    <PageHeader
+                    formName="Coupon"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={tog_list}
+                    setQuery={setQuery}
+                    showAddButton={
                                             currentPagePermissions.write
                                         }
-                                        showIsActiveFilter={true}
-                                    />
-                                    <ExportButtons
-                                        data={coupons}
-                                        columns={exportColumns}
-                                        fileName="coupons"
-                                        fetchAll={fetchAllForExport}
-                                    />
-                                    </div>
+                    data={coupons}
+                    exportColumns={exportColumns}
+                    fileName="coupons"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                                 </CardHeader>
 
                                 <CardBody>

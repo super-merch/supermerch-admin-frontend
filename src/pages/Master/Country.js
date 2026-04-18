@@ -33,7 +33,8 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import tableCustomStyles from "../../Components/Common/tableStyles";
-import ExportButtons from "../../Components/Common/ExportButtons";
+import PageHeader from "../../Components/Common/PageHeader";
+
 
 const initialState = {
   countryName: "",
@@ -391,23 +392,18 @@ const Country = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <FormsHeader
-                      formName="Country"
-                      filter={filter}
-                      handleFilter={handleFilter}
-                      tog_list={tog_list}
-                      setQuery={setQuery}
-                      currentPagePermissions={currentPagePermissions}
-                      showAddButton={currentPagePermissions.write}
-                    />
-                    <ExportButtons
-                      data={countries}
-                      columns={exportColumns}
-                      fileName="countries"
-                      fetchAll={fetchAllForExport}
-                    />
-                  </div>
+                  <PageHeader
+                    formName="Country"
+                    filter={filter}
+                    handleFilter={handleFilter}
+                    tog_list={tog_list}
+                    setQuery={setQuery}
+                    showAddButton={currentPagePermissions.write}
+                    data={countries}
+                    exportColumns={exportColumns}
+                    fileName="countries"
+                    fetchAllForExport={fetchAllForExport}
+                  />
                 </CardHeader>
 
                 <CardBody>
