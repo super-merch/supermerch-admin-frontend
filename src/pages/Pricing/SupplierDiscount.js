@@ -283,8 +283,11 @@ const SupplierDiscount = () => {
               >
                 <option value="">Select Supplier</option>
                 {suppliers.map((s) => (
-                  <option key={s._id || s.id} value={s._id || s.id}>
-                    {s.name}
+                  <option
+                    key={s._id || s.id}
+                    value={String(s.code || s._id || s.id || "")}
+                  >
+                    {s.code ? `${s.name} (${s.code})` : s.name}
                   </option>
                 ))}
               </select>

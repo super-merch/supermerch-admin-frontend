@@ -35,6 +35,7 @@ import {
 } from "../../functions/Pricing/marginFunc";
 import {
     addProductDiscount,
+    getProductDiscount,
 } from "../../functions/Pricing/discountFunc";
 
 const apiUrl = config.api.API_URL;
@@ -311,14 +312,21 @@ const ProductMaster = () => {
                     const pid = row.meta?.id || row._id || row.id;
                     if (!pid) return;
                     try {
-                        const res = await getProductMargin(pid);
-                        if (res.data?.success && res.data.data?.margin !== undefined) {
-                            mMap[pid] = res.data.data.margin;
-                            mInputs[pid] = res.data.data.margin;
+                        const marginRes = await getProductMargin(pid);
+                        const marginData = marginRes.data?.data;
+                        // Only treat product-level values as explicit overrides.
+                        if (marginRes.data?.success && marginData?.type === "product") {
+                            mMap[pid] = marginData.margin;
+                            mInputs[pid] = marginData.margin;
                         }
-                        if (res.data?.success && res.data.data?.discount !== undefined) {
-                            dMap[pid] = res.data.data.discount;
-                            dInputs[pid] = res.data.data.discount;
+
+                        const discountRes = await getProductDiscount(pid);
+                        const discountData = discountRes.data?.data;
+                        // getProductDiscount can return global/supplier fallback values.
+                        // Show override badges only for product-specific discounts.
+                        if (discountRes.data?.success && discountData?.type === "product") {
+                            dMap[pid] = discountData.discount;
+                            dInputs[pid] = discountData.discount;
                         }
                     } catch {
                         // no margin set for this product
@@ -344,6 +352,7 @@ const ProductMaster = () => {
             if (res.data?.success !== false) {
                 toast.success("Product margin saved");
                 setProductMarginMap((prev) => ({ ...prev, [productId]: val }));
+                await fetchProducts();
             }
         } catch {
             toast.error("Failed to save product margin");
@@ -361,6 +370,7 @@ const ProductMaster = () => {
             if (res.data?.success !== false) {
                 toast.success("Product discount saved");
                 setProductDiscountMap((prev) => ({ ...prev, [productId]: val }));
+                await fetchProducts();
             }
         } catch {
             toast.error("Failed to save product discount");
@@ -501,6 +511,11 @@ const ProductMaster = () => {
 
     // ── Helper: get min price ────────────────────────────────
     const getMinPrice = (row) => {
+        const summaryPrice = Number(row?.pricingSummary?.finalMinPrice);
+        if (Number.isFinite(summaryPrice) && summaryPrice > 0) {
+            return summaryPrice;
+        }
+
         const groups = row?.product?.prices?.price_groups;
         if (!groups?.length) return null;
         let min = Infinity;
@@ -588,10 +603,27 @@ const ProductMaster = () => {
         },
         {
             name: "Min Price",
-            width: "100px",
+            width: "140px",
             cell: (row) => {
-                const price = getMinPrice(row);
-                return price != null ? `A$${price.toFixed(2)}` : "-";
+                const finalPrice = Number(row?.pricingSummary?.finalMinPrice);
+                const strikePrice = Number(row?.pricingSummary?.marginAdjustedMinPrice);
+                const discountPct = Number(row?.pricingSummary?.discountPercent || 0);
+
+                if (Number.isFinite(finalPrice) && finalPrice > 0) {
+                    return (
+                        <div className="d-flex flex-column" style={{ lineHeight: 1.15 }}>
+                            {discountPct > 0 && Number.isFinite(strikePrice) && strikePrice > finalPrice && (
+                                <small className="text-danger text-decoration-line-through">
+                                    A${strikePrice.toFixed(2)}
+                                </small>
+                            )}
+                            <span>A${finalPrice.toFixed(2)}</span>
+                        </div>
+                    );
+                }
+
+                const fallback = getMinPrice(row);
+                return fallback != null ? `A$${fallback.toFixed(2)}` : "-";
             },
         },
         {
@@ -1337,7 +1369,7 @@ const ProductMaster = () => {
                             <TabPane tabId="5">
                                 {p.marginInfo && (
                                     <Alert color="info" className="mb-3">
-                                        <strong>Applied Margin:</strong> {p.marginInfo.margin}% ({p.marginInfo.type})
+                                        <strong>Applied Margin:</strong> {p.pricingSummary?.marginPercent ?? p.marginInfo.margin}% ({p.pricingSummary?.marginType ?? p.marginInfo.type})
                                         {p.discountInfo?.discount > 0 && (
                                             <>
                                                 {" | "}

@@ -1,6 +1,5 @@
 import { createContext, useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import SM_STATIC_MENUS from "../config/sm_menus";
 
 const MenuContext = createContext();
 
@@ -75,11 +74,12 @@ const MenuProvider = ({ children }) => {
                     const normalized = buildMenuTree(apiMenus);
                     setMenuData(normalized);
                 } else {
-                    // Fallback to static SM menus when DB has no menu groups
-                    setMenuData(SM_STATIC_MENUS);
+                    // DB-driven menus only: no static fallback
+                    setMenuData([]);
                 }
             } else {
-                setMenuData(SM_STATIC_MENUS);
+                // DB-driven menus only: no static fallback
+                setMenuData([]);
             }
 
             // Fetch admin status and role info
