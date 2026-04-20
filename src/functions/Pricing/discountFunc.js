@@ -12,6 +12,9 @@ export const addSupplierDiscount = async (data) => {
 export const getSupplierDiscounts = async (params) => {
     return await axios.get("/api/add-discount/list-supplier-discounts", { params });
 };
+export const getProductDiscount = async (productId) => {
+    return await axios.get(`/api/add-discount/discounts/${productId}`);
+};
 export const addProductDiscount = async (data) => {
     return await axios.post("/api/add-discount/add-discount", data);
 };

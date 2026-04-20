@@ -17,7 +17,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { MenuContext } from "../../context/MenuContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
-import { addProductDiscount } from "../../functions/Pricing/discountFunc";
+import { addProductDiscount, getProductDiscount } from "../../functions/Pricing/discountFunc";
 
 const ProductDiscount = () => {
   const { adminData } = useContext(AuthContext);
@@ -41,11 +41,7 @@ const ProductDiscount = () => {
     setIsLoading(true);
     setHasSearched(true);
     try {
-      // Use the discount list endpoint with productId filter to check existing discount
-      const response = await addProductDiscount({
-        productId: productId.trim(),
-        getOnly: true,
-      });
+      const response = await getProductDiscount(productId.trim());
       if (response.data.success && response.data.data) {
         const data = response.data.data;
         setProductData(data);

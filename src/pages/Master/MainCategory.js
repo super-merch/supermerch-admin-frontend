@@ -37,8 +37,6 @@ const MainCategory = () => {
   const [filter, setFilter] = useState(true);
   const [_id, set_Id] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [showOnHomePageFilter,setShowOnHomePageFilter] = useState(false);
-  const [showOnHeaderFilter,setShowOnHeaderFilter] = useState(false);
 
   const initialState = {
     name: "",
@@ -48,8 +46,6 @@ const MainCategory = () => {
     icon: "",
     sortOrder: 0,
     isActive: true,
-    showOnHomePage: false,
-    showOnHeader: false,
   };
 
   // File upload related states
@@ -102,36 +98,10 @@ const MainCategory = () => {
       minWidth: "150px",
     },
     {
-      name: "Image",
-      selector: (row) => (
-        <div>
-          {row.image ? (
-            <img
-              src={`${apiUrl}/${row.image}`}
-              alt={row.name}
-              style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-            />
-          ) : (
-            "-"
-          )}
-        </div>
-      ),
-      sortable: false,
-      minWidth: "120px",
-    },
-    {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
       minWidth: "120px",
-    },
-    {
-      name: "Show on Home Page",
-      selector: (row) => <p className="text-wrap">{row.showOnHomePage ? "Yes" : "No"}</p>,
-    },
-    {
-      name: "Show on Header",
-      selector: (row) => <p className="text-wrap">{row.showOnHeader ? "Yes" : "No"}</p>,
     },
   ];
 
@@ -139,8 +109,6 @@ const MainCategory = () => {
     { header: "Name", key: "name" },
     { header: "Slug", key: "slug" },
     { header: "Sort Order", key: "sortOrder" },
-    { header: "Show on Home Page", key: "showOnHomePage" },
-    { header: "Show on Header", key: "showOnHeader" },
     { header: "Active", key: "isActive" },
   ];
 
@@ -165,8 +133,6 @@ const MainCategory = () => {
       page: pageNo || 1,
       limit: perPage,
       isActive: filter,
-      showOnHomePage: showOnHomePageFilter,
-      showOnHeader: showOnHeaderFilter
     };
 
     if (query) {
@@ -194,7 +160,7 @@ const MainCategory = () => {
     } finally {
       setLoading(false);
     }
-  }, [pageNo, perPage, query, filter,showOnHomePageFilter, showOnHeaderFilter]);
+  }, [pageNo, perPage, query, filter]);
 
   useEffect(() => {
     fetchMainCategoriesMaster();
@@ -213,9 +179,12 @@ const MainCategory = () => {
   const validate = (values) => {
     const errors = {};
     if (!values.name) errors.name = "Name is required";
-    if (!values.sortOrder && values.sortOrder !== 0) {
-      errors.sortOrder = "Sort order is required";
-    } else if (isNaN(values.sortOrder) || values.sortOrder < 0) {
+    if (
+      values.sortOrder !== "" &&
+      values.sortOrder !== null &&
+      values.sortOrder !== undefined &&
+      (isNaN(values.sortOrder) || Number(values.sortOrder) < 0)
+    ) {
       errors.sortOrder = "Sort order must be a non-negative number";
     }
     return errors;
@@ -236,8 +205,6 @@ const MainCategory = () => {
       formData.append('shortDescription', values.shortDescription);
       formData.append('sortOrder', values.sortOrder);
       formData.append('isActive', values.isActive);
-      formData.append('showOnHomePage', values.showOnHomePage);
-      formData.append('showOnHeader', values.showOnHeader);
       
       if (selectedImageFile) {
         formData.append('image', selectedImageFile);
@@ -299,8 +266,6 @@ const MainCategory = () => {
       formData.append('shortDescription', values.shortDescription);
       formData.append('sortOrder', values.sortOrder);
       formData.append('isActive', values.isActive);
-      formData.append('showOnHomePage', values.showOnHomePage);
-      formData.append('showOnHeader', values.showOnHeader);
       
       // Handle image removal
       if (imageRemoved) {
@@ -444,8 +409,6 @@ const MainCategory = () => {
           icon: mainCategory.icon || "",
           sortOrder: mainCategory.sortOrder || 0,
           isActive: mainCategory.isActive,
-          showOnHomePage: mainCategory.showOnHomePage,
-          showOnHeader: mainCategory.showOnHeader,
         });
         setShowForm(true);
         setSelectedImageFile(null);
@@ -758,42 +721,6 @@ const MainCategory = () => {
                         <div className="form-check mb-2">
                           <Input
                             type="checkbox"
-                            name="showOnHomePage"
-                            value={values.showOnHomePage}
-                            onChange={handlecheck}
-                            checked={values.showOnHomePage}
-                          />
-                          <Label className="form-check-label">
-                            Show on Home Page
-                          </Label>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                  <div className="mt-3">
-                    <Row>
-                      <Col lg={2}>
-                        <div className="form-check mb-2">
-                          <Input
-                            type="checkbox"
-                            name="showOnHeader"
-                            value={values.showOnHeader}
-                            onChange={handlecheck}
-                            checked={values.showOnHeader}
-                          />
-                          <Label className="form-check-label">
-                            Show on Header
-                          </Label>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                  <div className="mt-3">
-                    <Row>
-                      <Col lg={2}>
-                        <div className="form-check mb-2">
-                          <Input
-                            type="checkbox"
                             name="isActive"
                             value={values.isActive}
                             onChange={handlecheck}
@@ -872,35 +799,6 @@ const MainCategory = () => {
                     fetchAllForExport={fetchAllForExport}
                   />
                 </CardHeader>
-
-                <div className="d-flex gap-2">
-                  <div className="d-flex align-items-center gap-2 p-3">
-                    <div className="form-check">
-                      <Input
-                        type="checkbox"
-                        id="showOnHomePageFilter"
-                        checked={showOnHomePageFilter}
-                        onChange={(e) => setShowOnHomePageFilter(e.target.checked)}
-                      />
-                      <Label className="form-check-label" htmlFor="showOnHomePageFilter">
-                        Show on Home Page
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2 p-3">
-                    <div className="form-check">
-                      <Input
-                        type="checkbox"
-                        id="showOnHeaderFilter"
-                        checked={showOnHeaderFilter}
-                        onChange={(e) => setShowOnHeaderFilter(e.target.checked)}
-                      />
-                      <Label className="form-check-label" htmlFor="showOnHeaderFilter">
-                        Show on Header
-                      </Label>
-                    </div>
-                  </div>
-                </div>
 
                 <CardBody>
                   <div className="table-responsive table-card mt-1 mb-1 text-right">

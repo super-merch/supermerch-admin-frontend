@@ -96,6 +96,19 @@ const Supplier = () => {
 
   const {currentPagePermissions} = useContext(MenuContext);
 
+  const getSupplierPricingId = (supplier) =>
+    String(supplier?.code || supplier?.supplierId || supplier?._id || "").trim();
+
+  const getExistingSupplierValue = (map, supplier) => {
+    const pricingId = getSupplierPricingId(supplier);
+    if (pricingId && map[pricingId] !== undefined) return map[pricingId];
+
+    const legacyId = String(supplier?._id || "").trim();
+    if (legacyId && map[legacyId] !== undefined) return map[legacyId];
+
+    return undefined;
+  };
+
   const columns = [
     {
       name: "Sr No",
@@ -124,8 +137,8 @@ const Supplier = () => {
       name: "Margin %",
       width: "200px",
       cell: (row) => {
-        const sid = row._id;
-        const existing = marginMap[sid];
+        const sid = getSupplierPricingId(row);
+        const existing = getExistingSupplierValue(marginMap, row);
         return (
           <div className="d-flex align-items-center gap-1">
             <input
@@ -156,8 +169,8 @@ const Supplier = () => {
       name: "Discount %",
       width: "200px",
       cell: (row) => {
-        const sid = row._id;
-        const existing = discountMap[sid];
+        const sid = getSupplierPricingId(row);
+        const existing = getExistingSupplierValue(discountMap, row);
         return (
           <div className="d-flex align-items-center gap-1">
             <input
@@ -186,8 +199,8 @@ const Supplier = () => {
       name: "Lead Time",
       width: "250px",
       cell: (row) => {
-        const sid = row._id;
-        const existing = leadTimeMap[sid];
+        const sid = getSupplierPricingId(row);
+        const existing = getExistingSupplierValue(leadTimeMap, row);
         const promoDefault = promodataLeadTimes[sid];
         return (
           <div className="d-flex flex-column gap-1">
@@ -322,6 +335,10 @@ const Supplier = () => {
 
   // ── Inline margin/discount handlers ──
   const handleMarginSave = async (supplierId) => {
+    if (!supplierId) {
+      toast.error("Missing supplier ID for margin save");
+      return;
+    }
     const val = parseFloat(marginInputs[supplierId]);
     if (isNaN(val) || val < 0) {
       toast.error("Enter a valid margin %");
@@ -352,6 +369,10 @@ const Supplier = () => {
   };
 
   const handleDiscountSave = async (supplierId) => {
+    if (!supplierId) {
+      toast.error("Missing supplier ID for discount save");
+      return;
+    }
     const val = parseFloat(discountInputs[supplierId]);
     if (isNaN(val) || val < 0) {
       toast.error("Enter a valid discount %");
@@ -370,6 +391,10 @@ const Supplier = () => {
 
   // ── Lead time handlers ──
   const handleLeadTimeSave = async (supplierId) => {
+    if (!supplierId) {
+      toast.error("Missing supplier ID for lead time save");
+      return;
+    }
     const val = (leadTimeInputs[supplierId] || "").trim();
     if (!val) {
       toast.error("Enter a valid lead time");
@@ -402,7 +427,10 @@ const Supplier = () => {
   // ── Fetch promodata lead time defaults when supplier data loads ──
   useEffect(() => {
     if (!data || data.length === 0) return;
-    const ids = data.map((s) => s._id).filter(Boolean).join(",");
+    const ids = data
+      .map((s) => getSupplierPricingId(s))
+      .filter((id) => /^\d+$/.test(id))
+      .join(",");
     if (!ids) return;
     const fetchDefaults = async () => {
       try {

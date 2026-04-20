@@ -320,10 +320,19 @@ const SupplierMargin = () => {
                 isClearable
                 placeholder="Select Supplier"
                 options={suppliers.map((s) => ({
-                  value: s._id || s.id,
-                  label: s.name,
+                  value: String(s.code || s._id || s.id || ""),
+                  label: s.code ? `${s.name} (${s.code})` : s.name,
                 }))}
-                value={supplierId ? suppliers.map((s) => ({ value: s._id || s.id, label: s.name })).find((o) => o.value === supplierId) || null : null}
+                value={
+                  supplierId
+                    ? suppliers
+                        .map((s) => ({
+                          value: String(s.code || s._id || s.id || ""),
+                          label: s.code ? `${s.name} (${s.code})` : s.name,
+                        }))
+                        .find((o) => o.value === String(supplierId)) || null
+                    : null
+                }
                 onChange={(opt) => setSupplierId(opt ? opt.value : "")}
                 onInputChange={(val) => setSupplierSearch(val)}
                 filterOption={null}
