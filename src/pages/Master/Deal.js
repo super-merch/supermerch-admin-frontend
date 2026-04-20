@@ -1167,8 +1167,18 @@ const Deal = () => {
 
         // Set banner image preview
         if (dealData.bannerImage) {
-            console.log(dealData.bannerImage)
-          setBannerPreview(`http://localhost:8000/${dealData.bannerImage}`);
+          const rawBannerImage = String(dealData.bannerImage);
+          if (/^https?:\/\//i.test(rawBannerImage)) {
+            setBannerPreview(rawBannerImage);
+          } else {
+            const apiBaseUrl = (api.API_URL || "").replace(/\/+$/, "");
+            const normalizedImagePath = rawBannerImage.replace(/^\/+/, "");
+            setBannerPreview(
+              apiBaseUrl
+                ? `${apiBaseUrl}/${normalizedImagePath}`
+                : `/${normalizedImagePath}`
+            );
+          }
         }
 
         setRemoveBanner(false);

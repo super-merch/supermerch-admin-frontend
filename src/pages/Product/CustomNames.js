@@ -26,6 +26,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import Select from "react-select";
 
 const CustomNames = () => {
   const { adminData } = useContext(AuthContext);
@@ -43,7 +44,6 @@ const CustomNames = () => {
     productId: "",
     originalName: "",
     customName: "",
-    customDescription: "",
   };
 
   const [remove_id, setRemove_id] = useState("");
@@ -60,6 +60,10 @@ const CustomNames = () => {
   const [showForm, setShowForm] = useState(false);
   const [updateForm, setUpdateForm] = useState(false);
   const [data, setData] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
+  const [selectedProductOption, setSelectedProductOption] = useState(null);
+  const [productSearchInput, setProductSearchInput] = useState("");
+  const [isProductSearchLoading, setIsProductSearchLoading] = useState(false);
 
   // Edit modal states
   const [editModal, setEditModal] = useState(false);
@@ -162,9 +166,62 @@ const CustomNames = () => {
     fetchCustomNames();
   }, [fetchCustomNames]);
 
+  const searchProducts = useCallback(async (searchText = "") => {
+    setIsProductSearchLoading(true);
+    try {
+      const params = {
+        page: 1,
+        limit: 30,
+        isActive: true,
+      };
+
+      if (searchText.trim()) {
+        params.search = searchText.trim();
+      }
+
+      const response = await axios.get("/api/list-products-by-params-dropdown", {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const rows = response.data?.success ? response.data?.data || [] : [];
+      const options = rows.map((item) => ({
+        value: String(item.id),
+        label: item.name || `Product ${item.id}`,
+        image: item.image || null,
+        code: item.code || "",
+      }));
+
+      setProductOptions(options);
+    } catch (error) {
+      console.error("Error searching products:", error);
+      setProductOptions([]);
+    } finally {
+      setIsProductSearchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showForm && !updateForm) return;
+
+    const timerId = setTimeout(() => {
+      searchProducts(productSearchInput);
+    }, 300);
+
+    return () => clearTimeout(timerId);
+  }, [productSearchInput, searchProducts, showForm, updateForm]);
+
+  useEffect(() => {
+    if (showForm || updateForm) {
+      searchProducts("");
+    }
+  }, [showForm, updateForm, searchProducts]);
+
   const validate = (vals) => {
     const errors = {};
-    if (!vals.productId) errors.productId = "Product ID is required";
+    if (!vals.productId) errors.productId = "Product is required";
     if (!vals.customName) errors.customName = "Custom name is required";
     return errors;
   };
@@ -175,7 +232,6 @@ const CustomNames = () => {
       productId: row.productId || row.id,
       originalName: row.originalName || row.productName || "",
       customName: row.customName || "",
-      customDescription: row.customDescription || "",
     });
     setEditModal(true);
     setFormErrors({});
@@ -194,7 +250,6 @@ const CustomNames = () => {
           {
             productId: editValues.productId,
             customName: editValues.customName,
-            customDescription: editValues.customDescription,
           },
           {
             headers: {
@@ -233,7 +288,6 @@ const CustomNames = () => {
           {
             productId: values.productId,
             customName: values.customName,
-            customDescription: values.customDescription,
           },
           {
             headers: {
@@ -246,6 +300,8 @@ const CustomNames = () => {
           toast.success(response.data.message || "Custom Name Added Successfully");
           setShowForm(false);
           setValues(initialState);
+          setSelectedProductOption(null);
+          setProductSearchInput("");
           setIsSubmit(false);
           setFormErrors({});
           fetchCustomNames();
@@ -265,6 +321,8 @@ const CustomNames = () => {
     setShowForm(false);
     setUpdateForm(false);
     setValues(initialState);
+    setSelectedProductOption(null);
+    setProductSearchInput("");
     setFormErrors({});
   };
 
@@ -332,8 +390,52 @@ const CustomNames = () => {
     setUpdateForm(false);
     setIsSubmit(false);
     setValues(initialState);
+    setSelectedProductOption(null);
+    setProductSearchInput("");
     setFormErrors({});
   };
+
+  const handleProductSelect = (option) => {
+    setSelectedProductOption(option || null);
+    setValues((prev) => ({
+      ...prev,
+      productId: option?.value || "",
+      originalName: option?.label || "",
+    }));
+  };
+
+  const formatProductOption = (option) => (
+    <div className="d-flex align-items-center gap-2">
+      {option.image ? (
+        <img
+          src={option.image}
+          alt={option.label}
+          style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4, border: "1px solid #dee2e6" }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 4,
+            border: "1px solid #dee2e6",
+            background: "#f8f9fa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#6c757d",
+            fontSize: 12,
+          }}
+        >
+          IMG
+        </div>
+      )}
+      <div className="d-flex flex-column">
+        <span>{option.label}</span>
+        {option.code ? <small className="text-muted">{option.code}</small> : null}
+      </div>
+    </div>
+  );
 
   const renderForm = () => (
     <CardBody>
@@ -345,19 +447,30 @@ const CustomNames = () => {
                 <Row>
                   <Row>
                     <Col lg={4}>
-                      <div className="form-floating mb-3">
-                        <input
-                          type="text"
-                          className="form-control"
-                          required
-                          name="productId"
-                          value={values.productId}
-                          onChange={handleChange}
-                          placeholder="Enter product ID"
+                      <div className="mb-3">
+                        <Label className="form-label mb-1">
+                          Product <span className="text-danger">*</span>
+                        </Label>
+                        <Select
+                          classNamePrefix="react-select"
+                          value={selectedProductOption}
+                          onChange={handleProductSelect}
+                          onInputChange={(inputValue, actionMeta) => {
+                            if (actionMeta.action === "input-change") {
+                              setProductSearchInput(inputValue);
+                            }
+                            return inputValue;
+                          }}
+                          options={productOptions}
+                          isLoading={isProductSearchLoading}
+                          isClearable
+                          placeholder="Search products by name or code..."
+                          formatOptionLabel={formatProductOption}
+                          noOptionsMessage={() =>
+                            isProductSearchLoading ? "Searching products..." : "No products found"
+                          }
+                          filterOption={null}
                         />
-                        <label className="form-label">
-                          Product ID <span className="text-danger"> *</span>
-                        </label>
                         {isSubmit && (
                           <p className="text-danger">{formErrors.productId}</p>
                         )}
@@ -382,21 +495,6 @@ const CustomNames = () => {
                       </div>
                     </Col>
                   </Row>
-                  <Row>
-                    <Col lg={8}>
-                      <div className="form-floating mb-3">
-                        <textarea
-                          className="form-control"
-                          name="customDescription"
-                          value={values.customDescription}
-                          onChange={handleChange}
-                          style={{ minHeight: "100px" }}
-                        />
-                        <label className="form-label">Custom Description</label>
-                      </div>
-                    </Col>
-                  </Row>
-
                   <Col lg={12}>
                     <FormsFooter
                       handleSubmit={handleClick}
@@ -501,16 +599,6 @@ const CustomNames = () => {
             {isSubmit && formErrors.customName && (
               <p className="text-danger">{formErrors.customName}</p>
             )}
-          </div>
-          <div className="form-floating mb-3">
-            <textarea
-              className="form-control"
-              name="customDescription"
-              value={editValues.customDescription}
-              onChange={handleEditChange}
-              style={{ minHeight: "100px" }}
-            />
-            <label className="form-label">Custom Description</label>
           </div>
           <div className="hstack gap-2 justify-content-end">
             <Button color="success" onClick={handleEditModalSave}>
