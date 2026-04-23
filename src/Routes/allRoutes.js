@@ -121,6 +121,8 @@ const authProtectedRoutes = [
     { path: "/size-category", component: <SizeCategory /> },
     { path: "/size", component: <Size /> },
     { path: "/main-category", component: <MainCategory /> },
+    { path: "/main-category/add", component: <MainCategory /> },
+    { path: "/main-category/edit/:id", component: <MainCategory /> },
     { path: "/sub-category", component: <SubCategory /> },
     { path: "/collection", component: <Collection /> },
     { path: "/customization-method", component: <CustomizationMethod /> },

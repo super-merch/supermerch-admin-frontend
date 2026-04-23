@@ -37,6 +37,7 @@ const PageHeader = ({
   filter,
   handleFilter,
   setQuery,
+  searchValue,
   initialState,
   setValues,
   updateForm,
@@ -119,6 +120,7 @@ const PageHeader = ({
                   <input
                     className="form-control search"
                     placeholder="Search..."
+                    {...(searchValue !== undefined ? { value: searchValue } : {})}
                     onChange={(e) => setQuery(e.target.value)}
                   />
                   <i className="ri-search-line search-icon"></i>
