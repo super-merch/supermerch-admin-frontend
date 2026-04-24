@@ -100,7 +100,7 @@ const CustomizationPosition = () => {
         <div>
           {row.imageUrl ? (
             <img
-              src={`${apiUrl}/${row.imageUrl}`}
+              src={row.imageUrl?.startsWith("http") ? row.imageUrl : `${apiUrl}/${row.imageUrl}`}
               alt={row.positionName}
               style={{ width: '60px', height: '60px', objectFit: 'contain' }}
             />
@@ -730,7 +730,7 @@ const CustomizationPosition = () => {
                           {values.imageUrl && !selectedImageFile && !imageRemoved && (
                             <div className="mb-2">
                               <img
-                                src={`${apiUrl}/${values.imageUrl}`}
+                                src={values.imageUrl?.startsWith("http") ? values.imageUrl : `${apiUrl}/${values.imageUrl}`}
                                 alt="Current Image"
                                 style={{ width: '120px', height: '120px', objectFit: 'contain' }}
                               />

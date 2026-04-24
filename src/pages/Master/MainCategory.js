@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Input,
   Label,
@@ -23,20 +24,35 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
+import AsyncSelect from "react-select/async";
 
 
 const apiUrl = config.api.API_URL;
+const MAIN_CATEGORY_SEARCH_STORAGE_KEY = "supermerch-admin-main-category-search";
 
 const MainCategory = () => {
   const { adminData } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id: routeId } = useParams();
+
+  const isAddMode = location.pathname.endsWith("/add");
+  const isEditMode = location.pathname.includes("/edit/");
+  const isFormMode = isAddMode || isEditMode;
+  const editingId = routeId || "";
   // Basic states
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isSubmit, setIsSubmit] = useState(false);
   const [filter, setFilter] = useState(true);
-  const [_id, set_Id] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return localStorage.getItem(MAIN_CATEGORY_SEARCH_STORAGE_KEY) || "";
+  });
 
   const initialState = {
     name: "",
@@ -46,6 +62,9 @@ const MainCategory = () => {
     icon: "",
     sortOrder: 0,
     isActive: true,
+    navGroup: "",
+    artworkSource: "promodata",
+    customizationMethodIds: [],
   };
 
   // File upload related states
@@ -62,6 +81,10 @@ const MainCategory = () => {
   const [remove_id, setRemove_id] = useState("");
   const [query, setQuery] = useState("");
   const [values, setValues] = useState(initialState);
+  const [customizationMethodOptions, setCustomizationMethodOptions] = useState([]);
+  const [selectedCustomizationMethods, setSelectedCustomizationMethods] = useState([]);
+  const [isSelectingAllMethods, setIsSelectingAllMethods] = useState(false);
+  const methodSearchDebounceRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
@@ -70,8 +93,6 @@ const MainCategory = () => {
   const [column, setcolumn] = useState();
   const [sortDirection, setsortDirection] = useState();
 
-  const [showForm, setShowForm] = useState(false);
-  const [updateForm, setUpdateForm] = useState(false);
   const [data, setData] = useState([]);
 
   const [referenceModal, setReferenceModal] = useState(false);
@@ -98,10 +119,80 @@ const MainCategory = () => {
       minWidth: "150px",
     },
     {
+      name: "Nav Group",
+      selector: (row) => <p className="text-wrap">{row.navGroup || "—"}</p>,
+      minWidth: "120px",
+    },
+    {
+      name: "Artwork Source",
+      selector: (row) => <p className="text-wrap">{row.artworkSource || "promodata"}</p>,
+      minWidth: "140px",
+    },
+    {
+      name: "Customization Methods",
+      selector: (row) => {
+        if (row.artworkSource !== "supermerch") {
+          return <p className="text-muted mb-0">—</p>;
+        }
+
+        const methods = Array.isArray(row.customizationMethodIds)
+          ? row.customizationMethodIds
+          : [];
+
+        if (!methods.length) {
+          return <p className="text-muted mb-0">None</p>;
+        }
+
+        const labels = methods.map((m) => {
+          if (!m) return "";
+          if (typeof m === "string") return m;
+          return [m.applicationMethod, m.applicationType].filter(Boolean).join(" - ");
+        }).filter(Boolean);
+
+        const displayText = labels.join(", ");
+        return (
+          <div
+            className="text-truncate"
+            style={{ maxWidth: "260px" }}
+            title={displayText}
+          >
+            {displayText}
+          </div>
+        );
+      },
+      minWidth: "230px",
+    },
+    {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
       minWidth: "120px",
+    },
+    {
+      name: "Actions",
+      minWidth: "120px",
+      cell: (row) => (
+        <div className="d-flex gap-2">
+          <div className="edit d-flex gap-2">
+            {currentPagePermissions?.edit !== false && (
+              <button
+                className="btn btn-sm btn-success edit-item-btn"
+                onClick={() => handleTog_edit(row._id)}
+              >
+                Edit
+              </button>
+            )}
+            {currentPagePermissions?.delete !== false && (
+              <button
+                className="btn btn-sm btn-danger remove-item-btn"
+                onClick={() => tog_delete(row._id)}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      ),
     },
   ];
 
@@ -163,8 +254,176 @@ const MainCategory = () => {
   }, [pageNo, perPage, query, filter]);
 
   useEffect(() => {
-    fetchMainCategoriesMaster();
-  }, [fetchMainCategoriesMaster]);
+    if (!isFormMode) {
+      fetchMainCategoriesMaster();
+    }
+  }, [fetchMainCategoriesMaster, isFormMode]);
+
+  useEffect(() => () => {
+    if (methodSearchDebounceRef.current) {
+      clearTimeout(methodSearchDebounceRef.current);
+    }
+  }, []);
+
+  const mapMethodOption = (method) => {
+    const id = String(method?._id || method?.id || "");
+    if (!id) return null;
+
+    const methodName = method?.applicationMethod || "Method";
+    const methodType = method?.applicationType || "";
+
+    return {
+      value: id,
+      label: methodType ? `${methodName} (${methodType})` : methodName,
+      raw: method,
+    };
+  };
+
+  const fetchCustomizationMethods = useCallback(async (search = "") => {
+    try {
+      const response = await axios.get("/api/listbyparams/customization-methods", {
+        params: {
+          page: 1,
+          limit: 50,
+          isActive: true,
+          ...(search ? { search } : {}),
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const list = response.data?.success ? (response.data.data || []) : [];
+      const options = list.map(mapMethodOption).filter(Boolean);
+      setCustomizationMethodOptions(options);
+      return options;
+    } catch (err) {
+      console.error("Error fetching customization methods:", err);
+      return [];
+    }
+  }, []);
+
+  const loadCustomizationMethodOptions = (inputValue, callback) => {
+    if (methodSearchDebounceRef.current) {
+      clearTimeout(methodSearchDebounceRef.current);
+    }
+
+    methodSearchDebounceRef.current = setTimeout(async () => {
+      const options = await fetchCustomizationMethods(inputValue || "");
+      callback(options);
+    }, 400);
+  };
+
+  const fetchCustomizationMethodsByIds = useCallback(async (ids = []) => {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+
+    try {
+      const requests = ids.map((id) =>
+        axios.get(`/api/customization-methods/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        })
+      );
+
+      const responses = await Promise.all(requests);
+      return responses
+        .map((res) => (res.data?.success ? res.data?.data : null))
+        .filter(Boolean)
+        .map(mapMethodOption)
+        .filter(Boolean);
+    } catch (err) {
+      console.error("Error fetching selected customization methods:", err);
+      return [];
+    }
+  }, []);
+
+  const loadMainCategoryForEdit = useCallback(async (id) => {
+    if (!id) return;
+    setIsLoading(true);
+
+    try {
+      const response = await axios.get(`/api/main-categories/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
+      if (response.data.success) {
+        const mainCategory = response.data.data;
+        const generatedSlug = mainCategory.name
+          ? mainCategory.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          : mainCategory.slug || "";
+
+        setValues({
+          name: mainCategory.name || "",
+          slug: generatedSlug,
+          shortDescription: mainCategory.shortDescription || "",
+          image: mainCategory.image || "",
+          icon: mainCategory.icon || "",
+          sortOrder: mainCategory.sortOrder || 0,
+          isActive: mainCategory.isActive,
+          navGroup: mainCategory.navGroup || "",
+          artworkSource: mainCategory.artworkSource || "promodata",
+          customizationMethodIds: (mainCategory.customizationMethodIds || []).map((m) =>
+            String(m?._id || m?.id || m)
+          ).filter(Boolean),
+        });
+
+        const methodsFromPayload = (mainCategory.customizationMethodIds || [])
+          .map(mapMethodOption)
+          .filter(Boolean);
+
+        if (methodsFromPayload.length > 0) {
+          setSelectedCustomizationMethods(methodsFromPayload);
+        } else {
+          const methodIds = (mainCategory.customizationMethodIds || []).map((m) => String(m));
+          const selected = await fetchCustomizationMethodsByIds(methodIds);
+          setSelectedCustomizationMethods(selected);
+        }
+
+        setSelectedImageFile(null);
+        setSelectedIconFile(null);
+        setImagePreview("");
+        setIconPreview("");
+        setShowImageInput(true);
+        setShowIconInput(true);
+        setImageRemoved(false);
+        setIconRemoved(false);
+      } else {
+        toast.error("Failed to fetch main category details");
+        navigate("/main-category");
+      }
+    } catch (err) {
+      console.log(err);
+      navigate("/main-category");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isAddMode) {
+      setValues(initialState);
+      setFormErrors({});
+      setIsSubmit(false);
+      setSelectedImageFile(null);
+      setSelectedIconFile(null);
+      setImagePreview("");
+      setIconPreview("");
+      setShowImageInput(true);
+      setShowIconInput(true);
+      setImageRemoved(false);
+      setIconRemoved(false);
+      setSelectedCustomizationMethods([]);
+      return;
+    }
+
+    if (isEditMode && editingId) {
+      loadMainCategoryForEdit(editingId);
+    }
+  }, [isAddMode, isEditMode, editingId, loadMainCategoryForEdit]);
+
+  useEffect(() => {
+    if (!isFormMode) return;
+    fetchCustomizationMethods("");
+  }, [isFormMode, fetchCustomizationMethods]);
 
   // Debounce search input
   useEffect(() => {
@@ -176,9 +435,20 @@ const MainCategory = () => {
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
+  useEffect(() => {
+    if (searchInput) {
+      localStorage.setItem(MAIN_CATEGORY_SEARCH_STORAGE_KEY, searchInput);
+    } else {
+      localStorage.removeItem(MAIN_CATEGORY_SEARCH_STORAGE_KEY);
+    }
+  }, [searchInput]);
+
   const validate = (values) => {
     const errors = {};
     if (!values.name) errors.name = "Name is required";
+    if (values.artworkSource === "supermerch" && (!Array.isArray(values.customizationMethodIds) || values.customizationMethodIds.length === 0)) {
+      errors.customizationMethodIds = "Select at least one customization method";
+    }
     if (
       values.sortOrder !== "" &&
       values.sortOrder !== null &&
@@ -205,7 +475,10 @@ const MainCategory = () => {
       formData.append('shortDescription', values.shortDescription);
       formData.append('sortOrder', values.sortOrder);
       formData.append('isActive', values.isActive);
-      
+      formData.append('navGroup', values.navGroup || '');
+      formData.append('artworkSource', values.artworkSource || 'promodata');
+      formData.append('customizationMethodIds', JSON.stringify(values.customizationMethodIds || []));
+
       if (selectedImageFile) {
         formData.append('image', selectedImageFile);
       }
@@ -228,7 +501,6 @@ const MainCategory = () => {
 
         if (response.data.success) {
           toast.success(response.data.message || "Main Category Added Successfully");
-          setShowForm(false);
           setValues(initialState);  
           setIsSubmit(false);
           setFormErrors({});
@@ -240,7 +512,7 @@ const MainCategory = () => {
           setShowIconInput(true);
           setImageRemoved(false);
           setIconRemoved(false);
-          fetchMainCategoriesMaster();
+          navigate("/main-category");
         } else {
           toast.error(response.data.message || "Cannot add Main Category");
         }
@@ -266,7 +538,10 @@ const MainCategory = () => {
       formData.append('shortDescription', values.shortDescription);
       formData.append('sortOrder', values.sortOrder);
       formData.append('isActive', values.isActive);
-      
+      formData.append('navGroup', values.navGroup || '');
+      formData.append('artworkSource', values.artworkSource || 'promodata');
+      formData.append('customizationMethodIds', JSON.stringify(values.customizationMethodIds || []));
+
       // Handle image removal
       if (imageRemoved) {
         formData.append('removeImage', 'true');
@@ -287,7 +562,7 @@ const MainCategory = () => {
 
       try {
         const response = await axios.put(
-          `/api/main-categories/${_id}`,
+          `/api/main-categories/${editingId}`,
           formData,
           {
             headers: { 
@@ -299,8 +574,6 @@ const MainCategory = () => {
 
         if (response.data.success) {
           toast.success("Main Category Updated Successfully");
-          setUpdateForm(false);
-          setShowForm(false);
           setValues(initialState);  
           setIsSubmit(false);
           setFormErrors({});
@@ -312,7 +585,7 @@ const MainCategory = () => {
           setShowIconInput(true);
           setImageRemoved(false);
           setIconRemoved(false);
-          fetchMainCategoriesMaster();
+          navigate("/main-category");
         }
         else {
           toast.error(response.data.message || "Cannot update Main Category");
@@ -327,8 +600,6 @@ const MainCategory = () => {
   const handleCancel = (e) => {
     e.preventDefault();
     setIsSubmit(false);
-    setShowForm(false);
-    setUpdateForm(false);
     setValues(initialState);
     setFormErrors({});
     setSelectedImageFile(null);
@@ -339,9 +610,11 @@ const MainCategory = () => {
     setShowIconInput(true);
     setImageRemoved(false);
     setIconRemoved(false);
+    setSelectedCustomizationMethods([]);
     if (imageRef.current) {
       imageRef.current.value = "";
     }
+    navigate("/main-category");
   };
 
   const handleDelete = async(e) => {
@@ -386,47 +659,8 @@ const MainCategory = () => {
     setmodal_delete(false);
   };
 
-  const handleTog_edit = async (_id) => {
-    setIsSubmit(false);
-    setUpdateForm(true);
-    set_Id(_id);
-    setFormErrors({});
-    setIsLoading(true);
-    
-    try {
-      const response = await axios.get(`/api/main-categories/${_id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      if (response.data.success) {
-        const mainCategory = response.data.data;
-        const generatedSlug = mainCategory.name ? mainCategory.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : mainCategory.slug || "";
-        setValues({
-          name: mainCategory.name || "",
-          slug: generatedSlug,
-          shortDescription: mainCategory.shortDescription || "",
-          image: mainCategory.image || "",
-          icon: mainCategory.icon || "",
-          sortOrder: mainCategory.sortOrder || 0,
-          isActive: mainCategory.isActive,
-        });
-        setShowForm(true);
-        setSelectedImageFile(null);
-        setSelectedIconFile(null);
-        setImagePreview("");
-        setIconPreview("");
-        setShowImageInput(true);
-        setShowIconInput(true);
-        setImageRemoved(false);
-        setIconRemoved(false);
-      } else {
-        toast.error("Failed to fetch main category details");
-      }
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleTog_edit = (_id) => {
+    navigate(`/main-category/edit/${_id}`);
   };
   
 
@@ -456,8 +690,54 @@ const MainCategory = () => {
     if (name === "name") {
       const generatedSlug = value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       setValues({ ...values, [name]: newValue, slug: generatedSlug });
+    } else if (name === "artworkSource") {
+      const nextValues = { ...values, [name]: newValue };
+      if (newValue !== "supermerch") {
+        nextValues.customizationMethodIds = [];
+        setSelectedCustomizationMethods([]);
+      }
+      setValues(nextValues);
     } else {
       setValues({ ...values, [name]: newValue });
+    }
+  };
+
+  const handleCustomizationMethodsChange = (selected) => {
+    const nextSelected = Array.isArray(selected) ? selected : [];
+    setSelectedCustomizationMethods(nextSelected);
+    setValues((prev) => ({
+      ...prev,
+      customizationMethodIds: nextSelected.map((opt) => opt.value),
+    }));
+  };
+
+  const handleSelectAllCustomizationMethods = async () => {
+    setIsSelectingAllMethods(true);
+    try {
+      const response = await axios.get("/api/listbyparams/customization-methods", {
+        params: {
+          page: 1,
+          limit: 1000,
+          isActive: true,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const list = response.data?.success ? (response.data.data || []) : [];
+      const allOptions = list.map(mapMethodOption).filter(Boolean);
+      setCustomizationMethodOptions(allOptions);
+      setSelectedCustomizationMethods(allOptions);
+      setValues((prev) => ({
+        ...prev,
+        customizationMethodIds: allOptions.map((opt) => opt.value),
+      }));
+    } catch (err) {
+      console.error("Error selecting all customization methods:", err);
+      toast.error("Failed to select all customization methods");
+    } finally {
+      setIsSelectingAllMethods(false);
     }
   };
 
@@ -601,6 +881,76 @@ const MainCategory = () => {
                     </Col>
                   </Row>
                   <Row>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <select
+                          className="form-control"
+                          name="navGroup"
+                          value={values.navGroup}
+                          onChange={handleChange}
+                        >
+                          <option value="">-- None --</option>
+                          <option value="promotional">Promotional</option>
+                          <option value="clothing">Clothing</option>
+                          <option value="headwear">Headwear</option>
+                        </select>
+                        <label className="form-label">Nav Group</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <select
+                          className="form-control"
+                          name="artworkSource"
+                          value={values.artworkSource}
+                          onChange={handleChange}
+                        >
+                          <option value="promodata">Promodata</option>
+                          <option value="supermerch">Supermerch</option>
+                        </select>
+                        <label className="form-label">
+                          Artwork Source <span className="text-danger"> *</span>
+                        </label>
+                      </div>
+                    </Col>
+                    {values.artworkSource === "supermerch" && (
+                      <Col lg={6}>
+                        <div className="mb-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <Label className="form-label mb-0">
+                              Customization Methods <span className="text-danger"> *</span>
+                            </Label>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-soft-primary"
+                              onClick={handleSelectAllCustomizationMethods}
+                              disabled={isSelectingAllMethods}
+                            >
+                              {isSelectingAllMethods ? "Selecting..." : "Select All"}
+                            </button>
+                          </div>
+                          <AsyncSelect
+                            isMulti
+                            cacheOptions
+                            defaultOptions={customizationMethodOptions}
+                            value={selectedCustomizationMethods}
+                            loadOptions={loadCustomizationMethodOptions}
+                            onChange={handleCustomizationMethodsChange}
+                            placeholder="Search and select customization methods..."
+                            noOptionsMessage={() => "No methods found"}
+                            styles={{
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            menuPortalTarget={document.body}
+                          />
+                          {isSubmit && values.artworkSource === "supermerch" && values.customizationMethodIds.length === 0 && (
+                            <p className="text-danger mt-1">{formErrors.customizationMethodIds || "Select at least one customization method"}</p>
+                          )}
+                        </div>
+                      </Col>
+                    )}
+                  </Row>
+                  <Row>
                     <Col lg={12}>
                       <div className="form-floating mb-3">
                         <textarea
@@ -735,7 +1085,7 @@ const MainCategory = () => {
                   </div>
                   <Col lg={12}>
                     <FormsFooter
-                      handleSubmit={updateForm ? handleUpdate : handleClick}
+                      handleSubmit={isEditMode ? handleUpdate : handleClick}
                       handleSubmitCancel={handleCancel}
                     />
                   </Col>
@@ -749,8 +1099,6 @@ const MainCategory = () => {
   );
   
   const handleList = () => {
-    setShowForm(false);
-    setUpdateForm(false);
     setIsSubmit(false);
     setValues(initialState);
     setFormErrors({});
@@ -765,6 +1113,7 @@ const MainCategory = () => {
     if (imageRef.current) {
       imageRef.current.value = "";
     }
+    navigate("/main-category");
   }
 
   document.title = `Main Category Master | ${adminData.companyName}`;
@@ -785,14 +1134,14 @@ const MainCategory = () => {
                     filter={filter}
                     handleFilter={handleFilter}
                     tog_list={() => handleList()}
+                    openAddForm={() => navigate("/main-category/add")}
                     setQuery={setSearchInput}
+                    searchValue={searchInput}
                     initialState={initialState}
                     setValues={setValues}
-                    updateForm={updateForm}
-                    showForm={showForm}
-                    setShowForm={setShowForm}
-                    setUpdateForm={setUpdateForm}
-                    showAddButton={false}
+                    updateForm={isEditMode}
+                    showForm={isFormMode}
+                    showAddButton={currentPagePermissions?.write !== false}
                     data={data}
                     exportColumns={exportColumns}
                     fileName="main_categories"
@@ -800,7 +1149,9 @@ const MainCategory = () => {
                   />
                 </CardHeader>
 
-                <CardBody>
+                {isFormMode && renderForm()}
+
+                {!isFormMode && <CardBody>
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
                       columns={columns}
@@ -826,12 +1177,24 @@ const MainCategory = () => {
                       onChangePage={handlePageChange}
                     />
                   </div>
-                </CardBody>
+                </CardBody>}
               </Card>
             </Col>
           </Row>
         </Container>
       </div>
+      <DeleteModal
+        show={modal_delete}
+        handleDelete={handleDelete}
+        toggle={handleDeleteClose}
+        setmodal_delete={setmodal_delete}
+      />
+
+      <ReferenceErrorModal
+        show={referenceModal}
+        onClose={handleReferenceModalClose}
+        data={referenceData}
+      />
     </React.Fragment>
   );
 };

@@ -1545,10 +1545,10 @@ const CreateOrder = () => {
                                 return (
                                   <div
                                     key={cp.id}
-                                    className={`border rounded p-2 bg-white ${
+                                    className={`border rounded p-2 bg-white d-flex flex-column align-items-center justify-content-between ${
                                       isSelected ? "border-success border-2 shadow-sm" : ""
                                     }`}
-                                    style={{ cursor: "pointer", minWidth: 100, transition: "all 0.15s" }}
+                                    style={{ cursor: "pointer", width: 130, transition: "all 0.15s" }}
                                     onClick={() => {
                                       if (isSelected) {
                                         setSelectedPositions((prev) =>
@@ -1559,10 +1559,23 @@ const CreateOrder = () => {
                                       }
                                     }}
                                   >
-                                    <strong className="small">{cp.positionName}</strong>
-                                    {p.priceAdjustment > 0 && (
-                                      <><br /><small className="text-warning">+A${p.priceAdjustment.toFixed(2)}</small></>
-                                    )}
+                                    <div className="text-center mb-2" style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {cp.imageUrl ? (
+                                        <img
+                                          src={cp.imageUrl.startsWith("http") ? cp.imageUrl : `${apiUrl}/${cp.imageUrl}`}
+                                          alt={cp.positionName}
+                                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                        />
+                                      ) : (
+                                        <i className="ri-image-line text-muted" style={{ fontSize: 24 }}></i>
+                                      )}
+                                    </div>
+                                    <div className="text-center">
+                                      <strong className="small d-block">{cp.positionName}</strong>
+                                      {p.priceAdjustment > 0 && (
+                                        <small className="text-warning">+A${p.priceAdjustment.toFixed(2)}</small>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}

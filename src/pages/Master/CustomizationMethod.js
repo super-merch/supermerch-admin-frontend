@@ -40,6 +40,8 @@ const CustomizationMethod = () => {
   const initialState = {
     applicationMethod: "",
     applicationType: "",
+    displayName: "",
+    description: "",
     setupCharge: 0,
     isActive: true,
   };
@@ -68,6 +70,11 @@ const CustomizationMethod = () => {
     {
       name: "Sr No",
       selector: (row, index) => index + 1,
+      sortable: true,
+    },
+    {
+      name: "Display Name",
+      selector: (row) => <p className="text-wrap">{row.displayName || "—"}</p>,
       sortable: true,
     },
     {
@@ -118,6 +125,7 @@ const CustomizationMethod = () => {
   ];
 
   const exportColumns = [
+    { header: "Display Name", key: "displayName" },
     { header: "Application Method", key: "applicationMethod" },
     { header: "Application Type", key: "applicationType" },
     { header: "Setup Charge", key: "setupCharge" },
@@ -323,6 +331,8 @@ const CustomizationMethod = () => {
         setValues({
           applicationMethod: method.applicationMethod || "",
           applicationType: method.applicationType || "",
+          displayName: method.displayName || "",
+          description: method.description || "",
           setupCharge: method.setupCharge || 0,
           isActive: method.isActive,
         });
@@ -382,68 +392,93 @@ const CustomizationMethod = () => {
             <div className="live-preview">
               <Form>
                 <Row>
-                  <Row>
-                    <Col lg={4}>
-                      <div className="form-floating mb-3">
-                        <select
-                          className="form-select"
-                          name="applicationMethod"
-                          value={values.applicationMethod}
-                          onChange={handleChange}
-                        >
-                          <option value="">Select Method</option>
-                          <option value="EMBROIDERY">Embroidery</option>
-                          <option value="PRINTING">Printing</option>
-                        </select>
-                        <label className="form-label">
-                          Application Method <span className="text-danger"> *</span>
-                        </label>
-                        {isSubmit && (
-                          <p className="text-danger">{formErrors.applicationMethod}</p>
-                        )}
-                      </div>
-                    </Col>
-                    <Col lg={4}>
-                      <div className="form-floating mb-3">
-                        <select
-                          className="form-select"
-                          name="applicationType"
-                          value={values.applicationType}
-                          onChange={handleChange}
-                        >
-                          <option value="">Select Type</option>
-                          <option value="TEXT">Text</option>
-                          <option value="IMAGE">Image</option>
-                        </select>
-                        <label className="form-label">
-                          Application Type <span className="text-danger"> *</span>
-                        </label>
-                        {isSubmit && (
-                          <p className="text-danger">{formErrors.applicationType}</p>
-                        )}
-                      </div>
-                    </Col>
-                    <Col lg={4}>
-                      <div className="form-floating mb-3">
-                        <input
-                          type="number"
-                          className="form-control"
-                          required
-                          name="setupCharge"
-                          value={values.setupCharge}
-                          onChange={handleChange}
-                          min="0"
-                          step="0.01"
-                        />
-                        <label className="form-label">
-                          Setup Charge (A$) <span className="text-danger"> *</span>
-                        </label>
-                        {isSubmit && (
-                          <p className="text-danger">{formErrors.setupCharge}</p>
-                        )}
-                      </div>
-                    </Col>
-                  </Row>
+                  <Col lg={4}>
+                    <div className="form-floating mb-3">
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="displayName"
+                        value={values.displayName}
+                        onChange={handleChange}
+                        placeholder="Enter Display Name"
+                      />
+                      <label className="form-label">Display Name</label>
+                    </div>
+                  </Col>
+                  <Col lg={8}>
+                    <div className="form-floating mb-3">
+                      <textarea
+                        className="form-control"
+                        style={{ height: '100px' }}
+                        name="description"
+                        value={values.description}
+                        onChange={handleChange}
+                        placeholder="Enter Description"
+                      />
+                      <label className="form-label">Description</label>
+                    </div>
+                  </Col>
+                  
+                  <Col lg={4}>
+                    <div className="form-floating mb-3">
+                      <select
+                        className="form-select"
+                        name="applicationMethod"
+                        value={values.applicationMethod}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select Method</option>
+                        <option value="EMBROIDERY">Embroidery</option>
+                        <option value="PRINTING">Printing</option>
+                      </select>
+                      <label className="form-label">
+                        Application Method <span className="text-danger"> *</span>
+                      </label>
+                      {isSubmit && (
+                        <p className="text-danger">{formErrors.applicationMethod}</p>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={4}>
+                    <div className="form-floating mb-3">
+                      <select
+                        className="form-select"
+                        name="applicationType"
+                        value={values.applicationType}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select Type</option>
+                        <option value="TEXT">Text</option>
+                        <option value="IMAGE">Image</option>
+                      </select>
+                      <label className="form-label">
+                        Application Type <span className="text-danger"> *</span>
+                      </label>
+                      {isSubmit && (
+                        <p className="text-danger">{formErrors.applicationType}</p>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={4}>
+                    <div className="form-floating mb-3">
+                      <input
+                        type="number"
+                        className="form-control"
+                        required
+                        name="setupCharge"
+                        value={values.setupCharge}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                      />
+                      <label className="form-label">
+                        Setup Charge (A$) <span className="text-danger"> *</span>
+                      </label>
+                      {isSubmit && (
+                        <p className="text-danger">{formErrors.setupCharge}</p>
+                      )}
+                    </div>
+                  </Col>
                   
                   <div className="mt-3">
                     <Row>
