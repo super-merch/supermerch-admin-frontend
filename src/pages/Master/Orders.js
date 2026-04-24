@@ -414,8 +414,8 @@ const Orders = () => {
       <div className="page-content">
         {isLoading && <LoadingOverlay />}
         <Container fluid>
-          <div className="d-flex align-items-center justify-content-between mb-3">
-            <BreadCrumb maintitle="Master" title="Orders" pageTitle="Master" />
+          <BreadCrumb maintitle="Master" title="Orders" pageTitle="Master" />
+          <div className="d-flex justify-content-end mb-3">
             <Button
               color="success"
               onClick={() => navigate("/orders/create")}
