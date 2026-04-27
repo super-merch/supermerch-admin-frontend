@@ -106,28 +106,36 @@ const SubCategory = () => {
       minWidth: "150px",
     },
     {
-      name: "Image",
-      selector: (row) => (
-        <div>
-          {row.image ? (
-            <img
-              src={`${apiUrl}/${row.image}`}
-              alt={row.name}
-              style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-            />
-          ) : (
-            "-"
-          )}
-        </div>
-      ),
-      sortable: false,
-      minWidth: "120px",
-    },
-    {
       name: "Sort Order",
       selector: (row) => <p className="text-wrap">{row.sortOrder}</p>,
       sortable: true,
       minWidth: "120px",
+    },
+    {
+      name: "Actions",
+      minWidth: "120px",
+      cell: (row) => (
+        <div className="d-flex gap-2">
+          <div className="edit d-flex gap-2">
+            {currentPagePermissions?.edit !== false && (
+              <button
+                className="btn btn-sm btn-success edit-item-btn"
+                onClick={() => handleTog_edit(row._id)}
+              >
+                Edit
+              </button>
+            )}
+            {currentPagePermissions?.delete !== false && (
+              <button
+                className="btn btn-sm btn-danger remove-item-btn"
+                onClick={() => tog_delete(row._id)}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      ),
     },
   ];
 
@@ -435,7 +443,7 @@ const SubCategory = () => {
         setValues({
           name: subCategory.name || "",
           slug: generatedSlug,
-          mainCategoryId: subCategory.mainCategoryId || "",
+          mainCategoryId: subCategory.mainCategoryId?._id || subCategory.mainCategoryId || "",
           shortDescription: subCategory.shortDescription || "",
           image: subCategory.image || "",
           icon: subCategory.icon || "",
@@ -571,7 +579,7 @@ const SubCategory = () => {
                         >
                           <option value="">Select Main Category</option>
                           {mainCategories.map((category) => (
-                            <option key={category.id} value={category.id}>
+                            <option key={category._id} value={category._id}>
                               {category.name}
                             </option>
                           ))}
@@ -826,6 +834,11 @@ const SubCategory = () => {
                     filter={filter}
                     handleFilter={handleFilter}
                     tog_list={() => handleList()}
+                    openAddForm={() => {
+                      setShowForm(true);
+                      setUpdateForm(false);
+                      setValues(initialState);
+                    }}
                     setQuery={setQuery}
                     initialState={initialState}
                     setValues={setValues}
@@ -833,15 +846,16 @@ const SubCategory = () => {
                     showForm={showForm}
                     setShowForm={setShowForm}
                     setUpdateForm={setUpdateForm}
-                    showAddButton={false}
+                    showAddButton={currentPagePermissions?.write !== false}
                     data={data}
                     exportColumns={exportColumns}
                     fileName="sub_categories"
                     fetchAllForExport={fetchAllForExport}
                   />
                 </CardHeader>
-
-                <CardBody>
+                {showForm && renderForm()}
+                {!showForm && (
+                  <CardBody>
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
                       columns={columns}
@@ -868,11 +882,24 @@ const SubCategory = () => {
                     />
                   </div>
                 </CardBody>
+                )}
               </Card>
             </Col>
           </Row>
         </Container>
       </div>
+      <DeleteModal
+        show={modal_delete}
+        handleDelete={handleDelete}
+        toggle={handleDeleteClose}
+        setmodal_delete={setmodal_delete}
+      />
+
+      <ReferenceErrorModal
+        show={referenceModal}
+        onClose={handleReferenceModalClose}
+        data={referenceData}
+      />
     </React.Fragment>
   );
 };
