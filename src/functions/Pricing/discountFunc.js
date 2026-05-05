@@ -18,3 +18,15 @@ export const getProductDiscount = async (productId) => {
 export const addProductDiscount = async (data) => {
     return await axios.post("/api/add-discount/add-discount", data);
 };
+
+export const listClearanceDiscounts = async () => {
+    return await axios.get("/api/add-discount/clearance");
+};
+
+export const upsertClearanceDiscounts = async (data) => {
+    return await axios.post("/api/add-discount/clearance", data);
+};
+
+export const removeClearanceDiscount = async (productId) => {
+    return await axios.delete(`/api/add-discount/clearance/${productId}`);
+};

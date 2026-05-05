@@ -45,6 +45,14 @@ const SubCategory = () => {
     image: "",
     icon: "",
     sortOrder: 0,
+    menuColumnTitle: "",
+    menuColumnColor: "primary",
+    menuColumnOrder: 0,
+    allowedTypeGroupIds: [],
+    themes: "",
+    compliances: "",
+    tags: "",
+    nameKeywords: "",
     isActive: true,
   };
 
@@ -248,6 +256,14 @@ const SubCategory = () => {
       formData.append('slug', values.slug);
       formData.append('mainCategoryId', values.mainCategoryId);
       formData.append('sortOrder', values.sortOrder);
+      formData.append('menuColumnTitle', values.menuColumnTitle || "");
+      formData.append('menuColumnColor', values.menuColumnColor || "primary");
+      formData.append('menuColumnOrder', values.menuColumnOrder || 0);
+      formData.append('allowedTypeGroupIds', JSON.stringify(values.allowedTypeGroupIds || []));
+      formData.append('themes', values.themes || "");
+      formData.append('compliances', values.compliances || "");
+      formData.append('tags', values.tags || "");
+      formData.append('nameKeywords', values.nameKeywords || "");
       formData.append('isActive', values.isActive);
       
       if (selectedImageFile) {
@@ -310,6 +326,14 @@ const SubCategory = () => {
       formData.append('mainCategoryId', values.mainCategoryId);
       formData.append('shortDescription', values.shortDescription);
       formData.append('sortOrder', values.sortOrder);
+      formData.append('menuColumnTitle', values.menuColumnTitle || "");
+      formData.append('menuColumnColor', values.menuColumnColor || "primary");
+      formData.append('menuColumnOrder', values.menuColumnOrder || 0);
+      formData.append('allowedTypeGroupIds', JSON.stringify(values.allowedTypeGroupIds || []));
+      formData.append('themes', values.themes || "");
+      formData.append('compliances', values.compliances || "");
+      formData.append('tags', values.tags || "");
+      formData.append('nameKeywords', values.nameKeywords || "");
       formData.append('isActive', values.isActive);
       
       // Handle image removal
@@ -448,6 +472,14 @@ const SubCategory = () => {
           image: subCategory.image || "",
           icon: subCategory.icon || "",
           sortOrder: subCategory.sortOrder || 0,
+          menuColumnTitle: subCategory.menuColumnTitle || "",
+          menuColumnColor: subCategory.menuColumnColor || "primary",
+          menuColumnOrder: Number(subCategory.menuColumnOrder || 0),
+          allowedTypeGroupIds: subCategory.allowedTypeGroupIds || [],
+          themes: (subCategory.productMatchRules?.themes || []).join(", "),
+          compliances: (subCategory.productMatchRules?.compliances || []).join(", "),
+          tags: (subCategory.productMatchRules?.tags || []).join(", "),
+          nameKeywords: (subCategory.productMatchRules?.nameKeywords || []).join(", "),
           isActive: subCategory.isActive,
         });
         setShowForm(true);
@@ -647,6 +679,106 @@ const SubCategory = () => {
                         {isSubmit && (
                           <p className="text-danger">{formErrors.sortOrder}</p>
                         )}
+                      </div>
+                    </Col>
+                    <Col lg={4}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="menuColumnTitle"
+                          value={values.menuColumnTitle}
+                          onChange={handleChange}
+                          placeholder="WORK TOPS"
+                        />
+                        <label className="form-label">Mega Menu Column Title</label>
+                      </div>
+                    </Col>
+                    <Col lg={2}>
+                      <div className="form-floating mb-3">
+                        <select
+                          className="form-select"
+                          name="menuColumnColor"
+                          value={values.menuColumnColor}
+                          onChange={handleChange}
+                        >
+                          <option value="primary">Primary</option>
+                          <option value="teal">Teal</option>
+                          <option value="blue">Blue</option>
+                          <option value="green">Green</option>
+                          <option value="orange">Orange</option>
+                          <option value="purple">Purple</option>
+                          <option value="pink">Pink</option>
+                          <option value="red">Red</option>
+                          <option value="gray">Gray</option>
+                        </select>
+                        <label className="form-label">Column Color</label>
+                      </div>
+                    </Col>
+                    <Col lg={2}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="menuColumnOrder"
+                          value={values.menuColumnOrder}
+                          onChange={handleChange}
+                          min="0"
+                        />
+                        <label className="form-label">Column Order</label>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col lg={12}>
+                      <div className="mb-3">
+                        <Label className="form-label">Allowed Promodata Type Groups (Optional)</Label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {[
+                            "PA","PB","PC","PD","PE","PF","PG","PH","PI","PJ","PK","PL","PM","PN","PO","PP","PQ","PR","PS","PT","PU","PV","PW","PX","PY",
+                          ].map((tg) => (
+                            <label key={tg} className="d-flex align-items-center gap-1 border rounded px-2 py-1" style={{ cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={(values.allowedTypeGroupIds || []).includes(tg)}
+                                onChange={(e) => {
+                                  const current = values.allowedTypeGroupIds || [];
+                                  const next = e.target.checked
+                                    ? [...current, tg]
+                                    : current.filter((id) => id !== tg);
+                                  setValues({ ...values, allowedTypeGroupIds: next });
+                                }}
+                              />
+                              <span className="small">{tg}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input type="text" className="form-control" name="themes" value={values.themes} onChange={handleChange} placeholder="healthcare, medical" />
+                        <label className="form-label">Auto-match Themes (comma separated)</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input type="text" className="form-control" name="compliances" value={values.compliances} onChange={handleChange} placeholder="ISO, TGA" />
+                        <label className="form-label">Auto-match Compliance (comma separated)</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input type="text" className="form-control" name="tags" value={values.tags} onChange={handleChange} placeholder="beanie, winter" />
+                        <label className="form-label">Auto-match Tags (comma separated)</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input type="text" className="form-control" name="nameKeywords" value={values.nameKeywords} onChange={handleChange} placeholder="beanie, beanies" />
+                        <label className="form-label">Auto-match Name Keywords (comma separated)</label>
                       </div>
                     </Col>
                   </Row>
