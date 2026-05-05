@@ -357,7 +357,8 @@ const Orders = () => {
         },
       });
       if (logoResponse.data.success) {
-        setPendingLogoCount(logoResponse.data.data?.orders?.length || 0);
+        const d = logoResponse.data.data;
+        setPendingLogoCount(d?.count ?? d?.orders?.length ?? 0);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);

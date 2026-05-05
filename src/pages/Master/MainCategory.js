@@ -65,6 +65,12 @@ const MainCategory = () => {
     navGroup: "",
     artworkSource: "promodata",
     customizationMethodIds: [],
+    allowedTypeGroupIds: [],
+    menuColumnCount: 4,
+    themes: "",
+    compliances: "",
+    tags: "",
+    nameKeywords: "",
   };
 
   // File upload related states
@@ -94,6 +100,10 @@ const MainCategory = () => {
   const [sortDirection, setsortDirection] = useState();
 
   const [data, setData] = useState([]);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderRows, setReorderRows] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const [referenceModal, setReferenceModal] = useState(false);
   const [referenceData, setReferenceData] = useState(null);
@@ -259,6 +269,12 @@ const MainCategory = () => {
     }
   }, [fetchMainCategoriesMaster, isFormMode]);
 
+  useEffect(() => {
+    if (!isReorderMode) {
+      setReorderRows(data);
+    }
+  }, [data, isReorderMode]);
+
   useEffect(() => () => {
     if (methodSearchDebounceRef.current) {
       clearTimeout(methodSearchDebounceRef.current);
@@ -364,6 +380,12 @@ const MainCategory = () => {
           customizationMethodIds: (mainCategory.customizationMethodIds || []).map((m) =>
             String(m?._id || m?.id || m)
           ).filter(Boolean),
+          allowedTypeGroupIds: mainCategory.allowedTypeGroupIds || [],
+          menuColumnCount: Number(mainCategory.menuColumnCount || 4),
+          themes: (mainCategory.productMatchRules?.themes || []).join(", "),
+          compliances: (mainCategory.productMatchRules?.compliances || []).join(", "),
+          tags: (mainCategory.productMatchRules?.tags || []).join(", "),
+          nameKeywords: (mainCategory.productMatchRules?.nameKeywords || []).join(", "),
         });
 
         const methodsFromPayload = (mainCategory.customizationMethodIds || [])
@@ -478,6 +500,12 @@ const MainCategory = () => {
       formData.append('navGroup', values.navGroup || '');
       formData.append('artworkSource', values.artworkSource || 'promodata');
       formData.append('customizationMethodIds', JSON.stringify(values.customizationMethodIds || []));
+      formData.append('allowedTypeGroupIds', JSON.stringify(values.allowedTypeGroupIds || []));
+      formData.append('menuColumnCount', values.menuColumnCount || 4);
+      formData.append('themes', values.themes || '');
+      formData.append('compliances', values.compliances || '');
+      formData.append('tags', values.tags || '');
+      formData.append('nameKeywords', values.nameKeywords || '');
 
       if (selectedImageFile) {
         formData.append('image', selectedImageFile);
@@ -541,6 +569,12 @@ const MainCategory = () => {
       formData.append('navGroup', values.navGroup || '');
       formData.append('artworkSource', values.artworkSource || 'promodata');
       formData.append('customizationMethodIds', JSON.stringify(values.customizationMethodIds || []));
+      formData.append('allowedTypeGroupIds', JSON.stringify(values.allowedTypeGroupIds || []));
+      formData.append('menuColumnCount', values.menuColumnCount || 4);
+      formData.append('themes', values.themes || '');
+      formData.append('compliances', values.compliances || '');
+      formData.append('tags', values.tags || '');
+      formData.append('nameKeywords', values.nameKeywords || '');
 
       // Handle image removal
       if (imageRemoved) {
@@ -746,6 +780,72 @@ const MainCategory = () => {
     setsortDirection(sortDirection);
   };
 
+  const handleStartReorder = () => {
+    setReorderRows(Array.isArray(data) ? [...data] : []);
+    setDraggedIndex(null);
+    setIsReorderMode(true);
+  };
+
+  const handleCancelReorder = () => {
+    setIsReorderMode(false);
+    setDraggedIndex(null);
+    setReorderRows([]);
+  };
+
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDrop = (dropIndex) => {
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+    setReorderRows((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(draggedIndex, 1);
+      next.splice(dropIndex, 0, moved);
+      return next;
+    });
+    setDraggedIndex(null);
+  };
+
+  const handleSaveReorder = async () => {
+    if (!Array.isArray(reorderRows) || reorderRows.length === 0) {
+      setIsReorderMode(false);
+      return;
+    }
+
+    setIsSavingOrder(true);
+    try {
+      const baseSortOrder = reorderRows.reduce((min, row) => {
+        const current = Number(row?.sortOrder);
+        if (!Number.isFinite(current)) return min;
+        return min === null ? current : Math.min(min, current);
+      }, null) ?? 1;
+
+      await Promise.all(
+        reorderRows.map((row, index) =>
+          axios.put(
+            `/api/main-categories/${row._id}`,
+            { sortOrder: baseSortOrder + index },
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            },
+          ),
+        ),
+      );
+
+      toast.success("Main category order updated");
+      setIsReorderMode(false);
+      setDraggedIndex(null);
+      await fetchMainCategoriesMaster();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update order");
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
   const handlePageChange = (page) => {
     setPageNo(page);
   };
@@ -913,6 +1013,22 @@ const MainCategory = () => {
                         </label>
                       </div>
                     </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="menuColumnCount"
+                          value={values.menuColumnCount}
+                          onChange={handleChange}
+                          min="1"
+                          max="8"
+                        />
+                        <label className="form-label">
+                          Mega Menu Columns
+                        </label>
+                      </div>
+                    </Col>
                     {values.artworkSource === "supermerch" && (
                       <Col lg={6}>
                         <div className="mb-3">
@@ -949,6 +1065,123 @@ const MainCategory = () => {
                         </div>
                       </Col>
                     )}
+                  </Row>
+                  <Row>
+                    <Col lg={12}>
+                      <div className="mb-3">
+                        <Label className="form-label">
+                          Allowed Promodata Type Groups
+                          <small className="text-muted ms-2">
+                            (restricts keyword matching to these product types only — auto-inferred from Nav Group if left empty)
+                          </small>
+                        </Label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {[
+                            { id: "PA", label: "Bags" },
+                            { id: "PB", label: "Bottoms" },
+                            { id: "PC", label: "Clothing Accessories" },
+                            { id: "PD", label: "Confectionery" },
+                            { id: "PE", label: "Drinkware" },
+                            { id: "PF", label: "Exhibitions & Events" },
+                            { id: "PG", label: "Footwear" },
+                            { id: "PH", label: "Fun & Games" },
+                            { id: "PI", label: "Glassware" },
+                            { id: "PJ", label: "Golf" },
+                            { id: "PK", label: "Headwear" },
+                            { id: "PL", label: "Health & Personal" },
+                            { id: "PM", label: "Home & Living" },
+                            { id: "PN", label: "Jackets" },
+                            { id: "PO", label: "Jumpers" },
+                            { id: "PP", label: "Keyrings & Tools" },
+                            { id: "PQ", label: "Leisure & Outdoors" },
+                            { id: "PR", label: "Office & Business" },
+                            { id: "PS", label: "Phone & Technology" },
+                            { id: "PT", label: "Print" },
+                            { id: "PU", label: "Shirts" },
+                            { id: "PV", label: "Sports Uniforms" },
+                            { id: "PW", label: "Uniforms" },
+                            { id: "PX", label: "Workwear" },
+                            { id: "PY", label: "Writing" },
+                          ].map((tg) => (
+                            <label key={tg.id} className="d-flex align-items-center gap-1 border rounded px-2 py-1" style={{ cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={(values.allowedTypeGroupIds || []).includes(tg.id)}
+                                onChange={(e) => {
+                                  const current = values.allowedTypeGroupIds || [];
+                                  const next = e.target.checked
+                                    ? [...current, tg.id]
+                                    : current.filter((id) => id !== tg.id);
+                                  setValues({ ...values, allowedTypeGroupIds: next });
+                                }}
+                              />
+                              <span className="small">{tg.label} ({tg.id})</span>
+                            </label>
+                          ))}
+                        </div>
+                        {values.navGroup && (values.allowedTypeGroupIds || []).length === 0 && (
+                          <small className="text-info mt-1 d-block">
+                            Auto-scoped to "{values.navGroup}" products via Nav Group.
+                          </small>
+                        )}
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="themes"
+                          value={values.themes}
+                          onChange={handleChange}
+                          placeholder="healthcare, medical"
+                        />
+                        <label className="form-label">Auto-match Themes (comma separated)</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="compliances"
+                          value={values.compliances}
+                          onChange={handleChange}
+                          placeholder="TGA, ISO"
+                        />
+                        <label className="form-label">Auto-match Compliance (comma separated)</label>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="tags"
+                          value={values.tags}
+                          onChange={handleChange}
+                          placeholder="healthwear, scrubs"
+                        />
+                        <label className="form-label">Auto-match Product Tags (comma separated)</label>
+                      </div>
+                    </Col>
+                    <Col lg={6}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="nameKeywords"
+                          value={values.nameKeywords}
+                          onChange={handleChange}
+                          placeholder="nurse, medical, hospital"
+                        />
+                        <label className="form-label">Auto-match Name Keywords (comma separated)</label>
+                      </div>
+                    </Col>
                   </Row>
                   <Row>
                     <Col lg={12}>
@@ -1152,6 +1385,63 @@ const MainCategory = () => {
                 {isFormMode && renderForm()}
 
                 {!isFormMode && <CardBody>
+                  <div className="d-flex justify-content-end gap-2 mb-3">
+                    {!isReorderMode ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={handleStartReorder}
+                        disabled={loading || !Array.isArray(data) || data.length < 2}
+                      >
+                        Drag Sort
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success"
+                          onClick={handleSaveReorder}
+                          disabled={isSavingOrder}
+                        >
+                          {isSavingOrder ? "Saving..." : "Save Order"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-light"
+                          onClick={handleCancelReorder}
+                          disabled={isSavingOrder}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {isReorderMode ? (
+                    <div className="border rounded p-3">
+                      <p className="text-muted mb-3">
+                        Drag rows to reorder, then click <strong>Save Order</strong>.
+                      </p>
+                      <div className="d-flex flex-column gap-2">
+                        {reorderRows.map((row, index) => (
+                          <div
+                            key={row._id}
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => handleDrop(index)}
+                            className="d-flex align-items-center justify-content-between border rounded px-3 py-2 bg-white"
+                            style={{ cursor: "move" }}
+                          >
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="text-muted">::</span>
+                              <span>{row.name}</span>
+                            </div>
+                            <small className="text-muted">Current sort: {row.sortOrder}</small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
                       columns={columns}
@@ -1177,6 +1467,7 @@ const MainCategory = () => {
                       onChangePage={handlePageChange}
                     />
                   </div>
+                  )}
                 </CardBody>}
               </Card>
             </Col>
