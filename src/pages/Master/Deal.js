@@ -950,10 +950,20 @@ const Deal = () => {
       const slotKey = `slot_${slotIndex}`;
       const currentSlotCustomizations = prev[slotKey] || [];
       
+      const sMethodId = String(methodId);
+      const sPositionId = String(positionId);
+
       if (checked) {
+        // Only add if not already present
+        const exists = currentSlotCustomizations.some(
+          c => String(c.customizationMethodId) === sMethodId && String(c.positionId) === sPositionId
+        );
+        if (exists) return prev;
+
         const customization = {
           customizationMethodId: methodId,
-          positionId: positionId
+          positionId: positionId,
+          isFree: false
         };
         return {
           ...prev,
@@ -963,10 +973,32 @@ const Deal = () => {
         return {
           ...prev,
           [slotKey]: currentSlotCustomizations.filter(
-            c => !(c.customizationMethodId === methodId && c.positionId === positionId)
+            c => !(String(c.customizationMethodId) === sMethodId && String(c.positionId) === sPositionId)
           )
         };
       }
+    });
+  };
+
+  const handleSlotCustomizationFreeToggle = (slotIndex, methodId, positionId, isFree) => {
+    setSlotCustomizations(prev => {
+      const slotKey = `slot_${slotIndex}`;
+      const currentSlotCustomizations = prev[slotKey] || [];
+      
+      const sMethodId = String(methodId);
+      const sPositionId = String(positionId);
+
+      const updated = currentSlotCustomizations.map(c => {
+        if (String(c.customizationMethodId) === sMethodId && String(c.positionId) === sPositionId) {
+          return { ...c, isFree };
+        }
+        return c;
+      });
+      
+      return {
+        ...prev,
+        [slotKey]: updated
+      };
     });
   };
 
@@ -2126,7 +2158,7 @@ const Deal = () => {
                                   )}
                                   
                                   {/* Slot Customization Section */}
-                                  {slot.hasCustomization && (
+                                  {((editingSlotIndex === index) ? productSlotForm.hasCustomization : slot.hasCustomization) && (
                                     <Row className="mt-3">
                                       <Col lg={12}>
                                         <div className="border-top pt-3">
@@ -2146,25 +2178,52 @@ const Deal = () => {
                                               </div>
                                               <div className="row">
                                                 {customizationPositions.map((position) => {
-                                                  const isChecked = (slotCustomizations[`slot_${index}`] || []).some(
-                                                    c => c.customizationMethodId === method.id && c.positionId === position.id
+                                                  const methodId = String(method.id);
+                                                  const positionId = String(position.id);
+                                                  const customization = (slotCustomizations[`slot_${index}`] || []).find(
+                                                    c => String(c.customizationMethodId) === methodId && String(c.positionId) === positionId
                                                   );
+                                                  const isChecked = !!customization;
+                                                  const isFree = customization?.isFree || false;
+                                                  const isSlotFree = (editingSlotIndex === index) ? productSlotForm.isFreeCustomization : slot.isFreeCustomization;
+
                                                   return (
-                                                    <div key={position.id} className="col-md-4 mb-1">
-                                                      <div className="d-flex align-items-center gap-2">
-                                                        <Input
-                                                          className="form-check-input"
-                                                          type="checkbox"
-                                                          id={`slot_${index}_custom_${method.id}_${position.id}`}
-                                                          checked={isChecked}
-                                                          onChange={(e) => handleSlotCustomizationChange(index, method.id, position.id, e.target.checked)}
-                                                        />
-                                                        <Label 
-                                                          className="form-check-label small mb-0" 
-                                                          htmlFor={`slot_${index}_custom_${method.id}_${position.id}`}
-                                                        >
-                                                          {position.positionName}
-                                                        </Label>
+                                                    <div key={position.id} className="col-md-6 mb-2">
+                                                      <div className="d-flex align-items-center justify-content-between border rounded p-2 bg-white">
+                                                        <div className="d-flex align-items-center gap-2">
+                                                          <Input
+                                                            className="form-check-input"
+                                                            type="checkbox"
+                                                            id={`slot_${index}_custom_${method.id}_${position.id}`}
+                                                            checked={isChecked}
+                                                            onChange={(e) => handleSlotCustomizationChange(index, method.id, position.id, e.target.checked)}
+                                                          />
+                                                          <Label 
+                                                            className="form-check-label small mb-0" 
+                                                            htmlFor={`slot_${index}_custom_${method.id}_${position.id}`}
+                                                          >
+                                                            {position.positionName}
+                                                          </Label>
+                                                        </div>
+                                                        
+                                                        {isChecked && (
+                                                          <div className="form-check form-switch form-switch-sm mb-0">
+                                                            <Input
+                                                              type="checkbox"
+                                                              className="form-check-input"
+                                                              id={`free_${index}_${method.id}_${position.id}`}
+                                                              checked={isFree || isSlotFree}
+                                                              disabled={isSlotFree}
+                                                              onChange={(e) => handleSlotCustomizationFreeToggle(index, method.id, position.id, e.target.checked)}
+                                                            />
+                                                            <Label 
+                                                              className={`form-check-label small mb-0 ${isFree || isSlotFree ? 'text-success' : ''}`} 
+                                                              htmlFor={`free_${index}_${method.id}_${position.id}`}
+                                                            >
+                                                              Free
+                                                            </Label>
+                                                          </div>
+                                                        )}
                                                       </div>
                                                     </div>
                                                   );
