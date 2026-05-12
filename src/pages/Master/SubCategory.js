@@ -56,6 +56,34 @@ const SubCategory = () => {
     isActive: true,
   };
 
+  const promodataTypeGroups = [
+    { id: "PA", label: "Bags" },
+    { id: "PB", label: "Bottoms" },
+    { id: "PC", label: "Clothing Accessories" },
+    { id: "PD", label: "Confectionery" },
+    { id: "PE", label: "Drinkware" },
+    { id: "PF", label: "Exhibitions & Events" },
+    { id: "PG", label: "Footwear" },
+    { id: "PH", label: "Fun & Games" },
+    { id: "PI", label: "Glassware" },
+    { id: "PJ", label: "Golf" },
+    { id: "PK", label: "Headwear" },
+    { id: "PL", label: "Health & Personal" },
+    { id: "PM", label: "Home & Living" },
+    { id: "PN", label: "Jackets" },
+    { id: "PO", label: "Jumpers" },
+    { id: "PP", label: "Keyrings & Tools" },
+    { id: "PQ", label: "Leisure & Outdoors" },
+    { id: "PR", label: "Office & Business" },
+    { id: "PS", label: "Phone & Technology" },
+    { id: "PT", label: "Print" },
+    { id: "PU", label: "Shirts" },
+    { id: "PV", label: "Sports Uniforms" },
+    { id: "PW", label: "Uniforms" },
+    { id: "PX", label: "Workwear" },
+    { id: "PY", label: "Writing" },
+  ];
+
   // File upload related states
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [selectedIconFile, setSelectedIconFile] = useState(null);
@@ -734,22 +762,22 @@ const SubCategory = () => {
                       <div className="mb-3">
                         <Label className="form-label">Allowed Promodata Type Groups (Optional)</Label>
                         <div className="d-flex flex-wrap gap-2">
-                          {[
-                            "PA","PB","PC","PD","PE","PF","PG","PH","PI","PJ","PK","PL","PM","PN","PO","PP","PQ","PR","PS","PT","PU","PV","PW","PX","PY",
-                          ].map((tg) => (
-                            <label key={tg} className="d-flex align-items-center gap-1 border rounded px-2 py-1" style={{ cursor: "pointer" }}>
+                          {promodataTypeGroups.map((tg) => (
+                            <label key={tg.id} className="d-flex align-items-center gap-1 border rounded px-2 py-1" style={{ cursor: "pointer" }}>
                               <input
                                 type="checkbox"
-                                checked={(values.allowedTypeGroupIds || []).includes(tg)}
+                                checked={(values.allowedTypeGroupIds || []).includes(tg.id)}
                                 onChange={(e) => {
                                   const current = values.allowedTypeGroupIds || [];
                                   const next = e.target.checked
-                                    ? [...current, tg]
-                                    : current.filter((id) => id !== tg);
+                                    ? [...current, tg.id]
+                                    : current.filter((id) => id !== tg.id);
                                   setValues({ ...values, allowedTypeGroupIds: next });
                                 }}
                               />
-                              <span className="small">{tg}</span>
+                              <span className="small">
+                                {tg.label} ({tg.id})
+                              </span>
                             </label>
                           ))}
                         </div>
