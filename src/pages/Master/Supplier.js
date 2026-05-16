@@ -62,6 +62,9 @@ const Supplier = () => {
     requestType: "",
     requestBody: "",
     responseType: "",
+    deliveryTime: "",
+    deliveryTimeUnit: "days",
+    orderCutoffTime: "18:00",
     isActive: true,
   };
 
@@ -93,6 +96,7 @@ const Supplier = () => {
   const [leadTimeMap, setLeadTimeMap] = useState({});       // { supplierId: leadTime }
   const [leadTimeInputs, setLeadTimeInputs] = useState({});
   const [promodataLeadTimes, setPromodataLeadTimes] = useState({}); // defaults from promodata
+  const [deliveryInputs, setDeliveryInputs] = useState({}); // { supplierId: { time, unit, cutoff } }
 
   const {currentPagePermissions} = useContext(MenuContext);
 
@@ -229,6 +233,61 @@ const Supplier = () => {
             )}
             {!existing && promoDefault && (
               <small className="text-info">Promodata: {promoDefault}</small>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      name: "Delivery Settings",
+      width: "350px",
+      cell: (row) => {
+        const sid = row._id;
+        const currentInputs = deliveryInputs[sid] || { time: row.deliveryTime || "", unit: row.deliveryTimeUnit || "days", cutoff: row.orderCutoffTime || "18:00" };
+        
+        return (
+          <div className="d-flex flex-column gap-1">
+            <div className="d-flex align-items-center gap-1">
+              <input
+                type="number"
+                className="form-control form-control-sm"
+                style={{ width: 60 }}
+                placeholder="Time"
+                min="0"
+                value={currentInputs.time}
+                onChange={(e) =>
+                  setDeliveryInputs((prev) => ({ ...prev, [sid]: { ...currentInputs, time: e.target.value } }))
+                }
+              />
+              <select
+                className="form-select form-select-sm px-1"
+                style={{ width: 80 }}
+                value={currentInputs.unit}
+                onChange={(e) =>
+                  setDeliveryInputs((prev) => ({ ...prev, [sid]: { ...currentInputs, unit: e.target.value } }))
+                }
+              >
+                <option value="days">Days</option>
+                <option value="weeks">Weeks</option>
+                <option value="hours">Hours</option>
+              </select>
+              <input
+                type="time"
+                className="form-control form-control-sm px-1"
+                style={{ width: 90 }}
+                value={currentInputs.cutoff}
+                onChange={(e) =>
+                  setDeliveryInputs((prev) => ({ ...prev, [sid]: { ...currentInputs, cutoff: e.target.value } }))
+                }
+              />
+              <Button color="success" size="sm" className="btn-icon" onClick={() => handleDeliverySave(row)} title="Save">
+                <i className="ri-save-line"></i>
+              </Button>
+            </div>
+            {row.deliveryTime && (
+              <small className="text-muted">
+                Saved: <strong>{row.deliveryTime} {row.deliveryTimeUnit}</strong> (Cutoff: {row.orderCutoffTime})
+              </small>
             )}
           </div>
         );
@@ -424,6 +483,40 @@ const Supplier = () => {
     }
   };
 
+  const handleDeliverySave = async (row) => {
+    const inputs = deliveryInputs[row._id];
+    if (!inputs) return;
+    
+    setIsLoading(true);
+    try {
+      const supplierData = {
+        ...row,
+        deliveryTime: inputs.time,
+        deliveryTimeUnit: inputs.unit,
+        orderCutoffTime: inputs.cutoff,
+      };
+      
+      const response = await axios.put(
+        `/api/suppliers/${row._id}`,
+        supplierData,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Delivery settings saved");
+        fetchSupplierMaster(); 
+      } else {
+        toast.error(response.data.message || "Cannot update Supplier");
+      }
+    } catch (err) {
+      toast.error("Failed to save delivery settings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ── Fetch promodata lead time defaults when supplier data loads ──
   useEffect(() => {
     if (!data || data.length === 0) return;
@@ -505,6 +598,12 @@ const Supplier = () => {
         address: values.address,
         apiEndpoint: values.apiEndpoint,
         apiKey: values.apiKey,
+        requestType: values.requestType,
+        requestBody: values.requestBody,
+        responseType: values.responseType,
+        deliveryTime: values.deliveryTime,
+        deliveryTimeUnit: values.deliveryTimeUnit,
+        orderCutoffTime: values.orderCutoffTime,
         isActive: values.isActive,
       };
       
@@ -550,6 +649,9 @@ const Supplier = () => {
         requestType: values.requestType,
         requestBody: values.requestBody,
         responseType: values.responseType,
+        deliveryTime: values.deliveryTime,
+        deliveryTimeUnit: values.deliveryTimeUnit,
+        orderCutoffTime: values.orderCutoffTime,
         isActive: values.isActive,
       };
       
@@ -648,6 +750,9 @@ const Supplier = () => {
           requestType: supplier.requestType || "",
           requestBody: supplier.requestBody || "",
           responseType: supplier.responseType || "",
+          deliveryTime: supplier.deliveryTime || "",
+          deliveryTimeUnit: supplier.deliveryTimeUnit || "days",
+          orderCutoffTime: supplier.orderCutoffTime || "18:00",
           isActive: supplier.isActive,
         });
         setShowForm(true);
@@ -888,6 +993,46 @@ const Supplier = () => {
                         )}
                       </div>
                     </Col>
+                    <Col lg={3}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="deliveryTime"
+                          value={values.deliveryTime}
+                          onChange={handleChange}
+                          min="0"
+                        />
+                        <label className="form-label">Delivery Time</label>
+                      </div>
+                    </Col>
+                    <Col lg={3}>
+                      <div className="form-floating mb-3">
+                        <select
+                          className="form-select"
+                          name="deliveryTimeUnit"
+                          value={values.deliveryTimeUnit}
+                          onChange={handleChange}
+                        >
+                          <option value="days">Days</option>
+                          <option value="weeks">Weeks</option>
+                          <option value="hours">Hours</option>
+                        </select>
+                        <label className="form-label">Time Unit</label>
+                      </div>
+                    </Col>
+                    <Col lg={3}>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="time"
+                          className="form-control"
+                          name="orderCutoffTime"
+                          value={values.orderCutoffTime}
+                          onChange={handleChange}
+                        />
+                        <label className="form-label">Order Cutoff Time</label>
+                      </div>
+                    </Col>
                     <Col lg={6}>
                       <div className="form-floating mb-3">
                         <textarea
@@ -982,6 +1127,7 @@ const Supplier = () => {
                 </CardHeader>
 
                 <CardBody>
+                  {showForm && renderForm()}
                   <div className="table-responsive table-card mt-1 mb-1 text-right">
                     <DataTable
                       columns={columns}

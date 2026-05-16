@@ -56,6 +56,11 @@ const resolveColorHex = (name, hex) => {
   return parts.map((part) => {
     const lower = part.toLowerCase();
     if (COLOR_NAME_HEX[lower]) return COLOR_NAME_HEX[lower];
+    
+    // Check for keyword matches (e.g. "Deep Black" -> "black")
+    const match = Object.keys(COLOR_NAME_HEX).find(key => lower.includes(key));
+    if (match) return COLOR_NAME_HEX[match];
+
     // Try CSS named color — browser will handle it
     return lower;
   });
@@ -220,7 +225,9 @@ const CreateOrder = () => {
   // PRODUCT CONFIGURATION HELPERS
   // ══════════════════════════════════════════════════════
 
-  const openConfigModal = (product) => {
+  const [configLoading, setConfigLoading] = useState(false);
+  const openConfigModal = async (product) => {
+    // 1. Initial basic setup from search result (so modal opens quickly)
     setConfigProduct(product);
     setSelectedColor(null);
     setSelectedSize(null);
@@ -234,7 +241,27 @@ const CreateOrder = () => {
     setUploadingArtwork(false);
     setManualUnitPrice("");
     setConfigModal(true);
+
+    // 2. Fetch FULL product details (all variants, sizes, etc.)
+    setConfigLoading(true);
+    try {
+      const productId = product.id || product._id;
+      const res = await axios.get(`${apiUrl}/api/admin/orders/product-details/${productId}`);
+      if (res.data?.success) {
+        const fullProduct = res.data.data;
+        setConfigProduct(fullProduct);
+        // Refresh default quantity if full data has better tiers
+        if (fullProduct.priceTiers?.[0]?.minQuantity) {
+          setSelectedQuantity(fullProduct.priceTiers[0].minQuantity);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching full product details:", err);
+    } finally {
+      setConfigLoading(false);
+    }
   };
+
 
   const getUniqueColors = (product) => {
     if (!product?.variants) return [];
@@ -250,7 +277,7 @@ const CreateOrder = () => {
   const getAvailableSizes = (product, colorId) => {
     if (!product?.variants || !colorId) return [];
     return product.variants
-      .filter((v) => v.color?.id === colorId && v.stockQty > 0)
+      .filter((v) => v.color?.id === colorId)
       .map((v) => ({
         variant: v,
         size: v.size,
@@ -278,7 +305,17 @@ const CreateOrder = () => {
   };
 
   const getCustomizationCharge = () => {
-    if (!enableCustomization || !selectedPositions.length) return 0;
+    if (!enableCustomization) return 0;
+    if (configProduct?.artworkSource === "promodata") {
+      if (!selectedMethod) return 0;
+      // Find the method object in productCustomizationMethods to get priceTiers
+      const methodObj = (configProduct.productCustomizationMethods || []).find(
+        (m) => m.customizationMethod?.id === selectedMethod.id
+      );
+      if (!methodObj?.priceTiers) return 0;
+      return getUnitPrice(methodObj.priceTiers, selectedQuantity);
+    }
+    if (!selectedPositions.length) return 0;
     return selectedPositions.reduce((sum, p) => sum + (p.priceAdjustment || 0), 0);
   };
 
@@ -618,11 +655,6 @@ const CreateOrder = () => {
                     <i className="ri-user-fill me-2"></i>
                     <strong>{selectedCustomer.firstName} {selectedCustomer.lastName}</strong>
                     <span className="ms-3 text-muted">{selectedCustomer.email}</span>
-                    {selectedCustomer.phone && (
-                      <span className="ms-3 text-muted">
-                        <i className="ri-phone-line me-1"></i>{selectedCustomer.phone}
-                      </span>
-                    )}
                     {selectedCustomer.companyName && (
                       <span className="ms-3 text-muted">
                         <i className="ri-building-line me-1"></i>{selectedCustomer.companyName}
@@ -633,19 +665,6 @@ const CreateOrder = () => {
                     <i className="ri-close-line"></i> Change
                   </Button>
                 </Alert>
-                {!selectedCustomer.phone && (
-                  <div className="d-flex align-items-center gap-2">
-                    <Label className="mb-0 text-nowrap"><i className="ri-phone-line me-1"></i>Phone *</Label>
-                    <Input
-                      type="text"
-                      placeholder="Enter customer phone number"
-                      value={customerPhoneOverride}
-                      onChange={(e) => setCustomerPhoneOverride(e.target.value)}
-                      style={{ maxWidth: 260 }}
-                    />
-                    <small className="text-warning"><i className="ri-error-warning-line me-1"></i>No phone on file</small>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1275,13 +1294,17 @@ const CreateOrder = () => {
                   </div>
                 )}
               </div>
-              <h6 className="fw-semibold mb-1">{configProduct.name}</h6>
+              <h6 className="fw-semibold mb-1 d-flex align-items-center">
+                {configProduct.name}
+                {configLoading && <Spinner size="sm" className="ms-2" color="primary" />}
+              </h6>
               <small className="text-muted d-block mb-1">{configProduct.productCode}</small>
               {configProduct.supplierName && (
                 <small className="text-info d-block mb-2">
                   <i className="ri-store-2-line me-1"></i>{configProduct.supplierName}
                 </small>
               )}
+
 
               {/* Price tiers table */}
               {priceTiers.length > 0 && (
@@ -1342,7 +1365,9 @@ const CreateOrder = () => {
                   </Label>
                   <div className="d-flex flex-wrap gap-2">
                     {colors.map((c) => {
-                      const hexList = resolveColorHex(c.name, c.hexCode || c.hex);
+                      const hexList = c.primaryHexCode 
+                        ? (c.secondaryHexCode ? [c.primaryHexCode, c.secondaryHexCode] : [c.primaryHexCode])
+                        : resolveColorHex(c.name, c.hexCode || c.hex);
                       const bg = colorCircleBg(hexList);
                       const isGradient = hexList.length > 1;
                       return (
@@ -1475,64 +1500,95 @@ const CreateOrder = () => {
                 )}
 
                 {/* Customization Section */}
-                {selectedColor && methods.length > 0 && (
+                {selectedColor && (
                   <>
                     <hr />
-                    <div className="mb-3">
-                      <div className="form-check form-switch">
-                        <Input
-                          type="switch"
-                          id="enableCustomization"
-                          checked={enableCustomization}
-                          onChange={() => {
-                            setEnableCustomization(!enableCustomization);
-                            if (enableCustomization) {
+                    {configProduct.artworkSource === "supermerch" ? (
+                      <div className="mb-3">
+                        <div className="form-check form-switch">
+                          <Input
+                            type="switch"
+                            id="enableCustomization"
+                            checked={enableCustomization}
+                            onChange={() => {
+                              setEnableCustomization(!enableCustomization);
+                              if (enableCustomization) {
+                                setSelectedMethod(null);
+                                setSelectedPositions([]);
+                                setCustomizationFile(null);
+                                setCustomizationImageUrl("");
+                                setAddLogoLater(false);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="enableCustomization" className="fw-medium">
+                            <i className="ri-paint-brush-line me-1"></i>Add Customization (Branding/Printing)
+                          </Label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-3">
+                        <Label className="fw-medium mb-2">
+                          <i className="ri-artboard-line me-1"></i>Select Artwork / Decoration Method *
+                        </Label>
+                        <Select
+                          options={(configProduct.productCustomizationMethods || [])
+                            .filter(m => m.customizationMethod)
+                            .map(m => ({
+                              value: m.customizationMethod?.id,
+                              label: m.customizationMethod?.applicationMethod || "Unnamed Method",
+                              method: m.customizationMethod
+                            }))}
+                          isClearable
+                          placeholder="Choose artwork method..."
+                          value={selectedMethod ? { value: selectedMethod.id, label: selectedMethod.applicationMethod } : null}
+                          onChange={(opt) => {
+                            if (opt) {
+                              setSelectedMethod(opt.method);
+                              setEnableCustomization(true);
+                            } else {
                               setSelectedMethod(null);
-                              setSelectedPositions([]);
-                              setCustomizationFile(null);
-                              setCustomizationImageUrl("");
-                              setAddLogoLater(false);
+                              setEnableCustomization(false);
                             }
                           }}
                         />
-                        <Label htmlFor="enableCustomization" className="fw-medium">
-                          <i className="ri-paint-brush-line me-1"></i>Add Customization (Branding/Printing)
-                        </Label>
                       </div>
-                    </div>
+                    )}
 
                     {enableCustomization && (
                       <div className="border rounded p-3 bg-light mb-3">
-                        {/* Method selection */}
-                        <div className="mb-3">
-                          <Label className="fw-medium mb-2">Customization Method *</Label>
-                          <div className="d-flex flex-wrap gap-2">
-                            {methods.map((m) => {
-                              const cm = m.customizationMethod;
-                              if (!cm) return null;
-                              return (
-                                <div
-                                  key={cm.id}
-                                  className={`border rounded p-2 bg-white ${
-                                    selectedMethod?.id === cm.id ? "border-primary border-2 shadow-sm" : ""
-                                  }`}
-                                  style={{ cursor: "pointer", minWidth: 140, transition: "all 0.15s" }}
-                                  onClick={() => { setSelectedMethod(cm); setSelectedPositions([]); }}
-                                >
-                                  <strong className="small d-block">{cm.applicationMethod}</strong>
-                                  <small className="text-muted">Type: {cm.applicationType}</small>
-                                  <br />
-                                  <small className="text-muted">
-                                    Setup: A${parseFloat(cm.setupCharge || 0).toFixed(2)}
-                                  </small>
-                                </div>
-                              );
-                            })}
+                        {/* Method selection (Supermerch only) */}
+                        {configProduct.artworkSource === "supermerch" && (
+                          <div className="mb-3">
+                            <Label className="fw-medium mb-2">Customization Method *</Label>
+                            <div className="d-flex flex-wrap gap-2">
+                              {methods.map((m) => {
+                                const cm = m.customizationMethod;
+                                if (!cm) return null;
+                                return (
+                                  <div
+                                    key={cm.id}
+                                    className={`border rounded p-2 bg-white ${
+                                      selectedMethod?.id === cm.id ? "border-primary border-2 shadow-sm" : ""
+                                    }`}
+                                    style={{ cursor: "pointer", minWidth: 140, transition: "all 0.15s" }}
+                                    onClick={() => { setSelectedMethod(cm); setSelectedPositions([]); }}
+                                  >
+                                    <strong className="small d-block">{cm.applicationMethod}</strong>
+                                    <small className="text-muted">Type: {cm.applicationType}</small>
+                                    <br />
+                                    <small className="text-muted">
+                                      Setup: A${parseFloat(cm.setupCharge || 0).toFixed(2)}
+                                    </small>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        {/* Position selection */}
-                        {selectedMethod && availablePositions.length > 0 && (
+                        {/* Position selection (Supermerch only) */}
+                        {configProduct.artworkSource === "supermerch" && selectedMethod && availablePositions.length > 0 && (
                           <div className="mb-3">
                             <Label className="fw-medium mb-2">Position(s)</Label>
                             <div className="d-flex flex-wrap gap-2">
