@@ -11,7 +11,7 @@ import config from "./config";
 
 function App() {
     axios.defaults.baseURL = config.api.API_URL;
-    axios.defaults.headers.common["Authorization"] = `Bearer ${localStorage.getItem("token") || ""}`;
+    axios.defaults.headers.common["Authorization"] = `Bearer ${localStorage.getItem("aToken") || ""}`;
     axios.defaults.headers.post["Content-Type"] = "application/json";
     axios.defaults.headers.post["Accept"] = "application/json";
     axios.defaults.validateStatus = function (status) {

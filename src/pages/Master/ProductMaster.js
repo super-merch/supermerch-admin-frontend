@@ -80,6 +80,11 @@ const ProductMaster = () => {
     const [productMarginMap, setProductMarginMap] = useState({});
     const [productDiscountMap, setProductDiscountMap] = useState({});
 
+    // ── Special Tags states ──────────────────────────────────
+    const [manualTags, setManualTags] = useState([]);
+    const [isSavingSpecialTags, setIsSavingSpecialTags] = useState(false);
+
+
     // ── Lazy-fetch supplier + category lists for filter dropdowns ─
     const fetchSuppliers = useCallback(async (search = "") => {
         try {
@@ -232,6 +237,8 @@ const ProductMaster = () => {
 
             const p = productRes.data?.data || productRes.data;
             setProductDetail(p);
+            setManualTags(p.manualSpecialTags || []);
+
 
             const methods = methodsRes.data?.data || [];
             setCustomizationMethods(Array.isArray(methods) ? methods : []);
@@ -493,7 +500,33 @@ const ProductMaster = () => {
         }
     };
 
+    const handleSaveSpecialTags = async () => {
+        const mongoId = productDetail?._id;
+        if (!mongoId) {
+            toast.error("Product ID not available");
+            return;
+        }
+        setIsSavingSpecialTags(true);
+        try {
+            const res = await axios.post(`${apiUrl}/api/admin/products/${mongoId}/special-tags`, {
+                specialTags: manualTags,
+            });
+            if (res.data?.success !== false) {
+                toast.success("Special tags saved successfully");
+                // Refresh product detail to get updated aggregated tags
+                const detailRes = await axios.get(`${apiUrl}/api/single-product/${productDetail.meta?.id || productDetail._id || mongoId}`);
+                setProductDetail(detailRes.data?.data || detailRes.data);
+            }
+        } catch (err) {
+            console.error("Error saving special tags:", err);
+            toast.error("Failed to save special tags");
+        } finally {
+            setIsSavingSpecialTags(false);
+        }
+    };
+
     const handlePageChange = (page) => setPageNo(page);
+
     const handlePerRowsChange = (newPerPage) => {
         setPerPage(newPerPage);
         setPageNo(1);
@@ -876,7 +909,18 @@ const ProductMaster = () => {
                                     Delivery
                                 </NavLink>
                             </NavItem>
+                            <NavItem>
+                                <NavLink
+                                    style={{ cursor: "pointer" }}
+                                    className={classnames({ active: activeTab === "7" })}
+                                    onClick={() => toggleTab("7")}
+                                >
+                                    <i className="ri-price-tag-3-line align-middle me-1"></i>
+                                    Special Tags
+                                </NavLink>
+                            </NavItem>
                         </Nav>
+
 
                         <TabContent activeTab={activeTab}>
                             {/* ── Tab 1: Basic Information ── */}
@@ -1495,12 +1539,124 @@ const ProductMaster = () => {
                                         </Table>
                                     ) : (
                                         <p className="text-muted mb-0">
-                                            No delivery information available from PromoData.
+                                    No delivery information available from PromoData.
                                         </p>
                                     );
                                 })()}
                             </TabPane>
+
+                            {/* ── Tab 7: Special Tags (Editable) ── */}
+                            <TabPane tabId="7">
+                                <Row>
+                                    <Col lg={12}>
+                                        <div className="alert alert-info mb-4">
+                                            <i className="ri-information-line align-middle me-2"></i>
+                                            <strong>Special Tags:</strong> These tags are for visual display on the product page (e.g., Trending, Australia Made).
+                                            Manual tags added here will be combined with automated tags based on category and curation rules.
+                                        </div>
+                                    </Col>
+                                    <Col lg={12}>
+                                        <Card className="border">
+                                            <CardHeader className="bg-light">
+                                                <h6 className="mb-0">Manage Special Tags</h6>
+                                            </CardHeader>
+                                            <CardBody>
+                                                <Row>
+                                                    <Col md={12} className="mb-3">
+                                                        <Label>Product Tags (Press Enter to add)</Label>
+                                                        <div className="d-flex gap-2 mb-3">
+                                                            <Input
+                                                                type="text"
+                                                                placeholder="Add a tag..."
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter") {
+                                                                        e.preventDefault();
+                                                                        const val = e.target.value.trim();
+                                                                        if (val && !manualTags.includes(val)) {
+                                                                            setManualTags([...manualTags, val]);
+                                                                            e.target.value = "";
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <Button
+                                                                color="primary"
+                                                                onClick={(e) => {
+                                                                    const input = e.currentTarget.previousElementSibling;
+                                                                    const val = input.value.trim();
+                                                                    if (val && !manualTags.includes(val)) {
+                                                                        setManualTags([...manualTags, val]);
+                                                                        input.value = "";
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Add
+                                                            </Button>
+                                                        </div>
+                                                        <div className="d-flex flex-wrap gap-2">
+                                                            {manualTags.map((tag, idx) => (
+                                                                <Badge
+                                                                    key={idx}
+                                                                    color="primary"
+                                                                    className="p-2 d-flex align-items-center gap-2"
+                                                                >
+                                                                    {tag}
+                                                                    <i
+                                                                        className="ri-close-line cursor-pointer"
+                                                                        onClick={() => setManualTags(manualTags.filter((_, i) => i !== idx))}
+                                                                    ></i>
+                                                                </Badge>
+                                                            ))}
+                                                            {manualTags.length === 0 && (
+                                                                <span className="text-muted">No manual tags added yet.</span>
+                                                            )}
+                                                        </div>
+                                                    </Col>
+
+                                                    {/* Preview of current aggregated tags */}
+                                                    <Col md={12}>
+                                                        <hr />
+                                                        <h6>Current Combined Tags (Visible on Frontend)</h6>
+                                                        <div className="d-flex flex-wrap gap-2 mt-2">
+                                                            {(p.specialTags || []).map((tag, idx) => (
+                                                                <Badge key={idx} color="soft-success" className="text-success p-2">
+                                                                    {tag}
+                                                                </Badge>
+                                                            ))}
+                                                            {(p.specialTags || []).length === 0 && (
+                                                                <span className="text-muted">No tags currently applied.</span>
+                                                            )}
+                                                        </div>
+                                                    </Col>
+                                                </Row>
+                                            </CardBody>
+                                        </Card>
+                                    </Col>
+                                    <Col lg={12}>
+                                        <div className="d-flex justify-content-end">
+                                            <Button
+                                                color="success"
+                                                onClick={handleSaveSpecialTags}
+                                                disabled={isSavingSpecialTags}
+                                            >
+                                                {isSavingSpecialTags ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-save-line me-1"></i>
+                                                        Save Special Tags
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </Col>
+                                </Row>
+                            </TabPane>
                         </TabContent>
+
                     </CardBody>
                 </Card>
             </>

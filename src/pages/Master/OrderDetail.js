@@ -163,11 +163,8 @@ const OrderDetail = () => {
             return;
         }
 
-        // Require tracking link for DISPATCHED status
-        if (newItemStatus === "DISPATCHED" && !itemTrackingLink) {
-            toast.error("Tracking link is required when dispatching an item");
-            return;
-        }
+        // Tracking link is now optional for DISPATCHED status
+        // Removed validation check
 
         setIsLoading(true);
         try {
@@ -176,9 +173,11 @@ const OrderDetail = () => {
                 {
                     status: newItemStatus,
                     notes: itemStatusNotes,
-                    trackingNumber: itemTrackingNumber || undefined,
-                    trackingLink: itemTrackingLink || undefined,
-                    logisticId: itemLogisticId || undefined,
+                    tracking: {
+                        trackingNumber: itemTrackingNumber || undefined,
+                        trackingLink: itemTrackingLink || undefined,
+                        logisticId: itemLogisticId || undefined,
+                    },
                 },
                 {
                     headers: {
@@ -240,10 +239,8 @@ const OrderDetail = () => {
     const handleUpdateTracking = async () => {
         if (!editTrackingItem) return;
 
-        if (!editTrackingLink) {
-            toast.error("Tracking link is required");
-            return;
-        }
+        // Tracking link is now optional
+        // Removed validation check
 
         setIsLoading(true);
         try {
@@ -2335,7 +2332,7 @@ const OrderDetail = () => {
                             </FormGroup>
                             <FormGroup>
                                 <Label for="itemTrackingLink">
-                                    Tracking Link *
+                                    Tracking Link
                                 </Label>
                                 <Input
                                     type="url"
@@ -2344,9 +2341,7 @@ const OrderDetail = () => {
                                     onChange={(e) =>
                                         setItemTrackingLink(e.target.value)
                                     }
-                                    placeholder="Enter tracking link (required)"
-                                    required
-                                    invalid={!itemTrackingLink}
+                                    placeholder="Enter tracking link (Optional)"
                                 />
                                 <small className="text-muted">
                                     Enter the full tracking URL for the customer
@@ -2596,7 +2591,7 @@ const OrderDetail = () => {
                             </FormGroup>
                             <FormGroup>
                                 <Label for="editTrackingLink">
-                                    Tracking Link *
+                                    Tracking Link
                                 </Label>
                                 <Input
                                     type="url"
@@ -2605,8 +2600,7 @@ const OrderDetail = () => {
                                     onChange={(e) =>
                                         setEditTrackingLink(e.target.value)
                                     }
-                                    placeholder="Enter tracking link"
-                                    required
+                                    placeholder="Enter tracking link (Optional)"
                                 />
                                 <small className="text-muted">
                                     Full URL for the customer to track their

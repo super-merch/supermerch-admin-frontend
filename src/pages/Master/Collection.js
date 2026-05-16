@@ -23,6 +23,8 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
+import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 
 const apiUrl = config.api.API_URL;
@@ -44,6 +46,11 @@ const Collection = () => {
     image: "",
     shortDescription: "",
     isActive: true,
+    allCategories: false,
+    categories: [],
+    subCategories: [],
+    products: [],
+    suppliers: [],
   };
 
   // File upload related states
@@ -70,6 +77,73 @@ const Collection = () => {
 
   const [referenceModal, setReferenceModal] = useState(false);
   const [referenceData, setReferenceData] = useState(null);
+
+  // States for multi-selects
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+
+  const debounceFetch = (fetcher) => {
+    let timeoutId;
+    return (inputValue) => {
+      return new Promise((resolve) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(async () => {
+          resolve(await fetcher(inputValue));
+        }, 500);
+      });
+    };
+  };
+
+  const fetchCategories = async (inputValue) => {
+    try {
+      const res = await axios.get("/api/listbyparams/main-categories", {
+        params: { search: inputValue, isActive: true, limit: 50 },
+        headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
+      });
+      return res.data.success ? res.data.data.map(c => ({ value: c._id || c.id, label: c.name })) : [];
+    } catch (err) { return []; }
+  };
+
+  const fetchSubCategories = async (inputValue) => {
+    try {
+      const res = await axios.get("/api/listbyparams/sub-categories", {
+        params: { search: inputValue, isActive: true, limit: 50 },
+        headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
+      });
+      return res.data.success ? res.data.data.map(sc => ({ value: sc._id || sc.id, label: sc.name })) : [];
+    } catch (err) { return []; }
+  };
+
+  const fetchProducts = async (inputValue) => {
+    try {
+      const res = await axios.get("/api/list-products-by-params-dropdown", {
+        params: { search: inputValue, limit: 50 },
+        headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
+      });
+      return res.data.success ? res.data.data.map(p => ({ 
+        value: p._id, 
+        label: `${p.name} (${p.code})` 
+      })) : [];
+    } catch (err) { return []; }
+  };
+
+  const fetchSuppliers = async (inputValue) => {
+    try {
+      const res = await axios.get("/api/listbyparams/suppliers", {
+        params: { search: inputValue, isActive: true, limit: 50 },
+        headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
+      });
+      return res.data.success ? res.data.data.map(s => ({ value: s._id || s.id, label: s.name })) : [];
+    } catch (err) { return []; }
+  };
+
+  const loadCategoryOptions = debounceFetch(fetchCategories);
+  const loadSubCategoryOptions = debounceFetch(fetchSubCategories);
+  const loadProductOptions = debounceFetch(fetchProducts);
+  const loadSupplierOptions = debounceFetch(fetchSuppliers);
+
 
   const {currentPagePermissions} = useContext(MenuContext);
 
@@ -161,7 +235,7 @@ const Collection = () => {
       const response = await axios.get('/api/listbyparams/collections', {
         params,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
         },
       });
 
@@ -220,13 +294,19 @@ const Collection = () => {
         formData.append('image', selectedImageFile);
       }
       
+      // Append multi-select values
+      formData.append('categories', JSON.stringify(selectedCategories.map(c => c.value)));
+      formData.append('subCategories', JSON.stringify(selectedSubCategories.map(sc => sc.value)));
+      formData.append('products', JSON.stringify(selectedProducts.map(p => p.value)));
+      formData.append('suppliers', JSON.stringify(selectedSuppliers.map(s => s.value)));
+      formData.append('allCategories', values.allCategories);
       try {
         const response = await axios.post(
           `/api/collections`,
           formData,
           {
             headers: { 
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${localStorage.getItem("aToken")}`,
               'Content-Type': 'multipart/form-data'
             },
           }
@@ -242,6 +322,10 @@ const Collection = () => {
           setImagePreview("");
           setShowImageInput(true);
           setImageRemoved(false);
+          setSelectedCategories([]);
+          setSelectedSubCategories([]);
+          setSelectedProducts([]);
+          setSelectedSuppliers([]);
           fetchCollectionsMaster();
         } else {
           toast.error(response.data.message || "Cannot add Collection");
@@ -277,13 +361,20 @@ const Collection = () => {
         formData.append('image', selectedImageFile);
       }
 
+      // Append multi-select values
+      formData.append('categories', JSON.stringify(selectedCategories.map(c => c.value)));
+      formData.append('subCategories', JSON.stringify(selectedSubCategories.map(sc => sc.value)));
+      formData.append('products', JSON.stringify(selectedProducts.map(p => p.value)));
+      formData.append('suppliers', JSON.stringify(selectedSuppliers.map(s => s.value)));
+      formData.append('allCategories', values.allCategories);
+
       try {
         const response = await axios.put(
           `/api/collections/${_id}`,
           formData,
           {
             headers: { 
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${localStorage.getItem("aToken")}`,
               'Content-Type': 'multipart/form-data'
             },
           }
@@ -300,6 +391,10 @@ const Collection = () => {
           setImagePreview("");
           setShowImageInput(true);
           setImageRemoved(false);
+          setSelectedCategories([]);
+          setSelectedSubCategories([]);
+          setSelectedProducts([]);
+          setSelectedSuppliers([]);
           fetchCollectionsMaster();
         }
         else {
@@ -326,6 +421,10 @@ const Collection = () => {
     if (imageRef.current) {
       imageRef.current.value = "";
     }
+    setSelectedCategories([]);
+    setSelectedSubCategories([]);
+    setSelectedProducts([]);
+    setSelectedSuppliers([]);
   };
 
   const handleDelete = async(e) => {
@@ -336,7 +435,7 @@ const Collection = () => {
         const response = await axios.delete(
             `/api/collections/${remove_id}`,
             {
-                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
             }
         );
         if (response.data.success) {
@@ -378,7 +477,7 @@ const Collection = () => {
     
     try {
       const response = await axios.get(`/api/collections/${_id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("aToken")}` },
       });
 
       if (response.data.success) {
@@ -390,7 +489,26 @@ const Collection = () => {
           image: collection.image || "",
           shortDescription: collection.shortDescription || "",
           isActive: collection.isActive,
+          allCategories: collection.allCategories || false,
         });
+        
+        // Set selected options for multi-selects
+        if (collection.categories) {
+          setSelectedCategories(collection.categories.map(c => ({ value: c._id || c.id, label: c.name })));
+        }
+        if (collection.subCategories) {
+          setSelectedSubCategories(collection.subCategories.map(sc => ({ value: sc._id || sc.id, label: sc.name })));
+        }
+        if (collection.products) {
+          setSelectedProducts(collection.products.map(p => ({ 
+            value: p._id || p.id, 
+            label: `${p.product?.name || 'Product'} (${p.overview?.sku_number || p.overview?.code || ''})` 
+          })));
+        }
+        if (collection.suppliers) {
+          setSelectedSuppliers(collection.suppliers.map(s => ({ value: s._id || s.id, label: s.name || s.supplierName })));
+        }
+
         setShowForm(true);
         setSelectedImageFile(null);
         setImagePreview("");
@@ -595,6 +713,60 @@ const Collection = () => {
                       </div>
                     </Col>
                   </Row>
+
+                  <Row>
+                    <Col lg={12} className="mb-3">
+                      <Label className="form-label">Linked Categories</Label>
+                      <AsyncSelect
+                        isMulti
+                        cacheOptions
+                        defaultOptions
+                        loadOptions={loadCategoryOptions}
+                        value={selectedCategories}
+                        onChange={setSelectedCategories}
+                        placeholder="Select Categories..."
+                        isDisabled={values.allCategories}
+                      />
+                    </Col>
+                    <Col lg={12} className="mb-3">
+                      <Label className="form-label">Linked Sub-Categories</Label>
+                      <AsyncSelect
+                        isMulti
+                        cacheOptions
+                        defaultOptions
+                        loadOptions={loadSubCategoryOptions}
+                        value={selectedSubCategories}
+                        onChange={setSelectedSubCategories}
+                        placeholder="Select Sub-Categories..."
+                        isDisabled={values.allCategories}
+                      />
+                    </Col>
+                    <Col lg={12} className="mb-3">
+                      <Label className="form-label">Linked Suppliers</Label>
+                      <AsyncSelect
+                        isMulti
+                        cacheOptions
+                        defaultOptions
+                        loadOptions={loadSupplierOptions}
+                        value={selectedSuppliers}
+                        onChange={setSelectedSuppliers}
+                        placeholder="Select Suppliers..."
+                        isDisabled={values.allCategories}
+                      />
+                    </Col>
+                    <Col lg={12} className="mb-3">
+                      <Label className="form-label">Linked Products</Label>
+                      <AsyncSelect
+                        isMulti
+                        cacheOptions
+                        loadOptions={loadProductOptions}
+                        value={selectedProducts}
+                        onChange={setSelectedProducts}
+                        placeholder="Search & Select Products..."
+                        isDisabled={values.allCategories}
+                      />
+                    </Col>
+                  </Row>
                   
                   <div className="mt-3">
                     <Row>
@@ -609,6 +781,20 @@ const Collection = () => {
                           />
                           <Label className="form-check-label">
                             Is Active
+                          </Label>
+                        </div>
+                      </Col>
+                      <Col lg={3}>
+                        <div className="form-check mb-2">
+                          <Input
+                            type="checkbox"
+                            name="allCategories"
+                            value={values.allCategories}
+                            onChange={handlecheck}
+                            checked={values.allCategories}
+                          />
+                          <Label className="form-check-label">
+                            Include All Categories
                           </Label>
                         </div>
                       </Col>
@@ -656,7 +842,7 @@ const Collection = () => {
       const response = await axios.get('/api/listbyparams/collections', {
         params: { page: 1, limit: 10000, isActive: filter },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("aToken")}`,
         },
       });
       return response.data.success ? response.data.data : [];
