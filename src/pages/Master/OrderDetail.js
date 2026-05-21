@@ -288,9 +288,8 @@ const OrderDetail = () => {
         setDownloadingInvoice(true);
         try {
             const response = await axios.get(
-                `/api/invoices/order/${order.orderNumber}`,
+                `/api/admin/invoices/order/${order.orderNumber}/pdf`,
                 {
-                    params: { email: order.customerEmail },
                     responseType: "blob",
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
