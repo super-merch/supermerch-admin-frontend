@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback, useRef } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import {
   Input,
   Label,
@@ -23,12 +23,12 @@ import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
+import JoditEditor from "jodit-react";
 
 const Blog = () => {
   const { adminData } = useContext(AuthContext);
   const { currentPagePermissions } = useContext(MenuContext);
 
-  // Basic states
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -42,13 +42,16 @@ const Blog = () => {
     metaTitle: "",
     metaDescription: "",
     keywords: "",
-    image: "",
+    images: [],
     isActive: true,
   };
 
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
-  const imageRef = useRef(null);
+  // Existing cloud URLs shown during edit (admin can remove individually)
+  const [existingImages, setExistingImages] = useState([]);
+  // Newly selected local files to upload
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  // Data-URL previews for newly selected files
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const [remove_id, setRemove_id] = useState("");
   const [query, setQuery] = useState("");
@@ -64,6 +67,48 @@ const Blog = () => {
   const [showForm, setShowForm] = useState(false);
   const [updateForm, setUpdateForm] = useState(false);
   const [data, setData] = useState([]);
+
+  const editorConfig = {
+    readonly: false,
+    height: 400,
+    buttons: [
+      "undo",
+      "redo",
+      "|",
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "|",
+      "ul",
+      "ol",
+      "|",
+      "paragraph",
+      "fontsize",
+      "font",
+      "|",
+      "link",
+      "unlink",
+      "|",
+      "align",
+      "brush",
+      "|",
+      "table",
+      "hr",
+      "|",
+      "fullsize",
+    ],
+    toolbarAdaptive: true,
+    showCharsCounter: true,
+    showWordsCounter: true,
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    defaultActionOnPaste: "insert_clear_html",
+    defaultActionOnPasteFromWord: "insert_clear_html",
+    processPasteHTML: true,
+    nl2brInPlainText: true,
+  };
 
   const columns = [
     {
@@ -129,22 +174,14 @@ const Blog = () => {
 
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
-    let params = {
-      page: pageNo || 1,
-    };
-
-    if (query) {
-      params.search = query;
-    }
+    let params = { page: pageNo || 1 };
+    if (query) params.search = query;
 
     try {
       const response = await axios.get("/api/blogs/get-blogs", {
         params,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
       if (response.data.success) {
         setTotalRows(response.data.pagination?.totalCount || 0);
         setData(response.data.data || []);
@@ -173,6 +210,12 @@ const Blog = () => {
     return errors;
   };
 
+  const clearImageState = () => {
+    setSelectedFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
+  };
+
   const handleClick = async (e) => {
     e.preventDefault();
     const errors = validate(values);
@@ -189,8 +232,8 @@ const Blog = () => {
       formData.append("keywords", values.keywords || "");
       formData.append("isActive", values.isActive);
 
-      if (selectedFile) {
-        formData.append("image", selectedFile);
+      for (const file of selectedFiles) {
+        formData.append("images", file);
       }
 
       try {
@@ -207,8 +250,7 @@ const Blog = () => {
           setValues(initialState);
           setIsSubmit(false);
           setFormErrors({});
-          setSelectedFile(null);
-          setImagePreview("");
+          clearImageState();
           fetchBlogs();
         } else {
           toast.error(response.data.message || "Cannot add Blog");
@@ -235,9 +277,11 @@ const Blog = () => {
       formData.append("metaDescription", values.metaDescription || "");
       formData.append("keywords", values.keywords || "");
       formData.append("isActive", values.isActive);
+      // Tell backend which existing cloud URLs to keep
+      formData.append("existingImages", JSON.stringify(existingImages));
 
-      if (selectedFile) {
-        formData.append("image", selectedFile);
+      for (const file of selectedFiles) {
+        formData.append("images", file);
       }
 
       try {
@@ -259,8 +303,7 @@ const Blog = () => {
           setValues(initialState);
           setIsSubmit(false);
           setFormErrors({});
-          setSelectedFile(null);
-          setImagePreview("");
+          clearImageState();
           fetchBlogs();
         } else {
           toast.error(response.data.message || "Cannot update Blog");
@@ -279,17 +322,12 @@ const Blog = () => {
     setUpdateForm(false);
     setValues(initialState);
     setFormErrors({});
-    setSelectedFile(null);
-    setImagePreview("");
-    if (imageRef.current) {
-      imageRef.current.value = "";
-    }
+    clearImageState();
   };
 
   const handleDelete = async (e) => {
     e.preventDefault();
     setIsDeleteLoading(true);
-
     try {
       const response = await axios.delete(`/api/blogs/delete-blog/${remove_id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -337,12 +375,19 @@ const Blog = () => {
             metaTitle: blog.metaTitle || "",
             metaDescription: blog.metaDescription || "",
             keywords: blog.keywords || "",
-            image: blog.image || "",
+            images: [],
             isActive: blog.isActive !== undefined ? blog.isActive : true,
           });
+          // Prefer images array; fall back to single legacy image
+          const imgs = blog.images?.length
+            ? blog.images
+            : blog.image
+            ? [blog.image]
+            : [];
+          setExistingImages(imgs);
+          setSelectedFiles([]);
+          setImagePreviews([]);
           setShowForm(true);
-          setSelectedFile(null);
-          setImagePreview("");
         } else {
           toast.error("Blog not found");
         }
@@ -373,18 +418,32 @@ const Blog = () => {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    const valid = [];
+    for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
-        e.target.value = "";
-        return;
+        toast.error(`"${file.name}" exceeds 5MB and was skipped`);
+        continue;
       }
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target.result);
-      reader.readAsDataURL(file);
+      valid.push(file);
     }
+    setSelectedFiles((prev) => [...prev, ...valid]);
+    valid.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) =>
+        setImagePreviews((prev) => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSort = (column, sortDirection) => {
@@ -392,17 +451,11 @@ const Blog = () => {
     setsortDirection(sortDirection);
   };
 
-  const handlePageChange = (page) => {
-    setPageNo(page);
-  };
+  const handlePageChange = (page) => setPageNo(page);
 
-  const handlePerRowsChange = async (newPerPage, page) => {
-    setPerPage(newPerPage);
-  };
+  const handlePerRowsChange = async (newPerPage) => setPerPage(newPerPage);
 
-  const handleFilter = (e) => {
-    setFilter(e.target.checked);
-  };
+  const handleFilter = (e) => setFilter(e.target.checked);
 
   const handleList = () => {
     setShowForm(false);
@@ -410,11 +463,46 @@ const Blog = () => {
     setIsSubmit(false);
     setValues(initialState);
     setFormErrors({});
-    setSelectedFile(null);
-    setImagePreview("");
-    if (imageRef.current) {
-      imageRef.current.value = "";
-    }
+    clearImageState();
+  };
+
+  const totalImageCount = existingImages.length + selectedFiles.length;
+
+  const thumbStyle = (isThumb) => ({
+    width: "90px",
+    height: "90px",
+    objectFit: "cover",
+    borderRadius: "6px",
+    border: isThumb ? "2px solid #0ab39c" : "1px solid #dee2e6",
+  });
+
+  const thumbLabelStyle = {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: "rgba(10,179,156,0.85)",
+    color: "#fff",
+    fontSize: "10px",
+    textAlign: "center",
+    borderBottomLeftRadius: "4px",
+    borderBottomRightRadius: "4px",
+  };
+
+  const removeBtnStyle = {
+    position: "absolute",
+    top: "-6px",
+    right: "-6px",
+    background: "#f06548",
+    color: "#fff",
+    border: "none",
+    borderRadius: "50%",
+    width: "20px",
+    height: "20px",
+    lineHeight: "18px",
+    fontSize: "12px",
+    cursor: "pointer",
+    padding: 0,
   };
 
   const renderForm = () => (
@@ -459,20 +547,20 @@ const Blog = () => {
                   </Row>
                   <Row>
                     <Col lg={12}>
-                      <div className="form-floating mb-3">
-                        <textarea
-                          className="form-control"
-                          required
-                          name="content"
-                          value={values.content}
-                          onChange={handleChange}
-                          style={{ minHeight: "200px" }}
-                        />
+                      <div className="mb-3">
                         <label className="form-label">
                           Content <span className="text-danger"> *</span>
                         </label>
+                        <JoditEditor
+                          value={values.content}
+                          config={editorConfig}
+                          tabIndex={1}
+                          onBlur={(newContent) =>
+                            setValues({ ...values, content: newContent })
+                          }
+                        />
                         {isSubmit && (
-                          <p className="text-danger">{formErrors.content}</p>
+                          <p className="text-danger mt-2">{formErrors.content}</p>
                         )}
                       </div>
                     </Col>
@@ -509,45 +597,50 @@ const Blog = () => {
                       </div>
                     </Col>
                   </Row>
+
+                  {/* ── Multi-Image Upload ── */}
                   <Row>
-                    <Col lg={6}>
+                    <Col lg={12}>
                       <div className="mb-3">
-                        <Label className="form-label">Image</Label>
-                        <div className="d-flex flex-column">
-                          {values.image && !selectedFile && (
-                            <div className="mb-2">
-                              <img
-                                src={values.image}
-                                alt="Current Blog"
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            </div>
-                          )}
-                          {imagePreview && selectedFile && (
-                            <div className="mb-2">
-                              <img
-                                src={imagePreview}
-                                alt="Image Preview"
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            </div>
-                          )}
-                          <input
-                            type="file"
-                            className="form-control"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            ref={imageRef}
-                          />
-                        </div>
+                        <Label className="form-label">
+                          Images{" "}
+                          <small className="text-muted">
+                            (first image is used as thumbnail · max 5MB each)
+                          </small>
+                        </Label>
+
+                        {totalImageCount > 0 && (
+                          <div className="d-flex flex-wrap gap-2 mb-3">
+                            {existingImages.map((url, i) => (
+                              <div key={`e-${i}`} style={{ position: "relative", display: "inline-block" }}>
+                                <img src={url} alt={`img-${i}`} style={thumbStyle(i === 0)} />
+                                {i === 0 && <span style={thumbLabelStyle}>Thumbnail</span>}
+                                <button type="button" style={removeBtnStyle} onClick={() => removeExistingImage(i)}>×</button>
+                              </div>
+                            ))}
+                            {imagePreviews.map((src, i) => {
+                              const globalIdx = existingImages.length + i;
+                              return (
+                                <div key={`n-${i}`} style={{ position: "relative", display: "inline-block" }}>
+                                  <img src={src} alt={`new-${i}`} style={thumbStyle(globalIdx === 0)} />
+                                  {globalIdx === 0 && <span style={thumbLabelStyle}>Thumbnail</span>}
+                                  <button type="button" style={removeBtnStyle} onClick={() => removeNewFile(i)}>×</button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        <input
+                          type="file"
+                          className="form-control"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                        <small className="text-muted d-block mt-1">
+                          Select multiple images. First image in the list becomes the thumbnail.
+                        </small>
                       </div>
                     </Col>
                   </Row>
@@ -621,21 +714,17 @@ const Blog = () => {
                   <CardBody>
                     <div className="table-responsive table-card mt-1 mb-1 text-right">
                       <DataTable
-                      customStyles={tableCustomStyles}
-                      columns={columns}
+                        customStyles={tableCustomStyles}
+                        columns={columns}
                         data={data}
                         progressPending={loading}
                         sortServer
-                        onSort={(column, sortDirection) =>
-                          handleSort(column, sortDirection)
-                        }
+                        onSort={(column, sortDirection) => handleSort(column, sortDirection)}
                         pagination
                         paginationServer
                         paginationTotalRows={totalRows}
                         paginationPerPage={100}
-                        paginationRowsPerPageOptions={[
-                          50, 100, 200, 300, totalRows,
-                        ]}
+                        paginationRowsPerPageOptions={[50, 100, 200, 300, totalRows]}
                         onChangeRowsPerPage={handlePerRowsChange}
                         onChangePage={handlePageChange}
                       />
