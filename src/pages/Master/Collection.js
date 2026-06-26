@@ -25,6 +25,7 @@ import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
+import CreatableSelect from "react-select/creatable";
 
 
 const apiUrl = config.api.API_URL;
@@ -52,6 +53,29 @@ const Collection = () => {
     products: [],
     suppliers: [],
   };
+
+  // Static attribute options
+  const THEME_OPTIONS = [
+    'Construction', 'Fitness', 'Health & Wellness', 'Healthcare',
+    'Hospitality', 'Hotels & Resorts', 'Safety', 'Schools & Education',
+    'Sports', 'Travel'
+  ].map(v => ({ value: v, label: v }));
+
+  const SPORT_OPTIONS = [
+    'AFL', 'Baseball & Softball', 'Basketball', 'Boating', 'Cheerleading',
+    'Cricket', 'Cycling', 'Dance', 'Darts', 'Fishing', 'Golf', 'Gym',
+    'Hockey', 'Hunting & Shooting', 'Lawn Bowls', 'Rugby', 'Running & Athletics',
+    'Soccer', 'Tennis', 'Touch Football', 'Volleyball'
+  ].map(v => ({ value: v, label: v }));
+
+  const ECO_FACTOR_OPTIONS = [
+    '100% Natural Material', '100% Recyclable', 'Aware Tracer', 'Biodegradable',
+    'Carbon Neutral', 'Compostable', 'Natural Material', 'Organic', 'Recycled', 'Reusable'
+  ].map(v => ({ value: v, label: v }));
+
+  const COMPLIANCE_OPTIONS = [
+    'Fire Resistant', 'Hi-Vis', 'NSW Rail Compliant', 'TTMC', 'UPF Rated', 'VIC Rail Compliant'
+  ].map(v => ({ value: v, label: v }));
 
   // File upload related states
   const [selectedImageFile, setSelectedImageFile] = useState(null);
@@ -83,6 +107,12 @@ const Collection = () => {
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+  // Attribute-based matching selects
+  const [selectedThemes, setSelectedThemes] = useState([]);
+  const [selectedSports, setSelectedSports] = useState([]);
+  const [selectedEcoFactors, setSelectedEcoFactors] = useState([]);
+  const [selectedCompliances, setSelectedCompliances] = useState([]);
+  const [selectedKeywords, setSelectedKeywords] = useState([]);
 
   const debounceFetch = (fetcher) => {
     let timeoutId;
@@ -300,6 +330,11 @@ const Collection = () => {
       formData.append('products', JSON.stringify(selectedProducts.map(p => p.value)));
       formData.append('suppliers', JSON.stringify(selectedSuppliers.map(s => s.value)));
       formData.append('allCategories', values.allCategories);
+      formData.append('themes', JSON.stringify(selectedThemes.map(t => t.value)));
+      formData.append('sports', JSON.stringify(selectedSports.map(s => s.value)));
+      formData.append('ecoFactors', JSON.stringify(selectedEcoFactors.map(e => e.value)));
+      formData.append('compliances', JSON.stringify(selectedCompliances.map(c => c.value)));
+      formData.append('keywords', JSON.stringify(selectedKeywords.map(k => k.value)));
       try {
         const response = await axios.post(
           `/api/collections`,
@@ -326,6 +361,11 @@ const Collection = () => {
           setSelectedSubCategories([]);
           setSelectedProducts([]);
           setSelectedSuppliers([]);
+          setSelectedThemes([]);
+          setSelectedSports([]);
+          setSelectedEcoFactors([]);
+          setSelectedCompliances([]);
+          setSelectedKeywords([]);
           fetchCollectionsMaster();
         } else {
           toast.error(response.data.message || "Cannot add Collection");
@@ -367,6 +407,11 @@ const Collection = () => {
       formData.append('products', JSON.stringify(selectedProducts.map(p => p.value)));
       formData.append('suppliers', JSON.stringify(selectedSuppliers.map(s => s.value)));
       formData.append('allCategories', values.allCategories);
+      formData.append('themes', JSON.stringify(selectedThemes.map(t => t.value)));
+      formData.append('sports', JSON.stringify(selectedSports.map(s => s.value)));
+      formData.append('ecoFactors', JSON.stringify(selectedEcoFactors.map(e => e.value)));
+      formData.append('compliances', JSON.stringify(selectedCompliances.map(c => c.value)));
+      formData.append('keywords', JSON.stringify(selectedKeywords.map(k => k.value)));
 
       try {
         const response = await axios.put(
@@ -395,6 +440,11 @@ const Collection = () => {
           setSelectedSubCategories([]);
           setSelectedProducts([]);
           setSelectedSuppliers([]);
+          setSelectedThemes([]);
+          setSelectedSports([]);
+          setSelectedEcoFactors([]);
+          setSelectedCompliances([]);
+          setSelectedKeywords([]);
           fetchCollectionsMaster();
         }
         else {
@@ -425,6 +475,11 @@ const Collection = () => {
     setSelectedSubCategories([]);
     setSelectedProducts([]);
     setSelectedSuppliers([]);
+    setSelectedThemes([]);
+    setSelectedSports([]);
+    setSelectedEcoFactors([]);
+    setSelectedCompliances([]);
+    setSelectedKeywords([]);
   };
 
   const handleDelete = async(e) => {
@@ -507,6 +562,22 @@ const Collection = () => {
         }
         if (collection.suppliers) {
           setSelectedSuppliers(collection.suppliers.map(s => ({ value: s._id || s.id, label: s.name || s.supplierName })));
+        }
+        // Populate attribute fields
+        if (collection.themes?.length > 0) {
+          setSelectedThemes(collection.themes.map(v => ({ value: v, label: v })));
+        }
+        if (collection.sports?.length > 0) {
+          setSelectedSports(collection.sports.map(v => ({ value: v, label: v })));
+        }
+        if (collection.ecoFactors?.length > 0) {
+          setSelectedEcoFactors(collection.ecoFactors.map(v => ({ value: v, label: v })));
+        }
+        if (collection.compliances?.length > 0) {
+          setSelectedCompliances(collection.compliances.map(v => ({ value: v, label: v })));
+        }
+        if (collection.keywords?.length > 0) {
+          setSelectedKeywords(collection.keywords.map(v => ({ value: v, label: v })));
         }
 
         setShowForm(true);
@@ -767,7 +838,76 @@ const Collection = () => {
                       />
                     </Col>
                   </Row>
-                  
+
+                  {/* ── Attribute-Based Matching ─────────────────── */}
+                  <Row className="mt-2">
+                    <Col lg={12}>
+                      <h6 className="fw-semibold text-muted mb-2" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        🏷️ Attribute Matching (products matched by Promodata tags)
+                      </h6>
+                    </Col>
+                    <Col lg={6} className="mb-3">
+                      <Label className="form-label">Themes</Label>
+                      <Select
+                        isMulti
+                        options={THEME_OPTIONS}
+                        value={selectedThemes}
+                        onChange={setSelectedThemes}
+                        placeholder="e.g. Hospitality, Safety..."
+                        isDisabled={values.allCategories}
+                      />
+                      <small className="text-muted">Matches products with a matching "Theme" attribute</small>
+                    </Col>
+                    <Col lg={6} className="mb-3">
+                      <Label className="form-label">Sports</Label>
+                      <Select
+                        isMulti
+                        options={SPORT_OPTIONS}
+                        value={selectedSports}
+                        onChange={setSelectedSports}
+                        placeholder="e.g. Golf, Cricket..."
+                        isDisabled={values.allCategories}
+                      />
+                      <small className="text-muted">Matches products with a matching "Sport" attribute</small>
+                    </Col>
+                    <Col lg={6} className="mb-3">
+                      <Label className="form-label">Eco Factors</Label>
+                      <Select
+                        isMulti
+                        options={ECO_FACTOR_OPTIONS}
+                        value={selectedEcoFactors}
+                        onChange={setSelectedEcoFactors}
+                        placeholder="e.g. Recycled, Reusable..."
+                        isDisabled={values.allCategories}
+                      />
+                      <small className="text-muted">Matches products with a matching "Eco Factors" attribute</small>
+                    </Col>
+                    <Col lg={6} className="mb-3">
+                      <Label className="form-label">Compliances</Label>
+                      <Select
+                        isMulti
+                        options={COMPLIANCE_OPTIONS}
+                        value={selectedCompliances}
+                        onChange={setSelectedCompliances}
+                        placeholder="e.g. Hi-Vis, Fire Resistant..."
+                        isDisabled={values.allCategories}
+                      />
+                      <small className="text-muted">Matches products with a matching "Compliance" attribute</small>
+                    </Col>
+                    <Col lg={12} className="mb-3">
+                      <Label className="form-label">Product Name Keywords</Label>
+                      <CreatableSelect
+                        isMulti
+                        value={selectedKeywords}
+                        onChange={setSelectedKeywords}
+                        placeholder="Type a keyword and press Enter (e.g. agriculture, farm)..."
+                        isDisabled={values.allCategories}
+                        noOptionsMessage={() => "Type a keyword and press Enter"}
+                      />
+                      <small className="text-muted">Matches products whose name contains any of these keywords (case-insensitive)</small>
+                    </Col>
+                  </Row>
+
                   <div className="mt-3">
                     <Row>
                       <Col lg={2}>
