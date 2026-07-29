@@ -220,6 +220,8 @@ const Brand = () => {
             // Add price tiers if they exist
             if (values.priceTiers && values.priceTiers.length > 0) {
                 formData.append("priceTiers", JSON.stringify(values.priceTiers));
+            } else {
+                formData.append("priceTiers", JSON.stringify([]));
             }
 
             if (selectedFile) {
@@ -431,7 +433,7 @@ const Brand = () => {
                     sizeGuide: brand.sizeGuide || "",
                     isActive: brand.isActive,
                     firstTierMargin: brand.firstTierMargin || 0,
-                    priceTiers: brand.brandPriceTiers || [],
+                    priceTiers: brand.priceTiers || brand.brandPriceTiers || [],
                 });
                 setShowForm(true);
                 setSelectedFile(null);

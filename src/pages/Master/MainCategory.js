@@ -25,6 +25,7 @@ import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import AsyncSelect from "react-select/async";
+import BrandPriceTierForm from "../../Components/Common/BrandPriceTierForm";
 
 
 const apiUrl = config.api.API_URL;
@@ -71,6 +72,8 @@ const MainCategory = () => {
     compliances: "",
     tags: "",
     nameKeywords: "",
+    firstTierMargin: 0,
+    priceTiers: [],
   };
 
   // File upload related states
@@ -386,6 +389,8 @@ const MainCategory = () => {
           compliances: (mainCategory.productMatchRules?.compliances || []).join(", "),
           tags: (mainCategory.productMatchRules?.tags || []).join(", "),
           nameKeywords: (mainCategory.productMatchRules?.nameKeywords || []).join(", "),
+          firstTierMargin: mainCategory.firstTierMargin || 0,
+          priceTiers: mainCategory.priceTiers || [],
         });
 
         const methodsFromPayload = (mainCategory.customizationMethodIds || [])
@@ -506,6 +511,8 @@ const MainCategory = () => {
       formData.append('compliances', values.compliances || '');
       formData.append('tags', values.tags || '');
       formData.append('nameKeywords', values.nameKeywords || '');
+      formData.append('firstTierMargin', values.firstTierMargin || 0);
+      formData.append('priceTiers', JSON.stringify(values.priceTiers || []));
 
       if (selectedImageFile) {
         formData.append('image', selectedImageFile);
@@ -575,6 +582,8 @@ const MainCategory = () => {
       formData.append('compliances', values.compliances || '');
       formData.append('tags', values.tags || '');
       formData.append('nameKeywords', values.nameKeywords || '');
+      formData.append('firstTierMargin', values.firstTierMargin || 0);
+      formData.append('priceTiers', JSON.stringify(values.priceTiers || []));
 
       // Handle image removal
       if (imageRemoved) {
@@ -707,6 +716,13 @@ const MainCategory = () => {
   const handlecheck = (e) => {
     setValues({ ...values, [e.target.name]: e.target.checked });
   };
+
+  const handlePriceTiersChange = (priceTiersData) => {
+    setValues((prev) => ({ ...prev, ...priceTiersData }));
+  };
+
+  const isApparelNavGroup =
+    values.navGroup === "clothing" || values.navGroup === "headwear";
 
   const handleReferenceModalClose = () => {
     setReferenceModal(false);
@@ -1297,6 +1313,20 @@ const MainCategory = () => {
                       </div>
                     </Col>
                   </Row>
+
+                  {isApparelNavGroup && (
+                    <Row className="mt-4">
+                      <Col lg={12}>
+                        <BrandPriceTierForm
+                          values={values}
+                          onChange={handlePriceTiersChange}
+                          isSubmit={isSubmit}
+                          formErrors={formErrors}
+                          entityLabel="category"
+                        />
+                      </Col>
+                    </Row>
+                  )}
                   
                   <div className="mt-3">
                     <Row>

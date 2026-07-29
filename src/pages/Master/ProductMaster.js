@@ -1420,6 +1420,15 @@ const ProductMaster = () => {
                                                 <strong>Applied Discount:</strong> {p.discountInfo.discount}% ({p.discountInfo.type})
                                             </>
                                         )}
+                                        {p.pricingSummary?.discountTierSource && p.pricingSummary.discountTierSource !== "product_master" && (
+                                            <>
+                                                {" | "}
+                                                <strong>Discount Tiers:</strong> {p.pricingSummary.discountTierSource}
+                                                {p.pricingSummary.discountTierSourceName
+                                                    ? ` (${p.pricingSummary.discountTierSourceName})`
+                                                    : ""}
+                                            </>
+                                        )}
                                     </Alert>
                                 )}
 

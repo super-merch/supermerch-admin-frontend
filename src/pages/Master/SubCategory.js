@@ -23,6 +23,7 @@ import { MenuContext } from "../../context/MenuContext";
 import ReferenceErrorModal from "../../Components/Common/ReferenceErrorModal";
 import config from "../../config";
 import tableCustomStyles from "../../Components/Common/tableStyles";
+import BrandPriceTierForm from "../../Components/Common/BrandPriceTierForm";
 
 
 const apiUrl = config.api.API_URL;
@@ -54,6 +55,8 @@ const SubCategory = () => {
     tags: "",
     nameKeywords: "",
     isActive: true,
+    firstTierMargin: 0,
+    priceTiers: [],
   };
 
   const promodataTypeGroups = [
@@ -293,7 +296,9 @@ const SubCategory = () => {
       formData.append('tags', values.tags || "");
       formData.append('nameKeywords', values.nameKeywords || "");
       formData.append('isActive', values.isActive);
-      
+      formData.append('firstTierMargin', values.firstTierMargin || 0);
+      formData.append('priceTiers', JSON.stringify(values.priceTiers || []));
+
       if (selectedImageFile) {
         formData.append('image', selectedImageFile);
       }
@@ -301,7 +306,7 @@ const SubCategory = () => {
       if (selectedIconFile) {
         formData.append('icon', selectedIconFile);
       }
-      
+
       try {
         const response = await axios.post(
           `/api/sub-categories`,
@@ -363,7 +368,9 @@ const SubCategory = () => {
       formData.append('tags', values.tags || "");
       formData.append('nameKeywords', values.nameKeywords || "");
       formData.append('isActive', values.isActive);
-      
+      formData.append('firstTierMargin', values.firstTierMargin || 0);
+      formData.append('priceTiers', JSON.stringify(values.priceTiers || []));
+
       // Handle image removal
       if (imageRemoved) {
         formData.append('removeImage', 'true');
@@ -509,6 +516,8 @@ const SubCategory = () => {
           tags: (subCategory.productMatchRules?.tags || []).join(", "),
           nameKeywords: (subCategory.productMatchRules?.nameKeywords || []).join(", "),
           isActive: subCategory.isActive,
+          firstTierMargin: subCategory.firstTierMargin || 0,
+          priceTiers: subCategory.priceTiers || [],
         });
         setShowForm(true);
         setSelectedImageFile(null);
@@ -539,6 +548,17 @@ const SubCategory = () => {
   const handlecheck = (e) => {
     setValues({ ...values, [e.target.name]: e.target.checked });
   };
+
+  const handlePriceTiersChange = (priceTiersData) => {
+    setValues((prev) => ({ ...prev, ...priceTiersData }));
+  };
+
+  const selectedMainCategory = mainCategories.find(
+    (category) => String(category._id) === String(values.mainCategoryId)
+  );
+  const isApparelParent =
+    selectedMainCategory?.navGroup === "clothing" ||
+    selectedMainCategory?.navGroup === "headwear";
 
   const handleReferenceModalClose = () => {
     setReferenceModal(false);
@@ -923,6 +943,20 @@ const SubCategory = () => {
                       </div>
                     </Col>
                   </Row>
+
+                  {isApparelParent && (
+                    <Row className="mt-4">
+                      <Col lg={12}>
+                        <BrandPriceTierForm
+                          values={values}
+                          onChange={handlePriceTiersChange}
+                          isSubmit={isSubmit}
+                          formErrors={formErrors}
+                          entityLabel="subcategory"
+                        />
+                      </Col>
+                    </Row>
+                  )}
                   
                   <div className="mt-3">
                     <Row>
