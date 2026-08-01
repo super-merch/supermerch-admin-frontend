@@ -207,6 +207,11 @@ const PromoContent = () => {
             .finally(() => setIsLoading(false));
     };
 
+    const handleDeleteClose = (e) => {
+        e.preventDefault();
+        setmodal_delete(false);
+    };
+
     const handleEdit = (_id) => {
         set_Id(_id);
         setIsLoading(true);
@@ -398,7 +403,7 @@ const PromoContent = () => {
                                                         placeholder="Enter content as JSON"
                                                     />
                                                     <small className="form-text text-muted">
-                                                        Enter the content as valid JSON. Example for benefits: [{"name":"Benefit 1"},{"name":"Benefit 2"}]
+                                                        Enter the content as valid JSON. Example for benefits: {'[{"name":"Benefit 1"},{"name":"Benefit 2"}]'}
                                                     </small>
                                                 </div>
                                             </Col>
@@ -436,11 +441,11 @@ const PromoContent = () => {
                 )}
 
                 <DeleteModal
-                    isOpen={modal_delete}
-                    toggle={() => setmodal_delete(!modal_delete)}
+                    show={modal_delete}
                     handleDelete={handleDelete}
-                    close={handleDeleteClose}
-                    isLoading={isLoading}
+                    handleDeleteClose={handleDeleteClose}
+                    setmodal_delete={setmodal_delete}
+                    disabled={isLoading}
                 />
             </Container>
         </div>

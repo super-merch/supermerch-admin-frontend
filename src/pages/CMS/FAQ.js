@@ -411,11 +411,11 @@ const FAQ = () => {
                 )}
 
                 <DeleteModal
-                    isOpen={modal_delete}
-                    toggle={() => setmodal_delete(!modal_delete)}
+                    show={modal_delete}
                     handleDelete={handleDelete}
-                    close={handleDeleteClose}
-                    isLoading={isLoading}
+                    handleDeleteClose={handleDeleteClose}
+                    setmodal_delete={setmodal_delete}
+                    disabled={isLoading}
                 />
             </Container>
         </div>
