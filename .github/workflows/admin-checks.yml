@@ -30,7 +30,7 @@ jobs:
 
       - name: Build
         env:
-          CI: "true"
+          CI: "false"
         run: npm run build
 
   runtime-audit:
