@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   Input,
   Label,
@@ -255,7 +256,15 @@ const UserQuotes = () => {
                     setValues={() => {}}
                     showAddButton={false}
                   />
-                  <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                  <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                    <Link
+                      className="btn btn-outline-primary"
+                      to="/quotation/enquiries"
+                    >
+                      Customer Enquiries
+                    </Link>
+                  </div>
                 </CardHeader>
 
                 <CardBody>
