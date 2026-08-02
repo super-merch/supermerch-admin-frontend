@@ -20,6 +20,7 @@ import {
   Row,
 } from "reactstrap";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import { toast } from "react-toastify";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
@@ -290,6 +291,14 @@ const Enquiries = () => {
                         <option value="responded">Responded</option>
                         <option value="all">All enquiries</option>
                       </Input>
+                    </Col>
+                    <Col lg="auto" className="ms-lg-auto">
+                      <Link
+                        className="btn btn-outline-primary"
+                        to="/quotation/user-requests"
+                      >
+                        Quote Requests
+                      </Link>
                     </Col>
                   </Row>
                 </CardHeader>
