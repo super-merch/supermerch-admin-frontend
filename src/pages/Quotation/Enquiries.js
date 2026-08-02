@@ -59,7 +59,13 @@ const Enquiries = () => {
 
   const pagePermissions = useMemo(() => {
     if (isAdmin) return { read: true, edit: true };
-    const menuId = findMenuIdByUrl(window.location.pathname);
+    // Until a dedicated Menu Master entry is created, inherit the existing
+    // User Quote Requests permission because both pages are the same sales-lead
+    // workflow. This keeps employee access fail-closed and makes the new route
+    // usable without a production menu-data migration.
+    const menuId =
+      findMenuIdByUrl(window.location.pathname) ||
+      findMenuIdByUrl("/quotation/user-requests");
     if (!menuId) return { read: false, edit: false };
     const permissions = getPermissionsForMenu(menuId);
     return { read: !!permissions.read, edit: !!permissions.edit };
