@@ -70,6 +70,7 @@ import SupplierPriority from "../pages/Curation/SupplierPriority";
 
 // Quotation
 import UserQuotes from "../pages/Quotation/UserQuotes";
+import Enquiries from "../pages/Quotation/Enquiries";
 import AdminQuotes from "../pages/Quotation/AdminQuotes";
 
 // CMS
@@ -169,6 +170,7 @@ const authProtectedRoutes = [
 
     // Quotation
     { path: "/quotation/user-requests", component: <UserQuotes /> },
+    { path: "/quotation/enquiries", component: <Enquiries /> },
     { path: "/quotation/admin-quotes", component: <AdminQuotes /> },
 
     // CMS
