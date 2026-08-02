@@ -11,7 +11,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 
 // import required modules
-import { Autoplay, Mousewheel } from "swiper";
+import { Autoplay, Mousewheel } from "swiper/modules";
 
 const ReviewSlider = () => {
   return (

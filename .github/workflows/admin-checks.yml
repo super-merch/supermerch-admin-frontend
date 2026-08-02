@@ -1,0 +1,49 @@
+name: Admin Frontend Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - bweb-dev
+
+permissions:
+  contents: read
+
+jobs:
+  install-lint-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          CI: "false"
+        run: npm run build
+
+  runtime-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Fail on critical runtime dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=critical
