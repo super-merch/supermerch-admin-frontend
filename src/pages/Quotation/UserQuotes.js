@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
+import React, { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Input,
@@ -30,7 +30,20 @@ import {
 
 const UserQuotes = () => {
   const { adminData } = useContext(AuthContext);
-  const { currentPagePermissions } = useContext(MenuContext);
+  const {
+    isAdmin,
+    loading: menuLoading,
+    findMenuIdByUrl,
+    getPermissionsForMenu,
+  } = useContext(MenuContext);
+
+  const pagePermissions = useMemo(() => {
+    if (isAdmin) return { read: true, edit: true };
+    const menuId = findMenuIdByUrl(window.location.pathname);
+    if (!menuId) return { read: false, edit: false };
+    const permissions = getPermissionsForMenu(menuId);
+    return { read: !!permissions.read, edit: !!permissions.edit };
+  }, [isAdmin, findMenuIdByUrl, getPermissionsForMenu]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState(true);
@@ -127,7 +140,7 @@ const UserQuotes = () => {
           >
             View
           </button>
-          {currentPagePermissions.edit && !row.respondedAt && (
+          {pagePermissions.edit && !row.respondedAt && (
             <button
               className="btn btn-sm btn-success"
               onClick={() => setRespondTarget(row)}
@@ -182,7 +195,7 @@ const UserQuotes = () => {
   };
 
   const handleMarkResponded = async () => {
-    if (!respondTarget || !currentPagePermissions.edit) return;
+    if (!respondTarget || !pagePermissions.edit) return;
     setSavingResponse(true);
     try {
       const response = await markUserQuoteResponded(
@@ -232,6 +245,31 @@ const UserQuotes = () => {
   const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
 
   document.title = `User Quote Requests | ${adminData.companyName}`;
+
+  if (menuLoading) return <LoadingOverlay />;
+
+  if (!pagePermissions.read) {
+    return (
+      <div className="page-content">
+        <Container fluid>
+          <BreadCrumb
+            maintitle="Quotation"
+            title="User Quote Requests"
+            pageTitle="Quotation"
+          />
+          <Card>
+            <CardBody className="text-center py-5">
+              <i className="ri-lock-2-line fs-1 text-danger" />
+              <h5 className="mt-3">Access Denied</h5>
+              <p className="text-muted mb-0">
+                You do not have permission to view customer quote requests.
+              </p>
+            </CardBody>
+          </Card>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <React.Fragment>
