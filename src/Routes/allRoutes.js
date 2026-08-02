@@ -45,6 +45,7 @@ import CreateOrder from "../pages/Master/CreateOrder";
 import CouponMaster from "../pages/Master/CouponMaster";
 import CouponBannerMaster from "../pages/Master/CouponBannerMaster";
 import SupportTickets from "../pages/Master/SupportTickets";
+import NotificationDeliveryHistory from "../pages/Master/NotificationDeliveryHistory";
 
 // ── SuperMerch-specific pages ──────────────────────────────
 // Product Master (read-only PromoData viewer)
@@ -146,6 +147,7 @@ const authProtectedRoutes = [
     { path: "/coupon-master", component: <CouponMaster /> },
     { path: "/coupon-banners", component: <CouponBannerMaster /> },
     { path: "/support-tickets", component: <SupportTickets /> },
+    { path: "/notification-deliveries", component: <NotificationDeliveryHistory /> },
 
     // ── SuperMerch-specific routes ────────────────────────────
     // Pricing & Margins
