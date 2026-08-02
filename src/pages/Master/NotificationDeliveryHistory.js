@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
+import React, { useState, useEffect, useContext, useCallback, useMemo, useRef } from "react";
 import {
     Card,
     CardBody,
@@ -26,6 +26,7 @@ import tableCustomStyles from "../../Components/Common/tableStyles";
 const STATUS_OPTIONS = ["PENDING", "SENDING", "RETRYING", "SENT", "FAILED", "RESOLVED", "CANCELLED"];
 const ENTITY_TYPE_OPTIONS = ["Quote", "UserQuery"];
 const RESENDABLE_STATUSES = new Set(["FAILED", "CANCELLED"]);
+const REFERENCE_SEARCH_DEBOUNCE_MS = 400;
 
 const STATUS_COLORS = {
     PENDING: "secondary",
@@ -37,9 +38,34 @@ const STATUS_COLORS = {
     CANCELLED: "dark",
 };
 
+// Never log the full Axios error — it can carry the admin auth header.
+const logSafeApiError = (label, error) => {
+    console.error(label, {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+    });
+};
+
 const NotificationDeliveryHistory = () => {
     const { adminData } = useContext(AuthContext);
-    const { currentPagePermissions } = useContext(MenuContext);
+    const {
+        isAdmin,
+        loading: menuLoading,
+        findMenuIdByUrl,
+        getPermissionsForMenu,
+    } = useContext(MenuContext);
+
+    // currentPagePermissions from MenuContext defaults to all-true and only
+    // updates once a Menu Master record exists for this URL — until then (or
+    // for an employee role with no explicit grant) it would fail OPEN. Resolve
+    // permissions for this exact page ourselves and fail closed by default.
+    const pagePermissions = useMemo(() => {
+        if (isAdmin) return { read: true, write: true };
+        const menuId = findMenuIdByUrl(window.location.pathname);
+        if (!menuId) return { read: false, write: false };
+        const resolved = getPermissionsForMenu(menuId);
+        return { read: !!resolved.read, write: !!resolved.write };
+    }, [isAdmin, findMenuIdByUrl, getPermissionsForMenu]);
 
     const [deliveries, setDeliveries] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -48,6 +74,7 @@ const NotificationDeliveryHistory = () => {
     const [pageNo, setPageNo] = useState(1);
 
     const [referenceNumber, setReferenceNumber] = useState("");
+    const [debouncedReferenceNumber, setDebouncedReferenceNumber] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [entityTypeFilter, setEntityTypeFilter] = useState("");
 
@@ -58,11 +85,31 @@ const NotificationDeliveryHistory = () => {
     const [resendTarget, setResendTarget] = useState(null);
     const [resending, setResending] = useState(false);
 
+    const requestSequenceRef = useRef(0);
+
     const authHeaders = {
         headers: { atoken: localStorage.getItem("aToken") || "" },
     };
 
+    // Debounce the reference-number search so every keystroke doesn't fire a request.
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedReferenceNumber(referenceNumber);
+        }, REFERENCE_SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [referenceNumber]);
+
+    // Any filter change invalidates the current page — a filter that matches
+    // only 1-2 records should not silently show "no results" because the
+    // request is still asking for page 5.
+    useEffect(() => {
+        setPageNo(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter, entityTypeFilter, debouncedReferenceNumber]);
+
     const fetchDeliveries = useCallback(async () => {
+        if (!pagePermissions.read) return;
+        const requestId = ++requestSequenceRef.current;
         setLoading(true);
         try {
             const params = {
@@ -70,13 +117,16 @@ const NotificationDeliveryHistory = () => {
                 limit: perPage,
                 status: statusFilter || undefined,
                 entityType: entityTypeFilter || undefined,
-                referenceNumber: referenceNumber || undefined,
+                referenceNumber: debouncedReferenceNumber || undefined,
             };
 
             const response = await axios.get("/api/notification-deliveries", {
                 params,
                 ...authHeaders,
             });
+
+            // A slower earlier request can resolve after a newer one — ignore it.
+            if (requestId !== requestSequenceRef.current) return;
 
             if (response.data.success) {
                 setDeliveries(response.data.data || []);
@@ -86,15 +136,16 @@ const NotificationDeliveryHistory = () => {
                 setTotalRows(0);
             }
         } catch (error) {
-            console.error("Error fetching notification deliveries:", error);
+            if (requestId !== requestSequenceRef.current) return;
+            logSafeApiError("Error fetching notification deliveries:", error);
             setDeliveries([]);
             setTotalRows(0);
             toast.error("Failed to fetch notification delivery history!");
         } finally {
-            setLoading(false);
+            if (requestId === requestSequenceRef.current) setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pageNo, perPage, statusFilter, entityTypeFilter, referenceNumber]);
+    }, [pageNo, perPage, statusFilter, entityTypeFilter, debouncedReferenceNumber, pagePermissions.read]);
 
     useEffect(() => {
         fetchDeliveries();
@@ -111,19 +162,20 @@ const NotificationDeliveryHistory = () => {
                 toast.error("Failed to load delivery details");
             }
         } catch (error) {
-            console.error("Error fetching notification delivery:", error);
+            logSafeApiError("Error fetching notification delivery:", error);
             toast.error("Failed to load delivery details");
         }
         setLoading(false);
     };
 
     const openResendConfirm = (delivery) => {
+        if (!pagePermissions.write) return;
         setResendTarget(delivery);
         setResendModal(true);
     };
 
     const handleResend = async () => {
-        if (!resendTarget) return;
+        if (!resendTarget || !pagePermissions.write) return;
         setResending(true);
         try {
             const response = await axios.post(
@@ -134,15 +186,19 @@ const NotificationDeliveryHistory = () => {
             if (response.data.success) {
                 toast.success("Notification queued for resend");
                 setResendModal(false);
-                setResendTarget(null);
-                if (selectedDelivery && selectedDelivery.id === resendTarget.id) {
-                    setSelectedDelivery({ ...selectedDelivery, status: response.data.data?.status || "RETRYING" });
-                }
                 fetchDeliveries();
+                // Re-fetch rather than patch in the immediate response status —
+                // the outbox worker can already have moved it past PENDING by
+                // the time this resolves.
+                if (selectedDelivery && selectedDelivery.id === resendTarget.id) {
+                    await handleViewDelivery(resendTarget.id);
+                }
+                setResendTarget(null);
             } else {
                 toast.error(response.data.message || "Could not queue notification resend");
             }
         } catch (error) {
+            logSafeApiError("Error queuing notification resend:", error);
             toast.error(error.response?.data?.message || "Could not queue notification resend");
         }
         setResending(false);
@@ -156,6 +212,7 @@ const NotificationDeliveryHistory = () => {
 
     const clearFilters = () => {
         setReferenceNumber("");
+        setDebouncedReferenceNumber("");
         setStatusFilter("");
         setEntityTypeFilter("");
         setPageNo(1);
@@ -181,7 +238,6 @@ const NotificationDeliveryHistory = () => {
         {
             name: "Reference",
             selector: (row) => row.referenceNumber || "",
-            sortable: true,
             minWidth: "140px",
             cell: (row) => (
                 <span className="fw-medium text-primary">{row.referenceNumber || "—"}</span>
@@ -216,7 +272,6 @@ const NotificationDeliveryHistory = () => {
         {
             name: "Status",
             selector: (row) => row.status,
-            sortable: true,
             minWidth: "120px",
             cell: (row) => getStatusBadge(row.status),
         },
@@ -231,16 +286,18 @@ const NotificationDeliveryHistory = () => {
             ),
         },
         {
+            // Server always sorts by createdAt desc; DataTable's client-side
+            // sortable would only reorder the currently loaded page, which is
+            // misleading under server pagination — so this column, like the
+            // others, is deliberately not marked sortable.
             name: "Last Attempt",
             selector: (row) => (row.lastAttemptAt ? new Date(row.lastAttemptAt).getTime() : 0),
-            sortable: true,
             minWidth: "150px",
             cell: (row) => <small>{formatDate(row.lastAttemptAt)}</small>,
         },
         {
             name: "Created",
             selector: (row) => new Date(row.createdAt).getTime(),
-            sortable: true,
             minWidth: "150px",
             cell: (row) => <small>{formatDate(row.createdAt)}</small>,
         },
@@ -252,7 +309,7 @@ const NotificationDeliveryHistory = () => {
                     <Button color="primary" size="sm" onClick={() => handleViewDelivery(row.id)} title="View details">
                         <i className="ri-eye-line"></i>
                     </Button>
-                    {currentPagePermissions?.write && RESENDABLE_STATUSES.has(row.status) && (
+                    {pagePermissions.write && RESENDABLE_STATUSES.has(row.status) && (
                         <Button color="warning" size="sm" onClick={() => openResendConfirm(row)} title="Resend">
                             <i className="ri-refresh-line"></i>
                         </Button>
@@ -263,6 +320,30 @@ const NotificationDeliveryHistory = () => {
     ];
 
     document.title = `Notification Delivery History | ${adminData?.companyName}`;
+
+    if (menuLoading) {
+        return <LoadingOverlay />;
+    }
+
+    if (!pagePermissions.read) {
+        return (
+            <div className="page-content">
+                <Container fluid>
+                    <BreadCrumb title="Notification Delivery History" pageTitle="Notifications" />
+                    <Card>
+                        <CardBody className="text-center py-5">
+                            <i className="ri-lock-2-line fs-1 text-danger"></i>
+                            <h5 className="mt-3">Access Denied</h5>
+                            <p className="text-muted mb-0">
+                                You don't have permission to view notification delivery history.
+                                Contact an administrator if you believe this is incorrect.
+                            </p>
+                        </CardBody>
+                    </Card>
+                </Container>
+            </div>
+        );
+    }
 
     return (
         <React.Fragment>
@@ -440,7 +521,7 @@ const NotificationDeliveryHistory = () => {
                     )}
                 </ModalBody>
                 <ModalFooter>
-                    {currentPagePermissions?.write &&
+                    {pagePermissions.write &&
                         selectedDelivery &&
                         RESENDABLE_STATUSES.has(selectedDelivery.status) && (
                             <Button color="warning" onClick={() => openResendConfirm(selectedDelivery)}>
