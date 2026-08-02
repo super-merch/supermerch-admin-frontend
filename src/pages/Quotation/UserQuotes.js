@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   Input,
   Label,
@@ -20,8 +21,12 @@ import FormsHeader from "../../Components/Common/FormsHeader";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
+import MarkRespondedModal from "../../Components/Common/MarkRespondedModal";
 import { MenuContext } from "../../context/MenuContext";
-import { getUserQuotes } from "../../functions/Quotation/quotationFunc";
+import {
+  getUserQuotes,
+  markUserQuoteResponded,
+} from "../../functions/Quotation/quotationFunc";
 
 const UserQuotes = () => {
   const { adminData } = useContext(AuthContext);
@@ -43,6 +48,8 @@ const UserQuotes = () => {
   // View modal states
   const [viewModal, setViewModal] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState(null);
+  const [respondTarget, setRespondTarget] = useState(null);
+  const [savingResponse, setSavingResponse] = useState(false);
 
   const columns = [
     {
@@ -78,7 +85,7 @@ const UserQuotes = () => {
       name: "Quantity",
       selector: (row) => row.quantity,
       sortable: true,
-      width: "100px",
+      minWidth: "190px",
     },
     {
       name: "Delivery",
@@ -94,6 +101,23 @@ const UserQuotes = () => {
       width: "120px",
     },
     {
+      name: "Response",
+      selector: (row) => (row.respondedAt ? "Responded" : "Unanswered"),
+      cell: (row) =>
+        row.respondedAt ? (
+          <div>
+            <span className="badge bg-success">Responded</span>
+            <small className="d-block text-muted mt-1">
+              {new Date(row.respondedAt).toLocaleString("en-AU")}
+            </small>
+          </div>
+        ) : (
+          <span className="badge bg-warning text-dark">Unanswered</span>
+        ),
+      sortable: true,
+      minWidth: "150px",
+    },
+    {
       name: "Action",
       cell: (row) => (
         <div className="d-flex gap-2">
@@ -103,6 +127,14 @@ const UserQuotes = () => {
           >
             View
           </button>
+          {currentPagePermissions.edit && !row.respondedAt && (
+            <button
+              className="btn btn-sm btn-success"
+              onClick={() => setRespondTarget(row)}
+            >
+              Mark Responded
+            </button>
+          )}
         </div>
       ),
       sortable: false,
@@ -147,6 +179,36 @@ const UserQuotes = () => {
   const handleView = (quote) => {
     setSelectedQuote(quote);
     setViewModal(true);
+  };
+
+  const handleMarkResponded = async () => {
+    if (!respondTarget || !currentPagePermissions.edit) return;
+    setSavingResponse(true);
+    try {
+      const response = await markUserQuoteResponded(
+        respondTarget.id || respondTarget._id,
+      );
+      if (response.data.success) {
+        toast.success("Quote request marked as responded");
+        setRespondTarget(null);
+        await fetchUserQuotes();
+      } else {
+        toast.error(
+          response.data.message || "Could not mark quote request responded",
+        );
+      }
+    } catch (error) {
+      console.error("Error marking quote request responded:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+      toast.error(
+        error?.response?.data?.message ||
+          "Could not mark quote request responded",
+      );
+    } finally {
+      setSavingResponse(false);
+    }
   };
 
   const handleSort = (column, sortDirection) => {
@@ -194,7 +256,15 @@ const UserQuotes = () => {
                     setValues={() => {}}
                     showAddButton={false}
                   />
-                  <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                  <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                    <Link
+                      className="btn btn-outline-primary"
+                      to="/quotation/enquiries"
+                    >
+                      Customer Enquiries
+                    </Link>
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -355,6 +425,18 @@ const UserQuotes = () => {
           )}
         </ModalBody>
       </Modal>
+
+      <MarkRespondedModal
+        isOpen={!!respondTarget}
+        leadLabel={
+          respondTarget
+            ? `quote request from ${respondTarget.name || respondTarget.email}`
+            : ""
+        }
+        onCancel={() => setRespondTarget(null)}
+        onConfirm={handleMarkResponded}
+        saving={savingResponse}
+      />
     </React.Fragment>
   );
 };
