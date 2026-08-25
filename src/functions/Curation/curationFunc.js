@@ -26,8 +26,10 @@ export const removeAustraliaMade = async (id) => await axios.delete(`/api/austra
 export const getAustraliaMade = async (params) => await axios.get("/api/australia/get-products", { params });
 
 // Category Ordering
-export const getCategoryOrder = async (params) => await axios.get("/api/prioritize/list", { params });
-export const updateCategoryOrder = async (data) => await axios.post("/api/prioritize/update", data);
+export const getCategoryOrder = async (params) => await axios.get("/api/prioritized", { params });
+export const addCategoryOrder = async (data) => await axios.post("/api/prioritize/add", data);
+export const updateCategoryOrder = async (data) => await axios.post("/api/prioritize/reorder", data);
+export const getPrioritizeForCategory = async (categoryId) => await axios.get(`/api/prioritize/${categoryId}`);
 
 // Supplier Priority
 export const getSupplierPriority = async (params) => await axios.get("/api/priority/list", { params });
