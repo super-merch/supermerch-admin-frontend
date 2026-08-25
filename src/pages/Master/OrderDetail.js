@@ -1770,8 +1770,11 @@ const OrderDetail = () => {
                                                                                                 0 && (
                                                                                                 <tr>
                                                                                                     <td className="ps-0 text-muted">
-                                                                                                        VAT
-                                                                                                        (20%):
+                                                                                                        GST
+                                                                                                        (
+                                                                                                        {order.gstPercent ??
+                                                                                                            10}
+                                                                                                        %):
                                                                                                     </td>
                                                                                                     <td className="text-end">
                                                                                                         A$
@@ -2098,7 +2101,10 @@ const OrderDetail = () => {
                                             {order.taxAmount > 0 && (
                                                 <tr>
                                                     <td className="text-muted">
-                                                        VAT (20%):
+                                                        GST (
+                                                        {order.gstPercent ??
+                                                            10}
+                                                        %):
                                                     </td>
                                                     <td className="text-end">
                                                         A$

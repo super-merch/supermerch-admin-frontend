@@ -30,10 +30,29 @@ import tableCustomStyles from "../../Components/Common/tableStyles";
 import ExportButtons from "../../Components/Common/ExportButtons";
 
 
+// Australian states and territories. "australia" is what the backend writes
+// for nationwide holidays; the rest are the state codes the sync accepts.
+const AU_REGIONS = [
+    { value: "australia", label: "Australia (nationwide)" },
+    { value: "nsw", label: "New South Wales" },
+    { value: "vic", label: "Victoria" },
+    { value: "qld", label: "Queensland" },
+    { value: "sa", label: "South Australia" },
+    { value: "wa", label: "Western Australia" },
+    { value: "tas", label: "Tasmania" },
+    { value: "nt", label: "Northern Territory" },
+    { value: "act", label: "Australian Capital Territory" },
+];
+
+const REGION_LABELS = AU_REGIONS.reduce((acc, r) => {
+    acc[r.value] = r.label;
+    return acc;
+}, {});
+
 const initialState = {
     date: "",
     name: "",
-    region: "england-and-wales",
+    region: "australia",
 };
 
 const BankHolidays = () => {
@@ -44,6 +63,11 @@ const BankHolidays = () => {
     const [isSubmit, setIsSubmit] = useState(false);
     const [filter, setFilter] = useState(true);
     const [syncing, setSyncing] = useState(false);
+    // Which state's holidays to pull. Anzac Day and the King's Birthday are
+    // state-coded because they fall on different dates in each state, so a
+    // nationwide-only sync would leave them out — pick the state you dispatch
+    // from rather than defaulting to national.
+    const [syncRegion, setSyncRegion] = useState("nsw");
 
     const [query, setQuery] = useState("");
     const [remove_id, setRemove_id] = useState("");
@@ -165,7 +189,7 @@ const BankHolidays = () => {
         try {
             const response = await axios.post(
                 `/api/admin/bank-holidays/sync`,
-                { region: "england-and-wales" },
+                { region: syncRegion },
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -177,7 +201,8 @@ const BankHolidays = () => {
 
             if (response.data.success) {
                 toast.success(
-                    `Synced ${response.data.count} bank holidays from gov.uk!`
+                    response.data.message ||
+                        `Synced ${response.data.count} public holidays.`
                 );
                 fetchHolidays();
             } else {
@@ -321,11 +346,7 @@ const BankHolidays = () => {
             name: "Region",
             selector: (row) => (
                 <Badge color="info">
-                    {row.region === "england-and-wales"
-                        ? "England & Wales"
-                        : row.region === "scotland"
-                        ? "Scotland"
-                        : "Northern Ireland"}
+                    {REGION_LABELS[row.region] || row.region}
                 </Badge>
             ),
             minWidth: "150px",
@@ -398,7 +419,7 @@ const BankHolidays = () => {
                                     <Row className="align-items-center">
                                         <Col md={8}>
                                             <FormsHeader
-                                                formName="UK Bank Holidays"
+                                                formName="Australian Public Holidays"
                                                 filter={filter}
                                                 handleFilter={handleFilter}
                                                 tog_list={tog_list}
@@ -418,6 +439,32 @@ const BankHolidays = () => {
                                                 fileName="bank-holidays"
                                                 fetchAll={fetchAllForExport}
                                             />
+                                            <Input
+                                                type="select"
+                                                value={syncRegion}
+                                                onChange={(e) =>
+                                                    setSyncRegion(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                disabled={syncing}
+                                                style={{ width: "auto" }}
+                                                aria-label="State to sync holidays for"
+                                            >
+                                                <option value="national">
+                                                    Nationwide only
+                                                </option>
+                                                {AU_REGIONS.filter(
+                                                    (r) => r.value !== "australia"
+                                                ).map((r) => (
+                                                    <option
+                                                        key={r.value}
+                                                        value={r.value}
+                                                    >
+                                                        {r.label}
+                                                    </option>
+                                                ))}
+                                            </Input>
                                             <Button
                                                 color="primary"
                                                 onClick={handleSync}
@@ -429,7 +476,7 @@ const BankHolidays = () => {
                                                         Syncing...
                                                     </>
                                                 ) : (
-                                                    <>🔄 Sync from Gov.UK</>
+                                                    <>🔄 Sync Holidays</>
                                                 )}
                                             </Button>
                                         </Col>
@@ -439,10 +486,14 @@ const BankHolidays = () => {
                                 <CardBody>
                                     <Alert color="info" className="mb-3">
                                         <i className="ri-information-line me-2"></i>
-                                        Bank holidays are used to calculate
-                                        accurate delivery estimates. Click "Sync
-                                        from Gov.UK" to automatically fetch the
-                                        latest UK bank holidays.
+                                        Public holidays are used to calculate
+                                        accurate delivery estimates. Pick the
+                                        state you dispatch from and click "Sync
+                                        Holidays" to load this year's and next
+                                        year's Australian public holidays.
+                                        Anzac Day and the King's Birthday fall
+                                        on different dates in each state, so
+                                        "Nationwide only" leaves them out.
                                     </Alert>
 
                                     <div id="customerList">
@@ -541,13 +592,11 @@ const BankHolidays = () => {
                                 value={values.region}
                                 onChange={handleChange}
                             >
-                                <option value="england-and-wales">
-                                    England & Wales
-                                </option>
-                                <option value="scotland">Scotland</option>
-                                <option value="northern-ireland">
-                                    Northern Ireland
-                                </option>
+                                {AU_REGIONS.map((r) => (
+                                    <option key={r.value} value={r.value}>
+                                        {r.label}
+                                    </option>
+                                ))}
                             </Input>
                             <Label>Region</Label>
                         </div>
