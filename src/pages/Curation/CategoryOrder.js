@@ -14,7 +14,7 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 import { AuthContext } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import {
-        addCategoryOrder,
+    addCategoryOrder,
     getCategoryOrder,
     updateCategoryOrder,
 } from "../../functions/Curation/curationFunc";
@@ -136,6 +136,21 @@ const CategoryOrder = () => {
         }
 
         setPinning(true);
+
+        // Step 1: add each product (creates category entry if new, no-ops if already there)
+        for (const row of validRows) {
+            try {
+                await addCategoryOrder({
+                    categoryId: pinCategoryId.trim(),
+                    categoryName: pinCategoryId.trim(),
+                    productId: row.productId.trim(),
+                });
+            } catch (err) {
+                // ignore "already prioritized" errors
+            }
+        }
+
+        // Step 2: reorder each product to its target position
         let successCount = 0;
         let failCount = 0;
 
@@ -144,7 +159,7 @@ const CategoryOrder = () => {
                 const res = await updateCategoryOrder({
                     categoryId: pinCategoryId.trim(),
                     productId: row.productId.trim(),
-                    position: Number(row.position),
+                    newPosition: Number(row.position),
                 });
                 if (res.data?.success) {
                     successCount++;
