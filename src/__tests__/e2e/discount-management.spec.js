@@ -30,11 +30,12 @@ test.describe('Global Discount E2E Flow', () => {
 
   test('should set global discount and display on frontend products', async ({ page, context }) => {
     // Step 1: Navigate to Global Discount page
-    await page.click('text=Pricing & Margins');
-    await page.click('a[href="/pricing/global-discount"]');
+    // The standalone Global Discount page was retired; the same control now
+    // lives in the Global Discount panel on /pricing/global.
+    await page.goto(`${ADMIN_URL}/pricing/global`);
 
     // Verify page loaded
-    await expect(page.locator('h5:has-text("Global Discount Settings")')).toBeVisible();
+    await expect(page.locator('h5:has-text("Global Discount")')).toBeVisible();
 
     // Step 2: Set global discount to 20%
     await page.fill('input[name="discount"]', '20');
@@ -71,7 +72,7 @@ test.describe('Global Discount E2E Flow', () => {
 
   test('should deactivate global discount and remove badges from frontend', async ({ page, context }) => {
     // Step 1: Ensure global discount is active first
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
     await page.fill('input[name="discount"]', '15');
     await page.check('input[name="isActive"]');
     await page.click('button[type="submit"]');
@@ -99,7 +100,7 @@ test.describe('Global Discount E2E Flow', () => {
   });
 
   test('should validate discount percentage limits', async ({ page }) => {
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
 
     // Try to set discount > 100%
     await page.fill('input[name="discount"]', '150');
@@ -136,7 +137,7 @@ test.describe('Product Discount E2E Flow', () => {
     const TEST_PRODUCT_ID = '501234'; // From seed data
 
     // Step 1: Set global discount to 10%
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
     await page.fill('input[name="discount"]', '10');
     await page.check('input[name="isActive"]');
     await page.click('button[type="submit"]');
@@ -292,7 +293,7 @@ test.describe('Discount Priority Integration', () => {
 
     // Set up discount hierarchy
     // Global: 5%
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
     await page.fill('input[name="discount"]', '5');
     await page.check('input[name="isActive"]');
     await page.click('button[type="submit"]');
@@ -341,7 +342,7 @@ test.describe('Discount Management Accessibility', () => {
     await page.fill('input[name="password"]', TEST_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
 
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
 
     // Tab through form fields
     await page.keyboard.press('Tab'); // Focus on discount input
@@ -365,7 +366,7 @@ test.describe('Discount Management Accessibility', () => {
     await page.fill('input[name="password"]', TEST_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
 
-    await page.goto(`${ADMIN_URL}/pricing/global-discount`);
+    await page.goto(`${ADMIN_URL}/pricing/global`);
     await page.fill('input[name="discount"]', '20');
 
     // Click submit and immediately check for loading state
