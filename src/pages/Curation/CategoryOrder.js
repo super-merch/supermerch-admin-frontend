@@ -16,17 +16,11 @@ import { toast } from "react-toastify";
 import {
     addCategoryOrder,
     getCategoryOrder,
+    getPrioritizeForCategory,
+    removeCategoryOrder,
     updateCategoryOrder,
 } from "../../functions/Curation/curationFunc";
 
-// Product IDs to pre-populate for PY-06 (Metal Pens)
-const METAL_PENS_PRESET = [
-    { id: "1621", name: "Concorde Pen ‚Äî $0.90, 8 colours (cheapest entry point)" },
-    { id: "1574", name: "Napier Pen ‚Äî $1.42, 11 colours, laser engrave (best all-rounder)" },
-    { id: "2383", name: "Panama Pen ‚Äî $1.44, 12 colours (most colours under $1.50)" },
-    { id: "43676", name: "Toledo Pen ‚Äî $1.76, 13 colours (widest colour range)" },
-    { id: "13643", name: "Edison Pen ‚Äî $2.10, laser engrave, 33 photos (premium pick)" },
-];
 
 const CategoryOrder = () => {
     const { adminData } = useContext(AuthContext);
@@ -37,16 +31,21 @@ const CategoryOrder = () => {
     const [pageNo, setPageNo] = useState(1);
 
     // Pin products form state
-    const [pinCategoryId, setPinCategoryId] = useState("PY-06");
-    const [pinRows, setPinRows] = useState(
-        METAL_PENS_PRESET.map((p, i) => ({ productId: p.id, position: i + 1 }))
-    );
+    const [pinCategoryId, setPinCategoryId] = useState("");
+    const [pinRows, setPinRows] = useState([{ productId: "", position: 1 }]);
     const [pinning, setPinning] = useState(false);
+
+    // Expanded row state for viewing/editing existing pinned products
+    const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+    const [expandedProducts, setExpandedProducts] = useState([]);
+    const [expandedLoading, setExpandedLoading] = useState(false);
+    const [expandedCategoryName, setExpandedCategoryName] = useState("");
 
     const columns = [
         {
             name: "Sr No",
             selector: (row, index) => (pageNo - 1) * perPage + index + 1,
+            width: "80px",
         },
         {
             name: "Category ID",
@@ -64,11 +63,83 @@ const CategoryOrder = () => {
             minWidth: "250px",
         },
         {
-            name: "Prioritized Products",
+            name: "Pinned Products",
             selector: (row) => (row.productIds || []).length,
             sortable: true,
         },
+        {
+            name: "Manage",
+            cell: (row) => (
+                <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => handleRowExpand(row)}
+                >
+                    {expandedCategoryId === row.categoryId ? "‚ñ≤ Close" : "‚ñº Edit"}
+                </button>
+            ),
+            width: "110px",
+        },
     ];
+
+    const ExpandedRowComponent = () => (
+        <div className="p-3 bg-light border-bottom">
+            <h6 className="mb-2">
+                Pinned products for <strong>{expandedCategoryName}</strong> ({expandedCategoryId})
+            </h6>
+            {expandedLoading ? (
+                <p className="text-muted small">Loading‚Ä¶</p>
+            ) : expandedProducts.length === 0 ? (
+                <p className="text-muted small">No products pinned.</p>
+            ) : (
+                <table className="table table-sm table-bordered mb-2" style={{ maxWidth: 500 }}>
+                    <thead className="table-light">
+                        <tr>
+                            <th style={{ width: 60 }}>Position</th>
+                            <th>Product ID</th>
+                            <th style={{ width: 120 }}>Move to</th>
+                            <th style={{ width: 80 }}>Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {expandedProducts.map((p) => (
+                            <tr key={p.productId}>
+                                <td className="align-middle">{p.position}</td>
+                                <td className="align-middle font-monospace">{p.productId}</td>
+                                <td>
+                                    <div className="d-flex gap-1">
+                                        <input
+                                            type="number"
+                                            className="form-control form-control-sm"
+                                            defaultValue={p.position}
+                                            min={1}
+                                            style={{ width: 60 }}
+                                            onBlur={(e) => {
+                                                const val = Number(e.target.value);
+                                                if (val > 0 && val !== p.position) {
+                                                    handleExpandedReorder(p.productId, val);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </td>
+                                <td>
+                                    <button
+                                        className="btn btn-sm btn-outline-danger"
+                                        onClick={() => handleExpandedRemove(p.productId)}
+                                    >
+                                        ‚úï
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+            <small className="text-muted">
+                Change position by editing the "Move to" field and clicking away. Remove unpins the product from this category.
+            </small>
+        </div>
+    );
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -120,6 +191,55 @@ const CategoryOrder = () => {
 
     const removePinRow = (index) => {
         setPinRows((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleRowExpand = async (row) => {
+        const catId = row.categoryId;
+        if (expandedCategoryId === catId) {
+            setExpandedCategoryId(null);
+            setExpandedProducts([]);
+            return;
+        }
+        setExpandedCategoryId(catId);
+        setExpandedCategoryName(row.categoryName || row.name || catId);
+        setExpandedLoading(true);
+        try {
+            const res = await getPrioritizeForCategory(catId);
+            const ids = res.data?.data?.productIds || [];
+            setExpandedProducts(ids.map((id, i) => ({ productId: id, position: i + 1 })));
+        } catch {
+            setExpandedProducts([]);
+        } finally {
+            setExpandedLoading(false);
+        }
+    };
+
+    const handleExpandedReorder = async (productId, newPosition) => {
+        try {
+            await updateCategoryOrder({
+                categoryId: expandedCategoryId,
+                productId,
+                newPosition: Number(newPosition),
+            });
+            // Refresh
+            const res = await getPrioritizeForCategory(expandedCategoryId);
+            const ids = res.data?.data?.productIds || [];
+            setExpandedProducts(ids.map((id, i) => ({ productId: id, position: i + 1 })));
+            toast.success("Reordered");
+        } catch {
+            toast.error("Failed to reorder");
+        }
+    };
+
+    const handleExpandedRemove = async (productId) => {
+        try {
+            await removeCategoryOrder({ categoryId: expandedCategoryId, productId });
+            setExpandedProducts((prev) => prev.filter((p) => p.productId !== productId));
+            toast.success(`Product ${productId} removed`);
+            fetchData();
+        } catch {
+            toast.error("Failed to remove");
+        }
     };
 
     const handlePinSubmit = async () => {
@@ -291,11 +411,6 @@ const CategoryOrder = () => {
                                                                 }
                                                                 placeholder="e.g. 1621"
                                                             />
-                                                            {METAL_PENS_PRESET[i] && (
-                                                                <small className="text-muted d-block mt-1">
-                                                                    {METAL_PENS_PRESET[i].name}
-                                                                </small>
-                                                            )}
                                                         </td>
                                                         <td className="text-center">
                                                             <button
@@ -373,6 +488,14 @@ const CategoryOrder = () => {
                                                 handlePerRowsChange
                                             }
                                             onChangePage={handlePageChange}
+                                            expandableRows
+                                            expandableRowsComponent={ExpandedRowComponent}
+                                            expandableRowExpanded={(row) =>
+                                                row.categoryId === expandedCategoryId
+                                            }
+                                            onRowExpandToggled={(expanded, row) =>
+                                                handleRowExpand(row)
+                                            }
                                         />
                                     </div>
                                 </CardBody>
