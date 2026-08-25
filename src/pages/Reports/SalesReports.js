@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Input,
   Label,
@@ -19,7 +19,13 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 // Currency exported as a NUMBER so it stays summable in Excel, but
 // rounded to cents — raw floats otherwise land in the sheet as
 // 2173.7870000000003.
-const money = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+const money = (n) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return n;
+  // Shift through a decimal string rather than multiplying: Math.round(1.005*100)
+  // is 100, not 101, because 1.005 has no exact binary representation.
+  const sign = n < 0 ? -1 : 1;
+  return sign * Number(`${Math.round(Number(`${Math.abs(n)}e2`))}e-2`);
+};
 
 const SalesReports = () => {
   const [loading, setLoading] = useState(false);
@@ -37,16 +43,26 @@ const SalesReports = () => {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   };
 
+  // Guards against exporting data for a filter the user has moved on from.
+  // Two races existed: clicking Export while a request was still in flight, and
+  // a slow earlier request landing after a faster later one and overwriting it.
+  // Each fetch takes a ticket; only the newest is allowed to write state.
+  const requestTicket = useRef(0);
+
   const fetchData = useCallback(async () => {
+    const ticket = ++requestTicket.current;
     setLoading(true);
     try {
       const params = new URLSearchParams({ groupBy });
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
       const res = await axios.get(`/api/admin/reports/sales?${params}`, authHeaders);
+      if (ticket !== requestTicket.current) return; // superseded
       if (res.data.success) setReportData(res.data.data);
     } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    finally {
+      if (ticket === requestTicket.current) setLoading(false);
+    }
   }, [groupBy, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -94,7 +110,7 @@ const SalesReports = () => {
   ];
 
   const topProductExportData = (reportData.topProducts || []).map((r) => ({
-    product: r._id,
+    product: r._id ?? "",
     qtySold: r.totalQty,
     revenue: money(r.totalRevenue),
   }));
@@ -181,6 +197,7 @@ const SalesReports = () => {
                         data={timeSeriesExportData}
                         columns={timeSeriesExportColumns}
                         fileName="sales-report-revenue-over-time"
+                        disabled={loading}
                       />
                     </div>
                   </CardHeader>
@@ -203,6 +220,7 @@ const SalesReports = () => {
                         data={topProductExportData}
                         columns={topProductExportColumns}
                         fileName="sales-report-top-products"
+                        disabled={loading}
                       />
                     </div>
                   </CardHeader>
@@ -221,6 +239,7 @@ const SalesReports = () => {
                         data={supplierExportData}
                         columns={supplierExportColumns}
                         fileName="sales-report-revenue-by-supplier"
+                        disabled={loading}
                       />
                     </div>
                   </CardHeader>

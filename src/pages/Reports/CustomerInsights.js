@@ -17,7 +17,13 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 // Currency exported as a NUMBER so it stays summable in Excel, but
 // rounded to cents — raw floats otherwise land in the sheet as
 // 2173.7870000000003.
-const money = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+const money = (n) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return n;
+  // Shift through a decimal string rather than multiplying: Math.round(1.005*100)
+  // is 100, not 101, because 1.005 has no exact binary representation.
+  const sign = n < 0 ? -1 : 1;
+  return sign * Number(`${Math.round(Number(`${Math.abs(n)}e2`))}e-2`);
+};
 
 const CustomerInsights = () => {
   const [loading, setLoading] = useState(false);
@@ -71,7 +77,7 @@ const CustomerInsights = () => {
   ];
 
   const exportData = (reportData.customers || []).map((r) => ({
-    customer: r.name,
+    customer: r.name ?? "",
     email: r.email,
     orders: r.orderCount,
     totalSpent: money(r.totalSpent),
@@ -132,6 +138,7 @@ const CustomerInsights = () => {
                     data={exportData}
                     columns={exportColumns}
                     fileName="customer-insights"
+                        disabled={loading}
                   />
                 </div>
               </CardHeader>

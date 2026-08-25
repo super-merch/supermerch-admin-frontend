@@ -54,7 +54,10 @@ const formatHeader = (key) => {
  * Columns auto-detection: The component automatically discovers ALL keys from data,
  * merges with explicitly provided columns, and excludes image/internal fields.
  */
-const ExportButtons = ({ data = [], columns = [], fileName = "export", fetchAll }) => {
+// `disabled` is optional and defaults to false, so the ~29 existing call sites
+// are unaffected. Pages whose data is refetched by a filter pass their loading
+// flag, so an export cannot capture rows for a filter the user has moved past.
+const ExportButtons = ({ data = [], columns = [], fileName = "export", fetchAll, disabled = false }) => {
     const [exporting, setExporting] = useState(false);
     const csvLinkRef = React.useRef(null);
     const [csvData, setCsvData] = useState([]);
@@ -191,13 +194,13 @@ const ExportButtons = ({ data = [], columns = [], fileName = "export", fetchAll 
         <div className="d-inline-flex align-items-center gap-2">
             {exporting && <Spinner size="sm" color="secondary" />}
             <ButtonGroup size="sm">
-                <Button color="soft-success" onClick={handleCSV} disabled={exporting} title="Export CSV">
+                <Button color="soft-success" onClick={handleCSV} disabled={exporting || disabled} title="Export CSV">
                     <i className="ri-file-text-line me-1"></i>CSV
                 </Button>
-                <Button color="soft-primary" onClick={handleExcel} disabled={exporting} title="Export Excel">
+                <Button color="soft-primary" onClick={handleExcel} disabled={exporting || disabled} title="Export Excel">
                     <i className="ri-file-excel-2-line me-1"></i>Excel
                 </Button>
-                <Button color="soft-danger" onClick={handlePDF} disabled={exporting} title="Export PDF">
+                <Button color="soft-danger" onClick={handlePDF} disabled={exporting || disabled} title="Export PDF">
                     <i className="ri-file-pdf-line me-1"></i>PDF
                 </Button>
             </ButtonGroup>
