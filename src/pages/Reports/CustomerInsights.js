@@ -12,6 +12,7 @@ import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const CustomerInsights = () => {
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,28 @@ const CustomerInsights = () => {
     { name: "First Order", selector: (r) => r.firstOrder, cell: (r) => fmtDate(r.firstOrder), width: "120px" },
     { name: "Last Order", selector: (r) => r.lastOrder, cell: (r) => fmtDate(r.lastOrder), width: "120px" },
   ];
+
+  // Export rows carry only the columns the table renders, using the same
+  // headers, so the exported sheet matches the table one-for-one.
+  const exportColumns = [
+    { header: "Customer", key: "customer" },
+    { header: "Email", key: "email" },
+    { header: "Orders", key: "orders" },
+    { header: "Total Spent", key: "totalSpent" },
+    { header: "Avg Order", key: "avgOrder" },
+    { header: "First Order", key: "firstOrder" },
+    { header: "Last Order", key: "lastOrder" },
+  ];
+
+  const exportData = (reportData.customers || []).map((r) => ({
+    customer: r.name,
+    email: r.email,
+    orders: r.orderCount,
+    totalSpent: r.totalSpent,
+    avgOrder: r.avgOrderValue,
+    firstOrder: fmtDate(r.firstOrder),
+    lastOrder: fmtDate(r.lastOrder),
+  }));
 
   document.title = "Customer Insights | SuperMerch Admin";
 
@@ -97,7 +120,16 @@ const CustomerInsights = () => {
 
           <LoadingOverlay isLoading={loading}>
             <Card>
-              <CardHeader><h5 className="card-title mb-0">Top Customers by Spend</h5></CardHeader>
+              <CardHeader>
+                <div className="d-flex align-items-center justify-content-between">
+                  <h5 className="card-title mb-0">Top Customers by Spend</h5>
+                  <ExportButtons
+                    data={exportData}
+                    columns={exportColumns}
+                    fileName="customer-insights"
+                  />
+                </div>
+              </CardHeader>
               <CardBody>
                 <DataTable columns={columns} data={reportData.customers}
                   customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />

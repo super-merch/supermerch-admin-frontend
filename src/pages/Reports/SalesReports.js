@@ -14,6 +14,7 @@ import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const SalesReports = () => {
   const [loading, setLoading] = useState(false);
@@ -64,6 +65,46 @@ const SalesReports = () => {
     { name: "Line Items", selector: (r) => r.orders, sortable: true, width: "120px" },
     { name: "Revenue", selector: (r) => r.revenue, cell: (r) => fmt(r.revenue), sortable: true, width: "160px" },
   ];
+
+  // Export rows are built from reportData, which is re-fetched whenever the
+  // date range or Group By changes — so every export reflects the filters
+  // currently applied on screen. Each row carries only the columns the matching
+  // table renders, so the exported sheet matches the table one-for-one.
+  const timeSeriesExportColumns = [
+    { header: "Period", key: "period" },
+    { header: "Orders", key: "orders" },
+    { header: "Revenue", key: "revenue" },
+  ];
+
+  const timeSeriesExportData = (reportData.timeSeries || []).map((r) => ({
+    period: r._id,
+    orders: r.orders,
+    revenue: r.revenue,
+  }));
+
+  const topProductExportColumns = [
+    { header: "Product", key: "product" },
+    { header: "Qty Sold", key: "qtySold" },
+    { header: "Revenue", key: "revenue" },
+  ];
+
+  const topProductExportData = (reportData.topProducts || []).map((r) => ({
+    product: r._id,
+    qtySold: r.totalQty,
+    revenue: r.totalRevenue,
+  }));
+
+  const supplierExportColumns = [
+    { header: "Supplier", key: "supplier" },
+    { header: "Line Items", key: "lineItems" },
+    { header: "Revenue", key: "revenue" },
+  ];
+
+  const supplierExportData = (reportData.revenueBySupplier || []).map((r) => ({
+    supplier: r._id || "Unknown",
+    lineItems: r.orders,
+    revenue: r.revenue,
+  }));
 
   document.title = "Sales Reports | SuperMerch Admin";
 
@@ -128,7 +169,16 @@ const SalesReports = () => {
             <Row>
               <Col lg={12}>
                 <Card>
-                  <CardHeader><h5 className="card-title mb-0">Revenue Over Time</h5></CardHeader>
+                  <CardHeader>
+                    <div className="d-flex align-items-center justify-content-between">
+                      <h5 className="card-title mb-0">Revenue Over Time</h5>
+                      <ExportButtons
+                        data={timeSeriesExportData}
+                        columns={timeSeriesExportColumns}
+                        fileName="sales-report-revenue-over-time"
+                      />
+                    </div>
+                  </CardHeader>
                   <CardBody>
                     <DataTable columns={timeSeriesColumns} data={reportData.timeSeries}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
@@ -141,7 +191,16 @@ const SalesReports = () => {
             <Row>
               <Col lg={6}>
                 <Card>
-                  <CardHeader><h5 className="card-title mb-0">Top Products</h5></CardHeader>
+                  <CardHeader>
+                    <div className="d-flex align-items-center justify-content-between">
+                      <h5 className="card-title mb-0">Top Products</h5>
+                      <ExportButtons
+                        data={topProductExportData}
+                        columns={topProductExportColumns}
+                        fileName="sales-report-top-products"
+                      />
+                    </div>
+                  </CardHeader>
                   <CardBody>
                     <DataTable columns={topProductColumns} data={reportData.topProducts}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
@@ -150,7 +209,16 @@ const SalesReports = () => {
               </Col>
               <Col lg={6}>
                 <Card>
-                  <CardHeader><h5 className="card-title mb-0">Revenue by Supplier</h5></CardHeader>
+                  <CardHeader>
+                    <div className="d-flex align-items-center justify-content-between">
+                      <h5 className="card-title mb-0">Revenue by Supplier</h5>
+                      <ExportButtons
+                        data={supplierExportData}
+                        columns={supplierExportColumns}
+                        fileName="sales-report-revenue-by-supplier"
+                      />
+                    </div>
+                  </CardHeader>
                   <CardBody>
                     <DataTable columns={supplierColumns} data={reportData.revenueBySupplier}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />

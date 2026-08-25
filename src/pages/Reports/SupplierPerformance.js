@@ -12,6 +12,7 @@ import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
+import ExportButtons from "../../Components/Common/ExportButtons";
 
 const SupplierPerformance = () => {
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,27 @@ const SupplierPerformance = () => {
     },
   ];
 
+  // Export rows carry only the columns the table renders, using the same
+  // headers, so the exported sheet matches the table one-for-one. Share is a
+  // derived column, so it is computed here exactly as the cell renders it.
+  const exportColumns = [
+    { header: "Supplier", key: "supplier" },
+    { header: "Line Items", key: "lineItems" },
+    { header: "Total Qty", key: "totalQty" },
+    { header: "Revenue", key: "revenue" },
+    { header: "Avg Item Value", key: "avgItemValue" },
+    { header: "Share", key: "share" },
+  ];
+
+  const exportData = suppliers.map((r) => ({
+    supplier: r._id || "Unknown",
+    lineItems: r.totalOrders,
+    totalQty: r.totalQty,
+    revenue: r.totalRevenue,
+    avgItemValue: r.avgItemValue,
+    share: totalRevenue > 0 ? `${((r.totalRevenue / totalRevenue) * 100).toFixed(1)}%` : "—",
+  }));
+
   document.title = "Supplier Performance | SuperMerch Admin";
 
   return (
@@ -88,7 +110,16 @@ const SupplierPerformance = () => {
 
           <LoadingOverlay isLoading={loading}>
             <Card>
-              <CardHeader><h5 className="card-title mb-0">Supplier Breakdown</h5></CardHeader>
+              <CardHeader>
+                <div className="d-flex align-items-center justify-content-between">
+                  <h5 className="card-title mb-0">Supplier Breakdown</h5>
+                  <ExportButtons
+                    data={exportData}
+                    columns={exportColumns}
+                    fileName="supplier-performance"
+                  />
+                </div>
+              </CardHeader>
               <CardBody>
                 <DataTable columns={columns} data={suppliers}
                   customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
