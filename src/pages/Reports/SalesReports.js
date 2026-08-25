@@ -21,10 +21,15 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 // 2173.7870000000003.
 const money = (n) => {
   if (typeof n !== "number" || !Number.isFinite(n)) return n;
-  // Shift through a decimal string rather than multiplying: Math.round(1.005*100)
-  // is 100, not 101, because 1.005 has no exact binary representation.
-  const sign = n < 0 ? -1 : 1;
-  return sign * Number(`${Math.round(Number(`${Math.abs(n)}e2`))}e-2`);
+  // Nudge by EPSILON before rounding: Math.round(1.005 * 100) is 100, not 101,
+  // because 1.005 has no exact binary representation. Rounding the magnitude
+  // and reapplying the sign keeps -1.005 at -1.01 rather than -1.
+  //
+  // Do NOT replace this with decimal-string shifting. That reads tidier but
+  // returns NaN for any value JavaScript stringifies in exponent form — 1e-7
+  // becomes the unparseable "1e-7e2", and 1e21 likewise.
+  const rounded = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+  return n < 0 ? -rounded : rounded;
 };
 
 const SalesReports = () => {
@@ -44,13 +49,22 @@ const SalesReports = () => {
   };
 
   // Guards against exporting data for a filter the user has moved on from.
-  // Two races existed: clicking Export while a request was still in flight, and
-  // a slow earlier request landing after a faster later one and overwriting it.
-  // Each fetch takes a ticket; only the newest is allowed to write state.
+  //
+  // Three ways that could happen: clicking Export while a request is in flight;
+  // a slow earlier response landing after a faster later one; and — the subtle
+  // one — a request FAILING, which leaves the previous filter's rows on screen
+  // while the controls show the new filter, with exports re-enabled.
+  //
+  // So a ticket orders the responses, and appliedFilter records which filter
+  // the data on screen actually belongs to. Export is offered only when that
+  // matches the current controls.
   const requestTicket = useRef(0);
+  const filterKey = `${groupBy}|${dateFrom}|${dateTo}`;
+  const [appliedFilter, setAppliedFilter] = useState(null);
 
   const fetchData = useCallback(async () => {
     const ticket = ++requestTicket.current;
+    const key = `${groupBy}|${dateFrom}|${dateTo}`;
     setLoading(true);
     try {
       const params = new URLSearchParams({ groupBy });
@@ -58,8 +72,18 @@ const SalesReports = () => {
       if (dateTo) params.append("dateTo", dateTo);
       const res = await axios.get(`/api/admin/reports/sales?${params}`, authHeaders);
       if (ticket !== requestTicket.current) return; // superseded
-      if (res.data.success) setReportData(res.data.data);
-    } catch (err) { console.error(err); }
+      if (res.data.success) {
+        setReportData(res.data.data);
+        setAppliedFilter(key);
+      } else {
+        // Resolved but unsuccessful — the rows on screen are still the old
+        // filter's, so make sure export stays closed.
+        setAppliedFilter(null);
+      }
+    } catch (err) {
+      console.error(err);
+      if (ticket === requestTicket.current) setAppliedFilter(null);
+    }
     finally {
       if (ticket === requestTicket.current) setLoading(false);
     }
@@ -197,7 +221,7 @@ const SalesReports = () => {
                         data={timeSeriesExportData}
                         columns={timeSeriesExportColumns}
                         fileName="sales-report-revenue-over-time"
-                        disabled={loading}
+                        disabled={loading || appliedFilter !== filterKey}
                       />
                     </div>
                   </CardHeader>
@@ -220,7 +244,7 @@ const SalesReports = () => {
                         data={topProductExportData}
                         columns={topProductExportColumns}
                         fileName="sales-report-top-products"
-                        disabled={loading}
+                        disabled={loading || appliedFilter !== filterKey}
                       />
                     </div>
                   </CardHeader>
@@ -239,7 +263,7 @@ const SalesReports = () => {
                         data={supplierExportData}
                         columns={supplierExportColumns}
                         fileName="sales-report-revenue-by-supplier"
-                        disabled={loading}
+                        disabled={loading || appliedFilter !== filterKey}
                       />
                     </div>
                   </CardHeader>

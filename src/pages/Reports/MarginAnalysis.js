@@ -19,10 +19,15 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 // 2173.7870000000003.
 const money = (n) => {
   if (typeof n !== "number" || !Number.isFinite(n)) return n;
-  // Shift through a decimal string rather than multiplying: Math.round(1.005*100)
-  // is 100, not 101, because 1.005 has no exact binary representation.
-  const sign = n < 0 ? -1 : 1;
-  return sign * Number(`${Math.round(Number(`${Math.abs(n)}e2`))}e-2`);
+  // Nudge by EPSILON before rounding: Math.round(1.005 * 100) is 100, not 101,
+  // because 1.005 has no exact binary representation. Rounding the magnitude
+  // and reapplying the sign keeps -1.005 at -1.01 rather than -1.
+  //
+  // Do NOT replace this with decimal-string shifting. That reads tidier but
+  // returns NaN for any value JavaScript stringifies in exponent form — 1e-7
+  // becomes the unparseable "1e-7e2", and 1e21 likewise.
+  const rounded = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+  return n < 0 ? -rounded : rounded;
 };
 
 const MarginAnalysis = () => {
