@@ -18,6 +18,8 @@ import {
     getCategoryOrder,
     getPrioritizeForCategory,
     removeCategoryOrder,
+    resetProductHeroImage,
+    setProductHeroImage,
     updateCategoryOrder,
 } from "../../functions/Curation/curationFunc";
 
@@ -40,6 +42,10 @@ const CategoryOrder = () => {
     const [expandedProducts, setExpandedProducts] = useState([]);
     const [expandedLoading, setExpandedLoading] = useState(false);
     const [expandedCategoryName, setExpandedCategoryName] = useState("");
+
+    // Draft image URLs typed into the expanded row, keyed by productId
+    const [imageDrafts, setImageDrafts] = useState({});
+    const [imageSaving, setImageSaving] = useState({});
 
     const columns = [
         {
@@ -74,7 +80,7 @@ const CategoryOrder = () => {
                     className="btn btn-sm btn-outline-primary"
                     onClick={() => handleRowExpand(row)}
                 >
-                    {expandedCategoryId === row.categoryId ? "‚ñ≤ Close" : "‚ñº Edit"}
+                    {expandedCategoryId === row.categoryId ? "Close" : "Edit"}
                 </button>
             ),
             width: "110px",
@@ -87,17 +93,20 @@ const CategoryOrder = () => {
                 Pinned products for <strong>{expandedCategoryName}</strong> ({expandedCategoryId})
             </h6>
             {expandedLoading ? (
-                <p className="text-muted small">Loading‚Ä¶</p>
+                <p className="text-muted small">Loading...</p>
             ) : expandedProducts.length === 0 ? (
                 <p className="text-muted small">No products pinned.</p>
             ) : (
-                <table className="table table-sm table-bordered mb-2" style={{ maxWidth: 500 }}>
+                <table className="table table-sm table-bordered mb-2" style={{ maxWidth: 760 }}>
                     <thead className="table-light">
                         <tr>
                             <th style={{ width: 60 }}>Position</th>
-                            <th>Product ID</th>
-                            <th style={{ width: 120 }}>Move to</th>
-                            <th style={{ width: 80 }}>Remove</th>
+                            <th style={{ width: 90 }}>Product ID</th>
+                            <th style={{ width: 100 }}>Move to</th>
+                            <th style={{ width: 60 }}>Remove</th>
+                            <th style={{ width: 56 }}>Preview</th>
+                            <th>Hero image URL</th>
+                            <th style={{ width: 150 }}>Image actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,29 +115,66 @@ const CategoryOrder = () => {
                                 <td className="align-middle">{p.position}</td>
                                 <td className="align-middle font-monospace">{p.productId}</td>
                                 <td>
-                                    <div className="d-flex gap-1">
-                                        <input
-                                            type="number"
-                                            className="form-control form-control-sm"
-                                            defaultValue={p.position}
-                                            min={1}
-                                            style={{ width: 60 }}
-                                            onBlur={(e) => {
-                                                const val = Number(e.target.value);
-                                                if (val > 0 && val !== p.position) {
-                                                    handleExpandedReorder(p.productId, val);
-                                                }
-                                            }}
-                                        />
-                                    </div>
+                                    <input
+                                        type="number"
+                                        className="form-control form-control-sm"
+                                        defaultValue={p.position}
+                                        min={1}
+                                        style={{ width: 60 }}
+                                        onBlur={(e) => {
+                                            const val = Number(e.target.value);
+                                            if (val > 0 && val !== p.position) {
+                                                handleExpandedReorder(p.productId, val);
+                                            }
+                                        }}
+                                    />
                                 </td>
                                 <td>
                                     <button
                                         className="btn btn-sm btn-outline-danger"
                                         onClick={() => handleExpandedRemove(p.productId)}
                                     >
-                                        ‚úï
+                                        Remove
                                     </button>
+                                </td>
+                                <td className="align-middle">
+                                    {imageDrafts[p.productId] ? (
+                                        <img
+                                            src={imageDrafts[p.productId]}
+                                            alt=""
+                                            style={{ width: 40, height: 40, objectFit: "contain" }}
+                                            onError={(e) => { e.target.style.visibility = "hidden"; }}
+                                        />
+                                    ) : (
+                                        <span className="text-muted small">--</span>
+                                    )}
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        placeholder="Paste new hero image URL..."
+                                        value={imageDrafts[p.productId] || ""}
+                                        onChange={(e) => handleImageDraftChange(p.productId, e.target.value)}
+                                    />
+                                </td>
+                                <td>
+                                    <div className="d-flex gap-1">
+                                        <button
+                                            className="btn btn-sm btn-primary"
+                                            disabled={imageSaving[p.productId]}
+                                            onClick={() => handleSetHeroImage(p.productId)}
+                                        >
+                                            {imageSaving[p.productId] ? "..." : "Set"}
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-outline-secondary"
+                                            disabled={imageSaving[p.productId]}
+                                            onClick={() => handleRevertHeroImage(p.productId)}
+                                        >
+                                            Revert
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -136,7 +182,9 @@ const CategoryOrder = () => {
                 </table>
             )}
             <small className="text-muted">
-                Change position by editing the "Move to" field and clicking away. Remove unpins the product from this category.
+                Change position by editing "Move to" and clicking away. Remove unpins the product from this category.
+                Paste a new image URL and click Set to override a product's hero image on the storefront; Revert restores
+                the supplier's original image.
             </small>
         </div>
     );
@@ -242,6 +290,48 @@ const CategoryOrder = () => {
         }
     };
 
+    const handleImageDraftChange = (productId, value) => {
+        setImageDrafts((prev) => ({ ...prev, [productId]: value }));
+    };
+
+    const handleSetHeroImage = async (productId) => {
+        const url = (imageDrafts[productId] || "").trim();
+        if (!url) {
+            toast.error("Paste an image URL first");
+            return;
+        }
+        setImageSaving((prev) => ({ ...prev, [productId]: true }));
+        try {
+            const res = await setProductHeroImage(productId, url);
+            if (res.data?.success) {
+                toast.success(`Hero image updated for product ${productId}`);
+            } else {
+                toast.error(res.data?.message || "Failed to update hero image");
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to update hero image");
+        } finally {
+            setImageSaving((prev) => ({ ...prev, [productId]: false }));
+        }
+    };
+
+    const handleRevertHeroImage = async (productId) => {
+        setImageSaving((prev) => ({ ...prev, [productId]: true }));
+        try {
+            const res = await resetProductHeroImage(productId);
+            if (res.data?.success) {
+                toast.success(`Reverted to supplier image for product ${productId}`);
+                setImageDrafts((prev) => ({ ...prev, [productId]: "" }));
+            } else {
+                toast.error(res.data?.message || "Failed to revert hero image");
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to revert hero image");
+        } finally {
+            setImageSaving((prev) => ({ ...prev, [productId]: false }));
+        }
+    };
+
     const handlePinSubmit = async () => {
         const validRows = pinRows.filter(
             (r) => r.productId.trim() && r.position > 0
@@ -332,7 +422,7 @@ const CategoryOrder = () => {
                         pageTitle="Curation"
                     />
 
-                    {/* ‚îÄ‚îÄ Pin Products Form ‚îÄ‚îÄ */}
+                    {/* -- Pin Products Form -- */}
                     <Row className="mb-4">
                         <Col lg={12}>
                             <Card>
@@ -420,7 +510,7 @@ const CategoryOrder = () => {
                                                                     removePinRow(i)
                                                                 }
                                                             >
-                                                                ‚úï
+                                                                x
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -442,7 +532,7 @@ const CategoryOrder = () => {
                                             disabled={pinning}
                                         >
                                             {pinning
-                                                ? "Pinning‚Ä¶"
+                                                ? "Pinning..."
                                                 : `Pin ${pinRows.filter((r) => r.productId).length} Products`}
                                         </button>
                                     </div>
@@ -451,7 +541,7 @@ const CategoryOrder = () => {
                         </Col>
                     </Row>
 
-                    {/* ‚îÄ‚îÄ Existing Priority List ‚îÄ‚îÄ */}
+                    {/* -- Existing Priority List -- */}
                     <Row>
                         <Col lg={12}>
                             <Card>
