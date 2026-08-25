@@ -14,6 +14,11 @@ import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import ExportButtons from "../../Components/Common/ExportButtons";
 
+// Currency exported as a NUMBER so it stays summable in Excel, but
+// rounded to cents — raw floats otherwise land in the sheet as
+// 2173.7870000000003.
+const money = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+
 const MarginAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState({
@@ -66,9 +71,9 @@ const MarginAnalysis = () => {
 
   const supplierExportData = (reportData.marginBySupplier || []).map((r) => ({
     supplier: r._id || "Unknown",
-    revenue: r.totalRevenue,
+    revenue: money(r.totalRevenue),
     totalQty: r.totalQty,
-    avgUnitPrice: r.avgUnitPrice,
+    avgUnitPrice: money(r.avgUnitPrice),
   }));
 
   const productExportColumns = [
@@ -82,9 +87,9 @@ const MarginAnalysis = () => {
   const productExportData = (reportData.marginByProduct || []).map((r) => ({
     product: r._id,
     supplier: r.supplierName || "Unknown",
-    revenue: r.totalRevenue,
+    revenue: money(r.totalRevenue),
     qty: r.totalQty,
-    avgUnitPrice: r.avgUnitPrice,
+    avgUnitPrice: money(r.avgUnitPrice),
   }));
 
   document.title = "Margin Analysis | SuperMerch Admin";

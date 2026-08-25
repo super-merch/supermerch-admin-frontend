@@ -14,6 +14,11 @@ import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import ExportButtons from "../../Components/Common/ExportButtons";
 
+// Currency exported as a NUMBER so it stays summable in Excel, but
+// rounded to cents — raw floats otherwise land in the sheet as
+// 2173.7870000000003.
+const money = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+
 const CustomerInsights = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState({
@@ -69,8 +74,8 @@ const CustomerInsights = () => {
     customer: r.name,
     email: r.email,
     orders: r.orderCount,
-    totalSpent: r.totalSpent,
-    avgOrder: r.avgOrderValue,
+    totalSpent: money(r.totalSpent),
+    avgOrder: money(r.avgOrderValue),
     firstOrder: fmtDate(r.firstOrder),
     lastOrder: fmtDate(r.lastOrder),
   }));

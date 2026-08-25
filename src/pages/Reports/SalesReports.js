@@ -16,6 +16,11 @@ import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import ExportButtons from "../../Components/Common/ExportButtons";
 
+// Currency exported as a NUMBER so it stays summable in Excel, but
+// rounded to cents — raw floats otherwise land in the sheet as
+// 2173.7870000000003.
+const money = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+
 const SalesReports = () => {
   const [loading, setLoading] = useState(false);
   const [groupBy, setGroupBy] = useState("month");
@@ -79,7 +84,7 @@ const SalesReports = () => {
   const timeSeriesExportData = (reportData.timeSeries || []).map((r) => ({
     period: r._id,
     orders: r.orders,
-    revenue: r.revenue,
+    revenue: money(r.revenue),
   }));
 
   const topProductExportColumns = [
@@ -91,7 +96,7 @@ const SalesReports = () => {
   const topProductExportData = (reportData.topProducts || []).map((r) => ({
     product: r._id,
     qtySold: r.totalQty,
-    revenue: r.totalRevenue,
+    revenue: money(r.totalRevenue),
   }));
 
   const supplierExportColumns = [
@@ -103,7 +108,7 @@ const SalesReports = () => {
   const supplierExportData = (reportData.revenueBySupplier || []).map((r) => ({
     supplier: r._id || "Unknown",
     lineItems: r.orders,
-    revenue: r.revenue,
+    revenue: money(r.revenue),
   }));
 
   document.title = "Sales Reports | SuperMerch Admin";
