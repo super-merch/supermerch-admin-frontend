@@ -32,6 +32,12 @@ export const removeCategoryOrder = async (data) => await axios.post("/api/priori
 export const updateCategoryOrder = async (data) => await axios.post("/api/prioritize/reorder", data);
 export const getPrioritizeForCategory = async (categoryId) => await axios.get(`/api/prioritize/${categoryId}`);
 
+// Product hero image override
+export const setProductHeroImage = async (productId, imageUrl) =>
+    await axios.patch(`/api/products/${productId}/hero-image`, { imageUrl });
+export const resetProductHeroImage = async (productId) =>
+    await axios.delete(`/api/products/${productId}/hero-image`);
+
 // Supplier Priority
 export const getSupplierPriority = async (params) => await axios.get("/api/priority/list", { params });
 export const updateSupplierPriority = async (data) => await axios.post("/api/priority/update", data);
