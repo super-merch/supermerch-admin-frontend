@@ -84,6 +84,9 @@ const ProductMaster = () => {
     const [manualTags, setManualTags] = useState([]);
     const [isSavingSpecialTags, setIsSavingSpecialTags] = useState(false);
 
+    // ── Hero image override state ────────────────────────────
+    const [isSavingHeroImage, setIsSavingHeroImage] = useState(false);
+
 
     // ── Lazy-fetch supplier + category lists for filter dropdowns ─
     const fetchSuppliers = useCallback(async (search = "") => {
@@ -522,6 +525,46 @@ const ProductMaster = () => {
             toast.error("Failed to save special tags");
         } finally {
             setIsSavingSpecialTags(false);
+        }
+    };
+
+    const handleSetHeroImage = async (imageUrl) => {
+        const productId = productDetail?.meta?.id;
+        if (!productId) {
+            toast.error("Product ID not available");
+            return;
+        }
+        setIsSavingHeroImage(true);
+        try {
+            await axios.patch(`${apiUrl}/api/products/${productId}/hero-image`, { imageUrl });
+            toast.success("Hero image updated");
+            const detailRes = await axios.get(`${apiUrl}/api/single-product/${productId}`);
+            setProductDetail(detailRes.data?.data || detailRes.data);
+        } catch (err) {
+            console.error("Error setting hero image:", err);
+            toast.error("Failed to update hero image");
+        } finally {
+            setIsSavingHeroImage(false);
+        }
+    };
+
+    const handleResetHeroImage = async () => {
+        const productId = productDetail?.meta?.id;
+        if (!productId) {
+            toast.error("Product ID not available");
+            return;
+        }
+        setIsSavingHeroImage(true);
+        try {
+            await axios.delete(`${apiUrl}/api/products/${productId}/hero-image`);
+            toast.success("Hero image reverted to original");
+            const detailRes = await axios.get(`${apiUrl}/api/single-product/${productId}`);
+            setProductDetail(detailRes.data?.data || detailRes.data);
+        } catch (err) {
+            console.error("Error resetting hero image:", err);
+            toast.error("Failed to reset hero image");
+        } finally {
+            setIsSavingHeroImage(false);
         }
     };
 
@@ -985,6 +1028,19 @@ const ProductMaster = () => {
                                                         style={{ maxHeight: 150, objectFit: "contain" }}
                                                         onError={(e) => { e.target.style.display = "none"; }}
                                                     />
+                                                    {overview.original_hero_image && overview.original_hero_image !== overview.hero_image && (
+                                                        <div className="mt-2">
+                                                            <Button
+                                                                size="sm"
+                                                                color="link"
+                                                                className="p-0"
+                                                                disabled={isSavingHeroImage}
+                                                                onClick={handleResetHeroImage}
+                                                            >
+                                                                Revert to original hero image
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         )}
@@ -1021,18 +1077,41 @@ const ProductMaster = () => {
                                 {product.images?.length > 0 && (
                                     <>
                                         <h6 className="mt-4 mb-3">Product Images</h6>
+                                        <p className="text-muted small mb-2">
+                                            Click an image to set it as the hero image shown on category pages.
+                                        </p>
                                         <Row className="g-2">
-                                            {product.images.map((img, i) => (
-                                                <Col xs={4} sm={3} md={2} key={i}>
-                                                    <img
-                                                        src={typeof img === "string" ? img : img.url || img.full_size}
-                                                        alt=""
-                                                        className="img-fluid rounded border"
-                                                        style={{ height: 80, width: "100%", objectFit: "contain" }}
-                                                        onError={(e) => { e.target.style.display = "none"; }}
-                                                    />
-                                                </Col>
-                                            ))}
+                                            {product.images.map((img, i) => {
+                                                const imageUrl = typeof img === "string" ? img : img.url || img.full_size;
+                                                const isCurrentHero = imageUrl === overview.hero_image;
+                                                return (
+                                                    <Col xs={4} sm={3} md={2} key={i}>
+                                                        <div
+                                                            className="position-relative"
+                                                            style={{ cursor: isSavingHeroImage ? "default" : "pointer" }}
+                                                            onClick={() => !isSavingHeroImage && !isCurrentHero && handleSetHeroImage(imageUrl)}
+                                                            title={isCurrentHero ? "Current hero image" : "Set as hero image"}
+                                                        >
+                                                            <img
+                                                                src={imageUrl}
+                                                                alt=""
+                                                                className={`img-fluid rounded border ${isCurrentHero ? "border-success border-3" : ""}`}
+                                                                style={{ height: 80, width: "100%", objectFit: "contain" }}
+                                                                onError={(e) => { e.target.style.display = "none"; }}
+                                                            />
+                                                            {isCurrentHero && (
+                                                                <Badge
+                                                                    color="success"
+                                                                    className="position-absolute top-0 end-0 m-1"
+                                                                    style={{ fontSize: 10 }}
+                                                                >
+                                                                    Hero
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </Col>
+                                                );
+                                            })}
                                         </Row>
                                     </>
                                 )}
