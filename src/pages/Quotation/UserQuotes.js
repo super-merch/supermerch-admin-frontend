@@ -176,6 +176,16 @@ const UserQuotes = () => {
     quote?.price === null ||
     quote?.price === undefined;
 
+  /**
+   * A quote can have a real unit price and still no total — the customer
+   * submitted without one and #88 stores null rather than inventing a figure.
+   * `?? 0` turned that straight back into a confident $0, which is the same
+   * lie one field over. The unit price and quantity are both on the record,
+   * so staff can work it out.
+   */
+  const hasTotal = (quote) =>
+    quote?.totalPrice !== null && quote?.totalPrice !== undefined;
+
   const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price on application",key:"priceOnApplicationLabel"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
   /**
    * Excel sums a Price column. An on-application quote has no price, so it
@@ -313,7 +323,7 @@ const UserQuotes = () => {
                   <p className="fw-medium mb-0">
                     {isOnApplication(selectedQuote)
                       ? "On application"
-                      : `${selectedQuote.price ?? "N/A"}`}
+                      : `$${selectedQuote.price ?? "N/A"}`}
                   </p>
                 </Col>
                 <Col md={3}>
@@ -352,7 +362,9 @@ const UserQuotes = () => {
                   <p className="fw-bold text-success fs-5 mb-0">
                     {isOnApplication(selectedQuote)
                       ? "On application"
-                      : `${selectedQuote.totalPrice ?? 0}`}
+                      : hasTotal(selectedQuote)
+                        ? `$${selectedQuote.totalPrice}`
+                        : "Not provided"}
                   </p>
                 </Col>
                 <Col md={4}>
