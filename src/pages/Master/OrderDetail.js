@@ -612,12 +612,31 @@ const OrderDetail = () => {
         : `Order Details | ${adminData.companyName}`;
 
     // Show a rate only when the order actually stored one. Defaulting a missing
-    // value to 10 would assert a rate this order never recorded — and could put
+    // value to 10 would assert a rate this order never recorded, and could put
     // "GST (10%)" above a $0.00 tax line, which is worse than saying less.
     // Every current order stores gstPercent (checked, 18 of 18), so this is
     // about imported or legacy records rather than today's data.
-    const gstRate = Number(order?.gstPercent);
-    const gstLabel = Number.isFinite(gstRate) ? `GST (${gstRate}%)` : "GST";
+    //
+    // Check the TYPE before coercing. `Number(order?.gstPercent)` on its own is
+    // not the conservative thing it looks like: Number(null) is 0, and so are
+    // Number("") and Number(" "). Number.isFinite(0) is true, so a legacy order
+    // with gstPercent: null rendered "GST (0%)" - and this row only renders
+    // when taxAmount > 0, so that label sat directly beside a positive tax
+    // charge. Zero percent cannot produce positive GST; the label was making a
+    // confident false claim about tax, which is the one thing it must not do.
+    //
+    // A stored 0 degrades to plain "GST" for the same reason. If the amount is
+    // positive the rate cannot be zero, so the record is inconsistent and the
+    // honest response is to state less, not to repeat the contradiction.
+    const rawGstRate = order?.gstPercent;
+    const gstRate =
+        typeof rawGstRate === "number"
+            ? rawGstRate
+            : typeof rawGstRate === "string" && rawGstRate.trim() !== ""
+              ? Number(rawGstRate)
+              : NaN;
+    const gstLabel =
+        Number.isFinite(gstRate) && gstRate > 0 ? `GST (${gstRate}%)` : "GST";
 
     if (orderLoading) {
         return (

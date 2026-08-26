@@ -63,10 +63,18 @@ const BankHolidays = () => {
     const [isSubmit, setIsSubmit] = useState(false);
     const [filter, setFilter] = useState(true);
     const [syncing, setSyncing] = useState(false);
-    // Which state's holidays to pull. Anzac Day and the King's Birthday are
-    // state-coded because they fall on different dates in each state, so a
-    // nationwide-only sync would leave them out — pick the state you dispatch
-    // from rather than defaulting to national.
+    // Which state or territory's holidays to pull. Defaulting to NSW rather
+    // than nationwide because that is where we dispatch from, and a
+    // nationwide-only sync leaves out the local ones: Labour Day falls on a
+    // different date in almost every jurisdiction, several have holidays
+    // nobody else observes, and where a national holiday lands on a weekend it
+    // is each jurisdiction that decides whether to observe a substitute day.
+    //
+    // An earlier version of this comment said Anzac Day and the King's
+    // Birthday "fall on different dates in each state". That is wrong. Anzac
+    // Day is 25 April everywhere; what varies is the substitute day when it
+    // falls on a weekend. The King's Birthday is shared by most jurisdictions
+    // on one date, with WA and QLD the exceptions.
     const [syncRegion, setSyncRegion] = useState("nsw");
 
     const [query, setQuery] = useState("");
@@ -206,12 +214,19 @@ const BankHolidays = () => {
                 // "Synced undefined public holidays." Say nothing rather than
                 // report a number we were not given.
                 const count = response.data.count;
-                toast.success(
-                    response.data.message ||
-                        (Number.isFinite(count)
-                            ? `Synced ${count} public holidays.`
-                            : "Sync completed.")
-                );
+                if (response.data.message) {
+                    toast.success(response.data.message);
+                } else if (Number.isFinite(count)) {
+                    toast.success(`Synced ${count} public holidays.`);
+                } else {
+                    // Neither a message nor a count: we have been told nothing
+                    // except that something answered. The deployed placeholder
+                    // does exactly this while writing no rows, so calling it a
+                    // completed sync would be a confident false report.
+                    toast.warning(
+                        "The server accepted the request but did not say what it synced. Check the table below."
+                    );
+                }
                 fetchHolidays();
             } else {
                 toast.error(response.data.message || "Sync failed");
@@ -462,13 +477,17 @@ const BankHolidays = () => {
                                                 }
                                                 disabled={syncing}
                                                 style={{ width: "auto" }}
-                                                aria-label="State to sync holidays for"
+                                                aria-label="State or territory to sync holidays for"
                                             >
                                                 {/* "australia", not "national" — the backend accepts
-                                                    both, but the add form and every stored row use
-                                                    "australia", and a second identifier for one
-                                                    concept would fail any future validation against
-                                                    AU_REGIONS and render as a raw word in the badge. */}
+                                                    both, but the add form writes "australia", and a
+                                                    second identifier for one concept would fail any
+                                                    future validation against AU_REGIONS and render
+                                                    as a raw word in the badge. (The 21 rows already
+                                                    stored carry no region at all — checked against
+                                                    the collection — which is why the badge needs its
+                                                    "Not specified" fallback. A sync repairs them:
+                                                    it upserts on date and sets the region.) */}
                                                 <option value="australia">
                                                     Nationwide only
                                                 </option>
@@ -505,13 +524,14 @@ const BankHolidays = () => {
                                     <Alert color="info" className="mb-3">
                                         <i className="ri-information-line me-2"></i>
                                         Public holidays are used to calculate
-                                        accurate delivery estimates. Pick the
-                                        state you dispatch from and click "Sync
-                                        Holidays" to load this year's and next
-                                        year's Australian public holidays.
-                                        Anzac Day and the King's Birthday fall
-                                        on different dates in each state, so
-                                        "Nationwide only" leaves them out.
+                                        accurate delivery estimates. Pick the state or
+                                        territory you dispatch from and click
+                                        "Sync Holidays" to load Australian public
+                                        holidays for this year and the next two.
+                                        Public holidays and substitute
+                                        days differ between states and
+                                        territories, so "Nationwide only"
+                                        leaves the local ones out.
                                     </Alert>
 
                                     <div id="customerList">
