@@ -24,6 +24,131 @@ import {
 } from "../../functions/Curation/curationFunc";
 
 
+/**
+ * Defined outside CategoryOrder so its identity never changes across
+ * renders. react-data-table-component treats `expandableRowsComponent` as a
+ * component type, not an element — if that reference changes (as it would
+ * for a function declared inside CategoryOrder's body, recreated on every
+ * render) React unmounts and remounts this whole subtree on every keystroke
+ * of a controlled input inside it, dropping focus after the first character.
+ * Live data comes in through `expandableRowsComponentProps` instead of
+ * closures, so the parent can re-render freely without touching this
+ * component's identity.
+ */
+const ExpandedRowComponent = ({
+    expandedCategoryId,
+    expandedCategoryName,
+    expandedProducts,
+    expandedLoading,
+    imageDrafts,
+    imageSaving,
+    onReorder,
+    onRemove,
+    onImageDraftChange,
+    onSetHeroImage,
+    onRevertHeroImage,
+}) => (
+    <div className="p-3 bg-light border-bottom">
+        <h6 className="mb-2">
+            Pinned products for <strong>{expandedCategoryName}</strong> ({expandedCategoryId})
+        </h6>
+        {expandedLoading ? (
+            <p className="text-muted small">Loading...</p>
+        ) : expandedProducts.length === 0 ? (
+            <p className="text-muted small">No products pinned.</p>
+        ) : (
+            <table className="table table-sm table-bordered mb-2" style={{ maxWidth: 760 }}>
+                <thead className="table-light">
+                    <tr>
+                        <th style={{ width: 60 }}>Position</th>
+                        <th style={{ width: 90 }}>Product ID</th>
+                        <th style={{ width: 100 }}>Move to</th>
+                        <th style={{ width: 60 }}>Remove</th>
+                        <th style={{ width: 56 }}>Preview</th>
+                        <th>Hero image URL</th>
+                        <th style={{ width: 150 }}>Image actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {expandedProducts.map((p) => (
+                        <tr key={p.productId}>
+                            <td className="align-middle">{p.position}</td>
+                            <td className="align-middle font-monospace">{p.productId}</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    className="form-control form-control-sm"
+                                    defaultValue={p.position}
+                                    min={1}
+                                    style={{ width: 60 }}
+                                    onBlur={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (val > 0 && val !== p.position) {
+                                            onReorder(p.productId, val);
+                                        }
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => onRemove(p.productId)}
+                                >
+                                    Remove
+                                </button>
+                            </td>
+                            <td className="align-middle">
+                                {imageDrafts[p.productId] ? (
+                                    <img
+                                        src={imageDrafts[p.productId]}
+                                        alt=""
+                                        style={{ width: 40, height: 40, objectFit: "contain" }}
+                                        onError={(e) => { e.target.style.visibility = "hidden"; }}
+                                    />
+                                ) : (
+                                    <span className="text-muted small">--</span>
+                                )}
+                            </td>
+                            <td>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="Paste new hero image URL..."
+                                    value={imageDrafts[p.productId] || ""}
+                                    onChange={(e) => onImageDraftChange(p.productId, e.target.value)}
+                                />
+                            </td>
+                            <td>
+                                <div className="d-flex gap-1">
+                                    <button
+                                        className="btn btn-sm btn-primary"
+                                        disabled={imageSaving[p.productId]}
+                                        onClick={() => onSetHeroImage(p.productId)}
+                                    >
+                                        {imageSaving[p.productId] ? "..." : "Set"}
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-outline-secondary"
+                                        disabled={imageSaving[p.productId]}
+                                        onClick={() => onRevertHeroImage(p.productId)}
+                                    >
+                                        Revert
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        )}
+        <small className="text-muted">
+            Change position by editing "Move to" and clicking away. Remove unpins the product from this category.
+            Paste a new image URL and click Set to override a product's hero image on the storefront; Revert restores
+            the supplier's original image.
+        </small>
+    </div>
+);
+
 const CategoryOrder = () => {
     const { adminData } = useContext(AuthContext);
     const [loading, setLoading] = useState(false);
@@ -86,108 +211,6 @@ const CategoryOrder = () => {
             width: "110px",
         },
     ];
-
-    const ExpandedRowComponent = () => (
-        <div className="p-3 bg-light border-bottom">
-            <h6 className="mb-2">
-                Pinned products for <strong>{expandedCategoryName}</strong> ({expandedCategoryId})
-            </h6>
-            {expandedLoading ? (
-                <p className="text-muted small">Loading...</p>
-            ) : expandedProducts.length === 0 ? (
-                <p className="text-muted small">No products pinned.</p>
-            ) : (
-                <table className="table table-sm table-bordered mb-2" style={{ maxWidth: 760 }}>
-                    <thead className="table-light">
-                        <tr>
-                            <th style={{ width: 60 }}>Position</th>
-                            <th style={{ width: 90 }}>Product ID</th>
-                            <th style={{ width: 100 }}>Move to</th>
-                            <th style={{ width: 60 }}>Remove</th>
-                            <th style={{ width: 56 }}>Preview</th>
-                            <th>Hero image URL</th>
-                            <th style={{ width: 150 }}>Image actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {expandedProducts.map((p) => (
-                            <tr key={p.productId}>
-                                <td className="align-middle">{p.position}</td>
-                                <td className="align-middle font-monospace">{p.productId}</td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        className="form-control form-control-sm"
-                                        defaultValue={p.position}
-                                        min={1}
-                                        style={{ width: 60 }}
-                                        onBlur={(e) => {
-                                            const val = Number(e.target.value);
-                                            if (val > 0 && val !== p.position) {
-                                                handleExpandedReorder(p.productId, val);
-                                            }
-                                        }}
-                                    />
-                                </td>
-                                <td>
-                                    <button
-                                        className="btn btn-sm btn-outline-danger"
-                                        onClick={() => handleExpandedRemove(p.productId)}
-                                    >
-                                        Remove
-                                    </button>
-                                </td>
-                                <td className="align-middle">
-                                    {imageDrafts[p.productId] ? (
-                                        <img
-                                            src={imageDrafts[p.productId]}
-                                            alt=""
-                                            style={{ width: 40, height: 40, objectFit: "contain" }}
-                                            onError={(e) => { e.target.style.visibility = "hidden"; }}
-                                        />
-                                    ) : (
-                                        <span className="text-muted small">--</span>
-                                    )}
-                                </td>
-                                <td>
-                                    <input
-                                        type="text"
-                                        className="form-control form-control-sm"
-                                        placeholder="Paste new hero image URL..."
-                                        value={imageDrafts[p.productId] || ""}
-                                        onChange={(e) => handleImageDraftChange(p.productId, e.target.value)}
-                                    />
-                                </td>
-                                <td>
-                                    <div className="d-flex gap-1">
-                                        <button
-                                            className="btn btn-sm btn-primary"
-                                            disabled={imageSaving[p.productId]}
-                                            onClick={() => handleSetHeroImage(p.productId)}
-                                        >
-                                            {imageSaving[p.productId] ? "..." : "Set"}
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-outline-secondary"
-                                            disabled={imageSaving[p.productId]}
-                                            onClick={() => handleRevertHeroImage(p.productId)}
-                                        >
-                                            Revert
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-            <small className="text-muted">
-                Change position by editing "Move to" and clicking away. Remove unpins the product from this category.
-                Paste a new image URL and click Set to override a product's hero image on the storefront; Revert restores
-                the supplier's original image.
-            </small>
-        </div>
-    );
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -580,6 +603,19 @@ const CategoryOrder = () => {
                                             onChangePage={handlePageChange}
                                             expandableRows
                                             expandableRowsComponent={ExpandedRowComponent}
+                                            expandableRowsComponentProps={{
+                                                expandedCategoryId,
+                                                expandedCategoryName,
+                                                expandedProducts,
+                                                expandedLoading,
+                                                imageDrafts,
+                                                imageSaving,
+                                                onReorder: handleExpandedReorder,
+                                                onRemove: handleExpandedRemove,
+                                                onImageDraftChange: handleImageDraftChange,
+                                                onSetHeroImage: handleSetHeroImage,
+                                                onRevertHeroImage: handleRevertHeroImage,
+                                            }}
                                             expandableRowExpanded={(row) =>
                                                 row.categoryId === expandedCategoryId
                                             }
