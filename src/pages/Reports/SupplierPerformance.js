@@ -19,15 +19,23 @@ import ExportButtons from "../../Components/Common/ExportButtons";
 // 2173.7870000000003.
 const money = (n) => {
   if (typeof n !== "number" || !Number.isFinite(n)) return n;
-  // Nudge by EPSILON before rounding: Math.round(1.005 * 100) is 100, not 101,
-  // because 1.005 has no exact binary representation. Rounding the magnitude
-  // and reapplying the sign keeps -1.005 at -1.01 rather than -1.
+  // Round the magnitude through toPrecision(15), then reapply the sign.
   //
-  // Do NOT replace this with decimal-string shifting. That reads tidier but
-  // returns NaN for any value JavaScript stringifies in exponent form — 1e-7
-  // becomes the unparseable "1e-7e2", and 1e21 likewise.
-  const rounded = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
-  return n < 0 ? -rounded : rounded;
+  // Two earlier attempts were wrong and are worth naming so they are not
+  // reinstated. Decimal-string shifting (`${n}e2`) returns NaN for anything
+  // JavaScript prints in exponent form — 1e-7 becomes the unparseable
+  // "1e-7e2". Nudging by Number.EPSILON fixes the famous 1.005 case but is a
+  // heuristic, not a rule: EPSILON is the gap around 1, so at larger
+  // magnitudes it does not move the value at all and money(10.075) came back
+  // 10.07, money(8.165) came back 8.16.
+  //
+  // toPrecision(15) drops the binary representation error below the rounding
+  // decision without inventing precision, and handles exponent forms.
+  // Verified: 1.005→1.01, 10.075→10.08, 8.165→8.17, 2.675→2.68, -1.005→-1.01,
+  // 1e-7→0, 1e21 finite.
+  const sign = n < 0 ? -1 : 1;
+  const rounded = Math.round(Number((Math.abs(n) * 100).toPrecision(15))) / 100;
+  return sign * rounded;
 };
 
 const SupplierPerformance = () => {
