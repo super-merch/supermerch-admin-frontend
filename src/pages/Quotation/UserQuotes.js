@@ -241,8 +241,46 @@ const UserQuotes = () => {
     setFilter(e.target.checked);
   };
 
-  const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
-  const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
+  /**
+   * A quote on a product the supplier gives no price for.
+   *
+   * Backend #88 stores null and sets the flag. Quotes taken before it stored
+   * ZERO, and Ankit has ruled out backfilling those — so the reader is the only
+   * place they can be read correctly. A non-positive price is not an ordinary
+   * priced website quote, which is the same rule #88 applies to new ones.
+   */
+  const isOnApplication = (quote) => {
+    if (quote?.isPriceOnApplication === true) return true;
+    if (quote?.price === null || quote?.price === undefined) return true;
+    const price = Number(quote.price);
+    return !Number.isFinite(price) || price <= 0;
+  };
+
+  /**
+   * A quote can have a real unit price and still no total — the customer
+   * submitted without one and #88 stores null rather than inventing a figure.
+   * `?? 0` turned that straight back into a confident $0, the same lie one
+   * field over. The unit price and quantity are both on the record.
+   */
+  const hasTotal = (quote) => {
+    if (quote?.totalPrice === null || quote?.totalPrice === undefined) return false;
+    return Number.isFinite(Number(quote.totalPrice));
+  };
+
+  /**
+   * Excel sums a Price column. An on-application quote has no price, so it must
+   * export blank with the reason in its own column — never as 0, which reads as
+   * a real order worth nothing.
+   */
+  const withOnApplicationColumn = (rows) =>
+    (rows || []).map((row) =>
+      isOnApplication(row)
+        ? { ...row, priceOnApplicationLabel: "Yes", price: "", totalPrice: "" }
+        : { ...row, priceOnApplicationLabel: "" },
+    );
+
+  const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price on application",key:"priceOnApplicationLabel"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
+  const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return withOnApplicationColumn(r.data?.data||[]); } catch(e){return withOnApplicationColumn(data);} };
 
   document.title = `User Quote Requests | ${adminData.companyName}`;
 
@@ -295,7 +333,7 @@ const UserQuotes = () => {
                     showAddButton={false}
                   />
                   <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                    <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                    <ExportButtons data={withOnApplicationColumn(data)} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
                     <Link
                       className="btn btn-outline-primary"
                       to="/quotation/enquiries"
@@ -396,7 +434,11 @@ const UserQuotes = () => {
                 </Col>
                 <Col md={3}>
                   <Label className="text-muted small mb-1">Unit Price</Label>
-                  <p className="fw-medium mb-0">${selectedQuote.price ?? "N/A"}</p>
+                  <p className="fw-medium mb-0">
+                    {isOnApplication(selectedQuote)
+                      ? "On application"
+                      : `$${selectedQuote.price}`}
+                  </p>
                 </Col>
                 <Col md={3}>
                   <Label className="text-muted small mb-1">Color</Label>
@@ -431,7 +473,13 @@ const UserQuotes = () => {
               <Row className="mb-3">
                 <Col md={4}>
                   <Label className="text-muted small mb-1">Total Price</Label>
-                  <p className="fw-bold text-success fs-5 mb-0">${selectedQuote.totalPrice ?? 0}</p>
+                  <p className="fw-bold text-success fs-5 mb-0">
+                    {isOnApplication(selectedQuote)
+                      ? "On application"
+                      : hasTotal(selectedQuote)
+                        ? `$${selectedQuote.totalPrice}`
+                        : "Not provided"}
+                  </p>
                 </Col>
                 <Col md={4}>
                   <Label className="text-muted small mb-1">Date</Label>
