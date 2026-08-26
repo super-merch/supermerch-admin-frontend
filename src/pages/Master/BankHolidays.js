@@ -30,10 +30,39 @@ import tableCustomStyles from "../../Components/Common/tableStyles";
 import ExportButtons from "../../Components/Common/ExportButtons";
 
 
+// Australian states and territories. "australia" is what the backend writes
+// for nationwide holidays; the rest are the state codes the sync accepts.
+const AU_REGIONS = [
+    { value: "australia", label: "Australia (nationwide)" },
+    { value: "nsw", label: "New South Wales" },
+    { value: "vic", label: "Victoria" },
+    { value: "qld", label: "Queensland" },
+    { value: "sa", label: "South Australia" },
+    { value: "wa", label: "Western Australia" },
+    { value: "tas", label: "Tasmania" },
+    { value: "nt", label: "Northern Territory" },
+    { value: "act", label: "Australian Capital Territory" },
+];
+
+// Object.create(null), not {}. A plain object inherits from
+// Object.prototype, so REGION_LABELS["__proto__"] returns Object.prototype
+// rather than undefined - and the badge below falls through with
+// `REGION_LABELS[row.region] || row.region`, which would hand React an object
+// as a child and break the whole holiday table. "constructor", "toString" and
+// "hasOwnProperty" resolve to inherited functions for the same reason.
+//
+// The point of that fallback is to display an UNEXPECTED stored region, so a
+// lookup that mishandles unexpected keys defeats its own purpose. A
+// null-prototype map has no inherited keys to collide with.
+const REGION_LABELS = AU_REGIONS.reduce((acc, r) => {
+    acc[r.value] = r.label;
+    return acc;
+}, Object.create(null));
+
 const initialState = {
     date: "",
     name: "",
-    region: "england-and-wales",
+    region: "australia",
 };
 
 const BankHolidays = () => {
@@ -165,7 +194,7 @@ const BankHolidays = () => {
         try {
             const response = await axios.post(
                 `/api/admin/bank-holidays/sync`,
-                { region: "england-and-wales" },
+                {},
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -176,9 +205,25 @@ const BankHolidays = () => {
             );
 
             if (response.data.success) {
-                toast.success(
-                    `Synced ${response.data.count} bank holidays from gov.uk!`
-                );
+                // Guard the count: the currently deployed backend is a
+                // placeholder that answers { success: true } with no message
+                // and no count, which produced the memorable
+                // "Synced undefined public holidays." Say nothing rather than
+                // report a number we were not given.
+                const count = response.data.count;
+                if (response.data.message) {
+                    toast.success(response.data.message);
+                } else if (Number.isFinite(count)) {
+                    toast.success(`Synced ${count} public holidays.`);
+                } else {
+                    // Neither a message nor a count: we have been told nothing
+                    // except that something answered. The deployed placeholder
+                    // does exactly this while writing no rows, so calling it a
+                    // completed sync would be a confident false report.
+                    toast.warning(
+                        "The server accepted the request but did not say what it synced. Check the table below."
+                    );
+                }
                 fetchHolidays();
             } else {
                 toast.error(response.data.message || "Sync failed");
@@ -321,11 +366,12 @@ const BankHolidays = () => {
             name: "Region",
             selector: (row) => (
                 <Badge color="info">
-                    {row.region === "england-and-wales"
-                        ? "England & Wales"
-                        : row.region === "scotland"
-                        ? "Scotland"
-                        : "Northern Ireland"}
+                    {/* Fall through to the raw value so a legacy or unexpected
+                        code is still visible, then to a word — without the
+                        last fallback a row with no region at all renders an
+                        empty badge, which is what every one of the 21 rows
+                        currently in the table would do. */}
+                    {REGION_LABELS[row.region] || row.region || "Not specified"}
                 </Badge>
             ),
             minWidth: "150px",
@@ -398,7 +444,7 @@ const BankHolidays = () => {
                                     <Row className="align-items-center">
                                         <Col md={8}>
                                             <FormsHeader
-                                                formName="UK Bank Holidays"
+                                                formName="Australian Public Holidays"
                                                 filter={filter}
                                                 handleFilter={handleFilter}
                                                 tog_list={tog_list}
@@ -429,7 +475,7 @@ const BankHolidays = () => {
                                                         Syncing...
                                                     </>
                                                 ) : (
-                                                    <>🔄 Sync from Gov.UK</>
+                                                    <>🔄 Sync Holidays</>
                                                 )}
                                             </Button>
                                         </Col>
@@ -439,10 +485,21 @@ const BankHolidays = () => {
                                 <CardBody>
                                     <Alert color="info" className="mb-3">
                                         <i className="ri-information-line me-2"></i>
-                                        Bank holidays are used to calculate
-                                        accurate delivery estimates. Click "Sync
-                                        from Gov.UK" to automatically fetch the
-                                        latest UK bank holidays.
+                                        Public holidays are used to calculate
+                                        delivery estimates. "Sync Holidays" loads
+                                        the Australian public holidays for this
+                                        year and the next two.
+                                        <br />
+                                        This is one national calendar, not a
+                                        per-state one: it covers the days
+                                        observed across most of the country,
+                                        including Anzac Day and the King's
+                                        Birthday. Purely local days — WA Labour
+                                        Day, Melbourne Cup, Picnic Day and the
+                                        like — are not included, because
+                                        suppliers are spread across several
+                                        states and no single state's calendar
+                                        would be right for all of them.
                                     </Alert>
 
                                     <div id="customerList">
@@ -541,13 +598,11 @@ const BankHolidays = () => {
                                 value={values.region}
                                 onChange={handleChange}
                             >
-                                <option value="england-and-wales">
-                                    England & Wales
-                                </option>
-                                <option value="scotland">Scotland</option>
-                                <option value="northern-ireland">
-                                    Northern Ireland
-                                </option>
+                                {AU_REGIONS.map((r) => (
+                                    <option key={r.value} value={r.value}>
+                                        {r.label}
+                                    </option>
+                                ))}
                             </Input>
                             <Label>Region</Label>
                         </div>
