@@ -271,12 +271,24 @@ const UserQuotes = () => {
    * Excel sums a Price column. An on-application quote has no price, so it must
    * export blank with the reason in its own column — never as 0, which reads as
    * a real order worth nothing.
+   *
+   * The empty strings have to be written explicitly, including for an ordinary
+   * quote that simply has no total. ExportButtons fills a null in from the other
+   * rows: if any row has a numeric total it substitutes 0, and if none does it
+   * writes the literal text "null". So leaving the field alone would put the
+   * screen and the spreadsheet at odds — "Not provided" here, 0 there — which is
+   * the exact confusion this work exists to remove, in the one place that gets
+   * summed.
    */
   const withOnApplicationColumn = (rows) =>
     (rows || []).map((row) =>
       isOnApplication(row)
         ? { ...row, priceOnApplicationLabel: "Yes", price: "", totalPrice: "" }
-        : { ...row, priceOnApplicationLabel: "" },
+        : {
+            ...row,
+            priceOnApplicationLabel: "",
+            totalPrice: hasTotal(row) ? row.totalPrice : "",
+          },
     );
 
   const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price on application",key:"priceOnApplicationLabel"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
