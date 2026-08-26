@@ -15,30 +15,25 @@ import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import ExportButtons from "../../Components/Common/ExportButtons";
-
-// Currency exported as a NUMBER so it stays summable in Excel, but
-// rounded to cents — raw floats otherwise land in the sheet as
-// 2173.7870000000003.
-const money = (n) => {
-  if (typeof n !== "number" || !Number.isFinite(n)) return n;
-  // Round the magnitude through toPrecision(15), then reapply the sign.
-  //
-  // Two earlier attempts were wrong and are worth naming so they are not
-  // reinstated. Decimal-string shifting (`${n}e2`) returns NaN for anything
-  // JavaScript prints in exponent form — 1e-7 becomes the unparseable
-  // "1e-7e2". Nudging by Number.EPSILON fixes the famous 1.005 case but is a
-  // heuristic, not a rule: EPSILON is the gap around 1, so at larger
-  // magnitudes it does not move the value at all and money(10.075) came back
-  // 10.07, money(8.165) came back 8.16.
-  //
-  // toPrecision(15) drops the binary representation error below the rounding
-  // decision without inventing precision, and handles exponent forms.
-  // Verified: 1.005→1.01, 10.075→10.08, 8.165→8.17, 2.675→2.68, -1.005→-1.01,
-  // 1e-7→0, 1e21 finite.
-  const sign = n < 0 ? -1 : 1;
-  const rounded = Math.round(Number((Math.abs(n) * 100).toPrecision(15))) / 100;
-  return sign * rounded;
-};
+// Exported figures are the raw values, not rounded ones.
+//
+// There used to be a money() helper here - one copy per Reports page - that
+// rounded every exported figure to two decimals. Three attempts at it were
+// wrong in three different ways (decimal-string shifting returned NaN for
+// exponent forms; a Number.EPSILON nudge rounded 10.075 down to 10.07;
+// toPrecision(15) still loses a real cent at large magnitudes), which was the
+// clue that the helper was the problem rather than its implementation.
+//
+// Rounding each row before export makes the accountant's spreadsheet disagree
+// with the report they exported it from. The summary cards sum the RAW values
+// and format once at the end, so two rows of 2173.787 show a total of
+// $4,347.57 on screen, while SUM() over two exported 2173.79 cells gives
+// $4,347.58. A one-cent difference with no total row to explain it is exactly
+// the kind of error nobody catches.
+//
+// So the values go out untouched and stay summable, and presentation is left
+// to presentation: Excel cells carry a #,##0.00 display format, and the PDF
+// formats for display because it is a document rather than a data source.
 
 const SalesReports = () => {
   const [loading, setLoading] = useState(false);
@@ -122,7 +117,12 @@ const SalesReports = () => {
   // Export rows are built from reportData, which is re-fetched whenever the
   // date range or Group By changes — so every export reflects the filters
   // currently applied on screen. Each row carries only the columns the matching
-  // table renders, so the exported sheet matches the table one-for-one.
+  // table renders, so the exported sheet matches the table
+  // column for column. NOT row for row after the user sorts: the table sorts in
+  // the browser while the export maps the original array, so a sorted table and
+  // its export can list the same rows in a different order. Values and totals
+  // are identical either way. Carrying the sort into the export is on the
+  // backlog; the claim is narrowed here rather than left overstated.
   const timeSeriesExportColumns = [
     { header: "Period", key: "period" },
     { header: "Orders", key: "orders" },
@@ -132,7 +132,7 @@ const SalesReports = () => {
   const timeSeriesExportData = (reportData.timeSeries || []).map((r) => ({
     period: r._id,
     orders: r.orders,
-    revenue: money(r.revenue),
+    revenue: r.revenue,
   }));
 
   const topProductExportColumns = [
@@ -144,7 +144,7 @@ const SalesReports = () => {
   const topProductExportData = (reportData.topProducts || []).map((r) => ({
     product: r._id ?? "",
     qtySold: r.totalQty,
-    revenue: money(r.totalRevenue),
+    revenue: r.totalRevenue,
   }));
 
   const supplierExportColumns = [
@@ -156,7 +156,7 @@ const SalesReports = () => {
   const supplierExportData = (reportData.revenueBySupplier || []).map((r) => ({
     supplier: r._id || "Unknown",
     lineItems: r.orders,
-    revenue: money(r.revenue),
+    revenue: r.revenue,
   }));
 
   document.title = "Sales Reports | SuperMerch Admin";

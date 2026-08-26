@@ -11,35 +11,39 @@ import BreadCrumb from "../../Components/Common/BreadCrumb";
 import DataTable from "react-data-table-component";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import axios from "axios";
+import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import ExportButtons from "../../Components/Common/ExportButtons";
-
-// Currency exported as a NUMBER so it stays summable in Excel, but
-// rounded to cents — raw floats otherwise land in the sheet as
-// 2173.7870000000003.
-const money = (n) => {
-  if (typeof n !== "number" || !Number.isFinite(n)) return n;
-  // Round the magnitude through toPrecision(15), then reapply the sign.
-  //
-  // Two earlier attempts were wrong and are worth naming so they are not
-  // reinstated. Decimal-string shifting (`${n}e2`) returns NaN for anything
-  // JavaScript prints in exponent form — 1e-7 becomes the unparseable
-  // "1e-7e2". Nudging by Number.EPSILON fixes the famous 1.005 case but is a
-  // heuristic, not a rule: EPSILON is the gap around 1, so at larger
-  // magnitudes it does not move the value at all and money(10.075) came back
-  // 10.07, money(8.165) came back 8.16.
-  //
-  // toPrecision(15) drops the binary representation error below the rounding
-  // decision without inventing precision, and handles exponent forms.
-  // Verified: 1.005→1.01, 10.075→10.08, 8.165→8.17, 2.675→2.68, -1.005→-1.01,
-  // 1e-7→0, 1e21 finite.
-  const sign = n < 0 ? -1 : 1;
-  const rounded = Math.round(Number((Math.abs(n) * 100).toPrecision(15))) / 100;
-  return sign * rounded;
-};
+// Exported figures are the raw values, not rounded ones.
+//
+// There used to be a money() helper here - one copy per Reports page - that
+// rounded every exported figure to two decimals. Three attempts at it were
+// wrong in three different ways (decimal-string shifting returned NaN for
+// exponent forms; a Number.EPSILON nudge rounded 10.075 down to 10.07;
+// toPrecision(15) still loses a real cent at large magnitudes), which was the
+// clue that the helper was the problem rather than its implementation.
+//
+// Rounding each row before export makes the accountant's spreadsheet disagree
+// with the report they exported it from. The summary cards sum the RAW values
+// and format once at the end, so two rows of 2173.787 show a total of
+// $4,347.57 on screen, while SUM() over two exported 2173.79 cells gives
+// $4,347.58. A one-cent difference with no total row to explain it is exactly
+// the kind of error nobody catches.
+//
+// So the values go out untouched and stay summable, and presentation is left
+// to presentation: Excel cells carry a #,##0.00 display format, and the PDF
+// formats for display because it is a document rather than a data source.
 
 const MarginAnalysis = () => {
   const [loading, setLoading] = useState(false);
+  // Export stays shut until a request has actually SUCCEEDED, not merely
+  // finished. These pages set state only inside `if (res.data.success)`, so a
+  // failed or unsuccessful request left the initial empty array in place while
+  // `finally` cleared the loading flag - and the export buttons came alive over
+  // it. The accountant would then download a report with headings and no rows,
+  // which is indistinguishable from a legitimate "no records in this period".
+  // Reporting nothing as if it were something is worse than an error.
+  const [loaded, setLoaded] = useState(false);
   const [reportData, setReportData] = useState({
     marginBySupplier: [],
     marginByProduct: [],
@@ -55,8 +59,18 @@ const MarginAnalysis = () => {
       setLoading(true);
       try {
         const res = await axios.get("/api/admin/reports/margins", authHeaders);
-        if (res.data.success) setReportData(res.data.data);
-      } catch (err) { console.error(err); }
+        if (res.data.success) {
+          setReportData(res.data.data);
+          setLoaded(true);
+        } else {
+          setLoaded(false);
+          toast.error(res.data.message || "Could not load this report.");
+        }
+      } catch (err) {
+        console.error(err);
+        setLoaded(false);
+        toast.error("Could not load this report. Nothing is safe to export.");
+      }
       finally { setLoading(false); }
     };
     fetchData();
@@ -80,7 +94,12 @@ const MarginAnalysis = () => {
   ];
 
   // Export rows carry only the columns the matching table renders, using the
-  // same headers, so each exported sheet matches its table one-for-one.
+  // same headers, so each exported sheet matches the table
+  // column for column. NOT row for row after the user sorts: the table sorts in
+  // the browser while the export maps the original array, so a sorted table and
+  // its export can list the same rows in a different order. Values and totals
+  // are identical either way. Carrying the sort into the export is on the
+  // backlog; the claim is narrowed here rather than left overstated.
   const supplierExportColumns = [
     { header: "Supplier", key: "supplier" },
     { header: "Revenue", key: "revenue" },
@@ -90,9 +109,9 @@ const MarginAnalysis = () => {
 
   const supplierExportData = (reportData.marginBySupplier || []).map((r) => ({
     supplier: r._id || "Unknown",
-    revenue: money(r.totalRevenue),
+    revenue: r.totalRevenue,
     totalQty: r.totalQty,
-    avgUnitPrice: money(r.avgUnitPrice),
+    avgUnitPrice: r.avgUnitPrice,
   }));
 
   const productExportColumns = [
@@ -106,9 +125,9 @@ const MarginAnalysis = () => {
   const productExportData = (reportData.marginByProduct || []).map((r) => ({
     product: r._id ?? "",
     supplier: r.supplierName || "Unknown",
-    revenue: money(r.totalRevenue),
+    revenue: r.totalRevenue,
     qty: r.totalQty,
-    avgUnitPrice: money(r.avgUnitPrice),
+    avgUnitPrice: r.avgUnitPrice,
   }));
 
   document.title = "Margin Analysis | SuperMerch Admin";
@@ -151,7 +170,7 @@ const MarginAnalysis = () => {
                         data={supplierExportData}
                         columns={supplierExportColumns}
                         fileName="margin-analysis-by-supplier"
-                        disabled={loading}
+                        disabled={loading || !loaded}
                       />
                     </div>
                   </CardHeader>
@@ -173,7 +192,7 @@ const MarginAnalysis = () => {
                         data={productExportData}
                         columns={productExportColumns}
                         fileName="margin-analysis-top-products"
-                        disabled={loading}
+                        disabled={loading || !loaded}
                       />
                     </div>
                   </CardHeader>
