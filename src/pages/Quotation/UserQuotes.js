@@ -166,8 +166,30 @@ const UserQuotes = () => {
     setFilter(e.target.checked);
   };
 
-  const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
-  const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return r.data?.data||[]; } catch(e){return data;} };
+  /**
+   * A quote on a product the supplier gives no price for. The backend stores
+   * price and totalPrice as null and sets this flag (backend #88); before
+   * that it stored 0, so the null check still matters for older records.
+   */
+  const isOnApplication = (quote) =>
+    quote?.isPriceOnApplication === true ||
+    quote?.price === null ||
+    quote?.price === undefined;
+
+  const exportColumns = [{header:"Customer",key:"name"},{header:"Email",key:"email"},{header:"Phone",key:"phone"},{header:"Product",key:"product"},{header:"Quantity",key:"quantity"},{header:"Delivery",key:"delivery"},{header:"Price on application",key:"priceOnApplicationLabel"},{header:"Price",key:"price"},{header:"Total",key:"totalPrice"},{header:"Comment",key:"comment"}];
+  /**
+   * Excel sums a Price column. An on-application quote has no price, so it
+   * must export as blank with the reason in its own column, never as 0 —
+   * otherwise the export reads as a real order worth nothing.
+   */
+  const withOnApplicationColumn = (rows) =>
+    (rows || []).map((row) =>
+      isOnApplication(row)
+        ? { ...row, priceOnApplicationLabel: "Yes", price: "", totalPrice: "" }
+        : { ...row, priceOnApplicationLabel: "" },
+    );
+
+  const fetchAllForExport = async () => { try { const r = await getUserQuotes({page:1,limit:10000}); return withOnApplicationColumn(r.data?.data||[]); } catch(e){return withOnApplicationColumn(data);} };
 
   document.title = `User Quote Requests | ${adminData.companyName}`;
 
@@ -194,7 +216,7 @@ const UserQuotes = () => {
                     setValues={() => {}}
                     showAddButton={false}
                   />
-                  <ExportButtons data={data} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
+                  <ExportButtons data={withOnApplicationColumn(data)} columns={exportColumns} fileName="user_quotes" fetchAll={fetchAllForExport} />
                 </CardHeader>
 
                 <CardBody>
@@ -288,7 +310,11 @@ const UserQuotes = () => {
                 </Col>
                 <Col md={3}>
                   <Label className="text-muted small mb-1">Unit Price</Label>
-                  <p className="fw-medium mb-0">${selectedQuote.price ?? "N/A"}</p>
+                  <p className="fw-medium mb-0">
+                    {isOnApplication(selectedQuote)
+                      ? "On application"
+                      : `${selectedQuote.price ?? "N/A"}`}
+                  </p>
                 </Col>
                 <Col md={3}>
                   <Label className="text-muted small mb-1">Color</Label>
@@ -323,7 +349,11 @@ const UserQuotes = () => {
               <Row className="mb-3">
                 <Col md={4}>
                   <Label className="text-muted small mb-1">Total Price</Label>
-                  <p className="fw-bold text-success fs-5 mb-0">${selectedQuote.totalPrice ?? 0}</p>
+                  <p className="fw-bold text-success fs-5 mb-0">
+                    {isOnApplication(selectedQuote)
+                      ? "On application"
+                      : `${selectedQuote.totalPrice ?? 0}`}
+                  </p>
                 </Col>
                 <Col md={4}>
                   <Label className="text-muted small mb-1">Date</Label>
