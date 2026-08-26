@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
+  Alert,
   Input,
   Label,
   Card,
@@ -64,6 +65,21 @@ const SalesReports = () => {
   const requestTicket = useRef(0);
   const filterKey = `${groupBy}|${dateFrom}|${dateTo}`;
   const [appliedFilter, setAppliedFilter] = useState(null);
+
+  // Does what is on screen actually belong to the filter on screen?
+  //
+  // This used to gate the export buttons only, which was half the job. On a
+  // failed refetch the export was correctly closed, but the tables and the
+  // summary cards went on showing the PREVIOUS filter's revenue underneath the
+  // NEW date range - so an admin reads a number, believes it belongs to the
+  // range in the controls, and acts on it. Blocking the export while still
+  // displaying the figure stops it leaving the building and does nothing about
+  // the decision made from the screen.
+  //
+  // Now the same flag governs both, and a failure says so instead of quietly
+  // leaving stale numbers up. Showing nothing is better than showing something
+  // confidently wrong.
+  const filterMatchesScreen = appliedFilter === filterKey;
 
   const fetchData = useCallback(async () => {
     const ticket = ++requestTicket.current;
@@ -195,7 +211,7 @@ const SalesReports = () => {
               <Card className="card-animate">
                 <CardBody>
                   <p className="text-muted mb-1">Total Revenue</p>
-                  <h4 className="mb-0">{fmt(summary.totalRevenue)}</h4>
+                  <h4 className="mb-0">{filterMatchesScreen ? fmt(summary.totalRevenue) : "—"}</h4>
                 </CardBody>
               </Card>
             </Col>
@@ -203,7 +219,7 @@ const SalesReports = () => {
               <Card className="card-animate">
                 <CardBody>
                   <p className="text-muted mb-1">Total Orders</p>
-                  <h4 className="mb-0">{summary.totalOrders}</h4>
+                  <h4 className="mb-0">{filterMatchesScreen ? summary.totalOrders : "—"}</h4>
                 </CardBody>
               </Card>
             </Col>
@@ -211,11 +227,20 @@ const SalesReports = () => {
               <Card className="card-animate">
                 <CardBody>
                   <p className="text-muted mb-1">Avg Order Value</p>
-                  <h4 className="mb-0">{fmt(summary.avgOrderValue)}</h4>
+                  <h4 className="mb-0">{filterMatchesScreen ? fmt(summary.avgOrderValue) : "—"}</h4>
                 </CardBody>
               </Card>
             </Col>
           </Row>
+
+          {!loading && !filterMatchesScreen && (
+            <Alert color="warning">
+              This report could not be loaded for the selected filter, so no
+              figures are shown. Adjust the filter or try again — the previous
+              result is deliberately not displayed, because it belongs to a
+              different date range.
+            </Alert>
+          )}
 
           <LoadingOverlay isLoading={loading}>
             {/* Time Series */}
@@ -229,12 +254,12 @@ const SalesReports = () => {
                         data={timeSeriesExportData}
                         columns={timeSeriesExportColumns}
                         fileName="sales-report-revenue-over-time"
-                        disabled={loading || appliedFilter !== filterKey}
+                        disabled={loading || !filterMatchesScreen}
                       />
                     </div>
                   </CardHeader>
                   <CardBody>
-                    <DataTable columns={timeSeriesColumns} data={reportData.timeSeries}
+                    <DataTable columns={timeSeriesColumns} data={filterMatchesScreen ? reportData.timeSeries : []}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
                   </CardBody>
                 </Card>
@@ -252,12 +277,12 @@ const SalesReports = () => {
                         data={topProductExportData}
                         columns={topProductExportColumns}
                         fileName="sales-report-top-products"
-                        disabled={loading || appliedFilter !== filterKey}
+                        disabled={loading || !filterMatchesScreen}
                       />
                     </div>
                   </CardHeader>
                   <CardBody>
-                    <DataTable columns={topProductColumns} data={reportData.topProducts}
+                    <DataTable columns={topProductColumns} data={filterMatchesScreen ? reportData.topProducts : []}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
                   </CardBody>
                 </Card>
@@ -271,12 +296,12 @@ const SalesReports = () => {
                         data={supplierExportData}
                         columns={supplierExportColumns}
                         fileName="sales-report-revenue-by-supplier"
-                        disabled={loading || appliedFilter !== filterKey}
+                        disabled={loading || !filterMatchesScreen}
                       />
                     </div>
                   </CardHeader>
                   <CardBody>
-                    <DataTable columns={supplierColumns} data={reportData.revenueBySupplier}
+                    <DataTable columns={supplierColumns} data={filterMatchesScreen ? reportData.revenueBySupplier : []}
                       customStyles={tableCustomStyles} highlightOnHover striped responsive pagination />
                   </CardBody>
                 </Card>

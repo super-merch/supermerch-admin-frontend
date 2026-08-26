@@ -77,6 +77,35 @@ export const exportedStamp = () =>
     });
 
 /**
+ * Format one prepared value for the PDF.
+ *
+ * The PDF is a document, not a data source, so it is the one output where a
+ * value should be PRESENTED rather than preserved. Excel and CSV keep the raw
+ * number so SUM() reconciles with the report; a PDF nobody can sum has nothing
+ * to reconcile, and a revenue figure printed as 2173.7870000000003 just looks
+ * broken.
+ *
+ * This is the gap deleting money() left behind. That helper was rounding the
+ * exported DATA, which was the bug - but it was also, incidentally, the only
+ * thing formatting the PDF. Excel got a replacement presentation layer in the
+ * same change and the PDF did not.
+ *
+ * Only non-integers are formatted. Counts and quantities are whole numbers and
+ * printing "Orders: 5.00" would be its own small nonsense; anything with a
+ * fractional part in these reports is money.
+ */
+export const formatForPdf = (value) => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        return String(value ?? "");
+    }
+    if (Number.isInteger(value)) return value.toLocaleString("en-AU");
+    return value.toLocaleString("en-AU", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+};
+
+/**
  * Build the workbook for an Excel export.
  *
  * Separate from the click handler so it can be tested without a browser, a
@@ -268,7 +297,7 @@ const ExportButtons = ({ data = [], columns = [], fileName = "export", fetchAll,
             doc.text(`Exported: ${exportedStamp()}`, 14, 21);
 
             const headers = allCols.map((c) => c.header);
-            const body = rows.map((r) => headers.map((h) => String(r[h] ?? "")));
+            const body = rows.map((r) => headers.map((h) => formatForPdf(r[h])));
 
             autoTable(doc, {
                 head: [headers],
