@@ -63,19 +63,6 @@ const BankHolidays = () => {
     const [isSubmit, setIsSubmit] = useState(false);
     const [filter, setFilter] = useState(true);
     const [syncing, setSyncing] = useState(false);
-    // Which state or territory's holidays to pull. Defaulting to NSW rather
-    // than nationwide because that is where we dispatch from, and a
-    // nationwide-only sync leaves out the local ones: Labour Day falls on a
-    // different date in almost every jurisdiction, several have holidays
-    // nobody else observes, and where a national holiday lands on a weekend it
-    // is each jurisdiction that decides whether to observe a substitute day.
-    //
-    // An earlier version of this comment said Anzac Day and the King's
-    // Birthday "fall on different dates in each state". That is wrong. Anzac
-    // Day is 25 April everywhere; what varies is the substitute day when it
-    // falls on a weekend. The King's Birthday is shared by most jurisdictions
-    // on one date, with WA and QLD the exceptions.
-    const [syncRegion, setSyncRegion] = useState("nsw");
 
     const [query, setQuery] = useState("");
     const [remove_id, setRemove_id] = useState("");
@@ -197,7 +184,7 @@ const BankHolidays = () => {
         try {
             const response = await axios.post(
                 `/api/admin/bank-holidays/sync`,
-                { region: syncRegion },
+                {},
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -467,41 +454,6 @@ const BankHolidays = () => {
                                                 fileName="bank-holidays"
                                                 fetchAll={fetchAllForExport}
                                             />
-                                            <Input
-                                                type="select"
-                                                value={syncRegion}
-                                                onChange={(e) =>
-                                                    setSyncRegion(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                disabled={syncing}
-                                                style={{ width: "auto" }}
-                                                aria-label="State or territory to sync holidays for"
-                                            >
-                                                {/* "australia", not "national" — the backend accepts
-                                                    both, but the add form writes "australia", and a
-                                                    second identifier for one concept would fail any
-                                                    future validation against AU_REGIONS and render
-                                                    as a raw word in the badge. (The 21 rows already
-                                                    stored carry no region at all — checked against
-                                                    the collection — which is why the badge needs its
-                                                    "Not specified" fallback. A sync repairs them:
-                                                    it upserts on date and sets the region.) */}
-                                                <option value="australia">
-                                                    Nationwide only
-                                                </option>
-                                                {AU_REGIONS.filter(
-                                                    (r) => r.value !== "australia"
-                                                ).map((r) => (
-                                                    <option
-                                                        key={r.value}
-                                                        value={r.value}
-                                                    >
-                                                        {r.label}
-                                                    </option>
-                                                ))}
-                                            </Input>
                                             <Button
                                                 color="primary"
                                                 onClick={handleSync}
@@ -524,14 +476,20 @@ const BankHolidays = () => {
                                     <Alert color="info" className="mb-3">
                                         <i className="ri-information-line me-2"></i>
                                         Public holidays are used to calculate
-                                        accurate delivery estimates. Pick the state or
-                                        territory you dispatch from and click
-                                        "Sync Holidays" to load Australian public
-                                        holidays for this year and the next two.
-                                        Public holidays and substitute
-                                        days differ between states and
-                                        territories, so "Nationwide only"
-                                        leaves the local ones out.
+                                        delivery estimates. "Sync Holidays" loads
+                                        the Australian public holidays for this
+                                        year and the next two.
+                                        <br />
+                                        This is one national calendar, not a
+                                        per-state one: it covers the days
+                                        observed across most of the country,
+                                        including Anzac Day and the King's
+                                        Birthday. Purely local days — WA Labour
+                                        Day, Melbourne Cup, Picnic Day and the
+                                        like — are not included, because
+                                        suppliers are spread across several
+                                        states and no single state's calendar
+                                        would be right for all of them.
                                     </Alert>
 
                                     <div id="customerList">
