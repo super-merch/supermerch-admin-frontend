@@ -611,6 +611,14 @@ const OrderDetail = () => {
         ? `Order #${order.orderNumber} | ${adminData.companyName}`
         : `Order Details | ${adminData.companyName}`;
 
+    // Show a rate only when the order actually stored one. Defaulting a missing
+    // value to 10 would assert a rate this order never recorded — and could put
+    // "GST (10%)" above a $0.00 tax line, which is worse than saying less.
+    // Every current order stores gstPercent (checked, 18 of 18), so this is
+    // about imported or legacy records rather than today's data.
+    const gstRate = Number(order?.gstPercent);
+    const gstLabel = Number.isFinite(gstRate) ? `GST (${gstRate}%)` : "GST";
+
     if (orderLoading) {
         return (
             <div className="page-content">
@@ -1770,11 +1778,7 @@ const OrderDetail = () => {
                                                                                                 0 && (
                                                                                                 <tr>
                                                                                                     <td className="ps-0 text-muted">
-                                                                                                        GST
-                                                                                                        (
-                                                                                                        {order.gstPercent ??
-                                                                                                            10}
-                                                                                                        %):
+                                                                                                        {gstLabel}:
                                                                                                     </td>
                                                                                                     <td className="text-end">
                                                                                                         A$
@@ -2101,10 +2105,7 @@ const OrderDetail = () => {
                                             {order.taxAmount > 0 && (
                                                 <tr>
                                                     <td className="text-muted">
-                                                        GST (
-                                                        {order.gstPercent ??
-                                                            10}
-                                                        %):
+                                                        {gstLabel}:
                                                     </td>
                                                     <td className="text-end">
                                                         A$

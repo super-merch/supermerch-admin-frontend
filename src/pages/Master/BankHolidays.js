@@ -200,9 +200,17 @@ const BankHolidays = () => {
             );
 
             if (response.data.success) {
+                // Guard the count: the currently deployed backend is a
+                // placeholder that answers { success: true } with no message
+                // and no count, which produced the memorable
+                // "Synced undefined public holidays." Say nothing rather than
+                // report a number we were not given.
+                const count = response.data.count;
                 toast.success(
                     response.data.message ||
-                        `Synced ${response.data.count} public holidays.`
+                        (Number.isFinite(count)
+                            ? `Synced ${count} public holidays.`
+                            : "Sync completed.")
                 );
                 fetchHolidays();
             } else {
@@ -346,7 +354,12 @@ const BankHolidays = () => {
             name: "Region",
             selector: (row) => (
                 <Badge color="info">
-                    {REGION_LABELS[row.region] || row.region}
+                    {/* Fall through to the raw value so a legacy or unexpected
+                        code is still visible, then to a word — without the
+                        last fallback a row with no region at all renders an
+                        empty badge, which is what every one of the 21 rows
+                        currently in the table would do. */}
+                    {REGION_LABELS[row.region] || row.region || "Not specified"}
                 </Badge>
             ),
             minWidth: "150px",
@@ -451,7 +464,12 @@ const BankHolidays = () => {
                                                 style={{ width: "auto" }}
                                                 aria-label="State to sync holidays for"
                                             >
-                                                <option value="national">
+                                                {/* "australia", not "national" — the backend accepts
+                                                    both, but the add form and every stored row use
+                                                    "australia", and a second identifier for one
+                                                    concept would fail any future validation against
+                                                    AU_REGIONS and render as a raw word in the badge. */}
+                                                <option value="australia">
                                                     Nationwide only
                                                 </option>
                                                 {AU_REGIONS.filter(
