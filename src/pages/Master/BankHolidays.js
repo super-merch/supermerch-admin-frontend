@@ -44,10 +44,20 @@ const AU_REGIONS = [
     { value: "act", label: "Australian Capital Territory" },
 ];
 
+// Object.create(null), not {}. A plain object inherits from
+// Object.prototype, so REGION_LABELS["__proto__"] returns Object.prototype
+// rather than undefined - and the badge below falls through with
+// `REGION_LABELS[row.region] || row.region`, which would hand React an object
+// as a child and break the whole holiday table. "constructor", "toString" and
+// "hasOwnProperty" resolve to inherited functions for the same reason.
+//
+// The point of that fallback is to display an UNEXPECTED stored region, so a
+// lookup that mishandles unexpected keys defeats its own purpose. A
+// null-prototype map has no inherited keys to collide with.
 const REGION_LABELS = AU_REGIONS.reduce((acc, r) => {
     acc[r.value] = r.label;
     return acc;
-}, {});
+}, Object.create(null));
 
 const initialState = {
     date: "",
