@@ -82,6 +82,7 @@ const ProductMaster = () => {
 
     // ── Special Tags states ──────────────────────────────────
     const [manualTags, setManualTags] = useState([]);
+    const [excludedTags, setExcludedTags] = useState([]);
     const [isSavingSpecialTags, setIsSavingSpecialTags] = useState(false);
 
     // ── Hero image override state ────────────────────────────
@@ -241,6 +242,7 @@ const ProductMaster = () => {
             const p = productRes.data?.data || productRes.data;
             setProductDetail(p);
             setManualTags(p.manualSpecialTags || []);
+            setExcludedTags(p.excludedSpecialTags || []);
 
 
             const methods = methodsRes.data?.data || [];
@@ -513,12 +515,16 @@ const ProductMaster = () => {
         try {
             const res = await axios.post(`${apiUrl}/api/admin/products/${mongoId}/special-tags`, {
                 specialTags: manualTags,
+                excludedSpecialTags: excludedTags,
             });
             if (res.data?.success !== false) {
                 toast.success("Special tags saved successfully");
                 // Refresh product detail to get updated aggregated tags
                 const detailRes = await axios.get(`${apiUrl}/api/single-product/${productDetail.meta?.id || productDetail._id || mongoId}`);
-                setProductDetail(detailRes.data?.data || detailRes.data);
+                const refreshed = detailRes.data?.data || detailRes.data;
+                setProductDetail(refreshed);
+                setManualTags(refreshed.manualSpecialTags || []);
+                setExcludedTags(refreshed.excludedSpecialTags || []);
             }
         } catch (err) {
             console.error("Error saving special tags:", err);
@@ -1692,19 +1698,54 @@ const ProductMaster = () => {
                                                         </div>
                                                     </Col>
 
-                                                    {/* Preview of current aggregated tags */}
+                                                    {/* Preview of current aggregated tags — removable, including automated ones */}
                                                     <Col md={12}>
                                                         <hr />
                                                         <h6>Current Combined Tags (Visible on Frontend)</h6>
+                                                        <div className="text-muted small mb-2">
+                                                            Includes automated tags (e.g., Headwear, Trending). Click the × on any tag to remove it from this product.
+                                                        </div>
                                                         <div className="d-flex flex-wrap gap-2 mt-2">
-                                                            {(p.specialTags || []).map((tag, idx) => (
-                                                                <Badge key={idx} color="soft-success" className="text-success p-2">
-                                                                    {tag}
-                                                                </Badge>
-                                                            ))}
-                                                            {(p.specialTags || []).length === 0 && (
-                                                                <span className="text-muted">No tags currently applied.</span>
-                                                            )}
+                                                            {(() => {
+                                                                const originalManualTags = p.manualSpecialTags || [];
+                                                                const isVisible = (tag) => originalManualTags.includes(tag)
+                                                                    ? manualTags.includes(tag)
+                                                                    : !excludedTags.includes(tag);
+                                                                const visibleTags = (p.specialTags || []).filter(isVisible);
+                                                                if (visibleTags.length === 0) {
+                                                                    return <span className="text-muted">No tags currently applied.</span>;
+                                                                }
+                                                                return visibleTags.map((tag, idx) => (
+                                                                    <Badge
+                                                                        key={idx}
+                                                                        color="soft-success"
+                                                                        className="text-success p-2 d-flex align-items-center gap-2"
+                                                                    >
+                                                                        {tag}
+                                                                        <i
+                                                                            className="ri-close-line cursor-pointer"
+                                                                            onClick={() => {
+                                                                                if (originalManualTags.includes(tag)) {
+                                                                                    setManualTags(manualTags.filter((t) => t !== tag));
+                                                                                } else if (!excludedTags.includes(tag)) {
+                                                                                    setExcludedTags([...excludedTags, tag]);
+                                                                                }
+                                                                            }}
+                                                                        ></i>
+                                                                    </Badge>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                        <div className="mt-2">
+                                                            <Button
+                                                                color="link"
+                                                                size="sm"
+                                                                className="p-0"
+                                                                disabled={excludedTags.length === 0}
+                                                                onClick={() => setExcludedTags([])}
+                                                            >
+                                                                Reset removed automated tags
+                                                            </Button>
                                                         </div>
                                                     </Col>
                                                 </Row>
