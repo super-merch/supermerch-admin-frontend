@@ -1273,6 +1273,51 @@ const OrderDetail = () => {
                                                                 </Button>
                                                             </td>
                                                         </tr>
+                                                        {/* Product Details Row */}
+                                                        <tr className="bg-light">
+                                                            <td colSpan={7} className="py-3">
+                                                                <div className="ps-4">
+                                                                    <h6 className="mb-3 text-primary">
+                                                                        <i className="ri-price-tag-3-line me-1"></i>
+                                                                        Product Details
+                                                                    </h6>
+                                                                    <Row>
+                                                                        <Col md={3}>
+                                                                            <small className="text-muted d-block mb-1">
+                                                                                Supplier Name
+                                                                            </small>
+                                                                            <span className="fw-medium">
+                                                                                {item.supplierName || "N/A"}
+                                                                            </span>
+                                                                        </Col>
+                                                                        <Col md={3}>
+                                                                            <small className="text-muted d-block mb-1">
+                                                                                SKU Number
+                                                                            </small>
+                                                                            <span className="fw-medium">
+                                                                                {item.sku || "N/A"}
+                                                                            </span>
+                                                                        </Col>
+                                                                        <Col md={3}>
+                                                                            <small className="text-muted d-block mb-1">
+                                                                                Product Name
+                                                                            </small>
+                                                                            <span className="fw-medium">
+                                                                                {item.productName || "N/A"}
+                                                                            </span>
+                                                                        </Col>
+                                                                        <Col md={3}>
+                                                                            <small className="text-muted d-block mb-1">
+                                                                                Product Code
+                                                                            </small>
+                                                                            <span className="fw-medium">
+                                                                                {item.productCode || "N/A"}
+                                                                            </span>
+                                                                        </Col>
+                                                                    </Row>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
                                                         {/* Customization Details Row - Only show for first item in a customization group */}
                                                         {item.hasCustomization &&
                                                             isFirstInCustomizationGroup(
