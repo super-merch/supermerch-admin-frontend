@@ -607,6 +607,32 @@ const OrderDetail = () => {
         return `${apiUrl}/${url}`;
     };
 
+    // Download a customization logo/image to the admin's local machine
+    const handleDownloadCustomizationImage = async (url, fileName) => {
+        const fullUrl = getCustomizationImageUrl(url);
+        if (!fullUrl) return;
+        try {
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error("Download failed");
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download =
+                fileName ||
+                fullUrl.split("/").pop().split("?")[0] ||
+                "customization-logo";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Error downloading customization image:", error);
+            toast.error("Couldn't download the image directly — opening it in a new tab instead.");
+            window.open(fullUrl, "_blank", "noopener,noreferrer");
+        }
+    };
+
     document.title = order
         ? `Order #${order.orderNumber} | ${adminData.companyName}`
         : `Order Details | ${adminData.companyName}`;
@@ -979,11 +1005,29 @@ const OrderDetail = () => {
                                                                                 item.dealTitle ||
                                                                                 "Item"}
                                                                         </p>
-                                                                        <small className="text-muted">
-                                                                            {item.productCode ||
-                                                                                item.dealCode ||
-                                                                                item.sku}
+                                                                        <small className="text-muted d-block">
+                                                                            {[
+                                                                                item.productCode ||
+                                                                                    item.dealCode,
+                                                                                item.sku
+                                                                                    ? `SKU: ${item.sku}`
+                                                                                    : null,
+                                                                            ]
+                                                                                .filter(
+                                                                                    Boolean
+                                                                                )
+                                                                                .join(
+                                                                                    " · "
+                                                                                )}
                                                                         </small>
+                                                                        {item.supplierName && (
+                                                                            <small className="text-muted d-block">
+                                                                                Supplier:{" "}
+                                                                                {
+                                                                                    item.supplierName
+                                                                                }
+                                                                            </small>
+                                                                        )}
                                                                         {(item.colorName ||
                                                                             item.sizeName) && (
                                                                             <div className="mt-1">
@@ -1271,51 +1315,6 @@ const OrderDetail = () => {
                                                                 >
                                                                     <i className="ri-edit-line"></i>
                                                                 </Button>
-                                                            </td>
-                                                        </tr>
-                                                        {/* Product Details Row */}
-                                                        <tr className="bg-light">
-                                                            <td colSpan={7} className="py-3">
-                                                                <div className="ps-4">
-                                                                    <h6 className="mb-3 text-primary">
-                                                                        <i className="ri-price-tag-3-line me-1"></i>
-                                                                        Product Details
-                                                                    </h6>
-                                                                    <Row>
-                                                                        <Col md={3}>
-                                                                            <small className="text-muted d-block mb-1">
-                                                                                Supplier Name
-                                                                            </small>
-                                                                            <span className="fw-medium">
-                                                                                {item.supplierName || "N/A"}
-                                                                            </span>
-                                                                        </Col>
-                                                                        <Col md={3}>
-                                                                            <small className="text-muted d-block mb-1">
-                                                                                SKU Number
-                                                                            </small>
-                                                                            <span className="fw-medium">
-                                                                                {item.sku || "N/A"}
-                                                                            </span>
-                                                                        </Col>
-                                                                        <Col md={3}>
-                                                                            <small className="text-muted d-block mb-1">
-                                                                                Product Name
-                                                                            </small>
-                                                                            <span className="fw-medium">
-                                                                                {item.productName || "N/A"}
-                                                                            </span>
-                                                                        </Col>
-                                                                        <Col md={3}>
-                                                                            <small className="text-muted d-block mb-1">
-                                                                                Product Code
-                                                                            </small>
-                                                                            <span className="fw-medium">
-                                                                                {item.productCode || "N/A"}
-                                                                            </span>
-                                                                        </Col>
-                                                                    </Row>
-                                                                </div>
                                                             </td>
                                                         </tr>
                                                         {/* Customization Details Row - Only show for first item in a customization group */}
@@ -1734,6 +1733,24 @@ const OrderDetail = () => {
                                                                                                 </small>
                                                                                             </div>
                                                                                         )}
+                                                                                        <div className="mt-2">
+                                                                                            <Button
+                                                                                                color="outline-primary"
+                                                                                                size="sm"
+                                                                                                onClick={() =>
+                                                                                                    handleDownloadCustomizationImage(
+                                                                                                        item.customizationImageUrl,
+                                                                                                        item
+                                                                                                            .customizationData
+                                                                                                            ?.content
+                                                                                                            ?.fileName
+                                                                                                    )
+                                                                                                }
+                                                                                            >
+                                                                                                <i className="ri-download-2-line me-1"></i>
+                                                                                                Download
+                                                                                            </Button>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
 
