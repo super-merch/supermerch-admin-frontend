@@ -24,6 +24,7 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import tableCustomStyles from "../../Components/Common/tableStyles";
 import ExportButtons from "../../Components/Common/ExportButtons";
+import DeleteModal from "../../Components/Common/DeleteModal";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -52,6 +53,11 @@ const Orders = () => {
   const [perPage, setPerPage] = useState(50);
   const [pageNo, setPageNo] = useState(0);
   const [data, setData] = useState([]);
+
+  // Delete state
+  const [modal_delete, setmodal_delete] = useState(false);
+  const [remove_id, setRemove_id] = useState("");
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -258,15 +264,29 @@ const Orders = () => {
       name: "Action",
       selector: (row) => row.id,
       sortable: false,
-      minWidth: "100px",
+      minWidth: "170px",
       cell: (row) => (
-        <Button
-          size="sm"
-          color="info"
-          onClick={() => navigate(`/orders/${row.id}`)}
-        >
-          View
-        </Button>
+        <div className="d-flex gap-2">
+          <Button
+            size="sm"
+            color="info"
+            onClick={() => navigate(`/orders/${row.id}`)}
+          >
+            View
+          </Button>
+          {currentPagePermissions.delete && (
+            <Button
+              size="sm"
+              color="danger"
+              onClick={(e) => {
+                e.stopPropagation();
+                tog_delete(row.id);
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
       ),
     },
   ];
@@ -374,6 +394,40 @@ const Orders = () => {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Delete handlers
+  const tog_delete = (id) => {
+    setmodal_delete(!modal_delete);
+    setRemove_id(id);
+  };
+
+  const handleDeleteClose = (e) => {
+    e.preventDefault();
+    setmodal_delete(false);
+  };
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    setIsDeleteLoading(true);
+    try {
+      const response = await axios.delete(`/api/admin/orders/${remove_id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.data.success) {
+        setmodal_delete(false);
+        toast.success("Order Deleted Successfully");
+        fetchOrders();
+        fetchStats();
+      } else {
+        toast.error(response.data.message || "Cannot delete order");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete order. Please try again.");
+    }
+    setIsDeleteLoading(false);
+  };
+
   // Pagination handlers
   const handlePageChange = (page) => {
     setPageNo(page - 1);
@@ -414,6 +468,7 @@ const Orders = () => {
     <React.Fragment>
       <div className="page-content">
         {isLoading && <LoadingOverlay />}
+        {isDeleteLoading && <LoadingOverlay fullscreen />}
         <Container fluid>
           <BreadCrumb maintitle="Master" title="Orders" pageTitle="Master" />
           <div className="d-flex justify-content-end mb-3">
@@ -690,6 +745,13 @@ const Orders = () => {
           </Row>
         </Container>
       </div>
+
+      <DeleteModal
+        show={modal_delete && !isDeleteLoading}
+        handleDelete={handleDelete}
+        handleDeleteClose={handleDeleteClose}
+        setmodal_delete={setmodal_delete}
+      />
     </React.Fragment>
   );
 };
