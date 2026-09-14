@@ -54,7 +54,8 @@ import ProductMaster from "../pages/Master/ProductMaster";
 // Pricing & Margins
 import GlobalPricing from "../pages/Pricing/GlobalPricing";
 import CategoryMargin from "../pages/Pricing/CategoryMargin";
-import GlobalDiscount from "../pages/Pricing/GlobalDiscount";
+// GlobalDiscount page retired — /pricing/global-discount now redirects to
+// /pricing/global, which edits the same record from the same panel.
 import ProductDiscount from "../pages/Pricing/ProductDiscount";
 import SupplierDiscount from "../pages/Pricing/SupplierDiscount";
 import Clearance from "../pages/Pricing/Clearance";
@@ -154,7 +155,10 @@ const authProtectedRoutes = [
     // Pricing & Margins
     { path: "/pricing/global", component: <GlobalPricing /> },
     { path: "/pricing/category-margin", component: <CategoryMargin /> },
-    { path: "/pricing/global-discount", component: <GlobalDiscount /> },
+    // Retired duplicate: this URL edited the same alldiscounts.globalDiscount
+    // record as the Global Discount panel on /pricing/global. Kept as a
+    // redirect rather than removed because the URL is live and bookmarkable.
+    { path: "/pricing/global-discount", component: <Navigate to="/pricing/global" replace /> },
     { path: "/pricing/product-discount", component: <ProductDiscount /> },
     { path: "/pricing/supplier-discount", component: <SupplierDiscount /> },
     { path: "/pricing/clearance", component: <Clearance /> },
