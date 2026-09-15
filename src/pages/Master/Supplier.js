@@ -511,7 +511,14 @@ const Supplier = () => {
         toast.error(response.data.message || "Cannot update Supplier");
       }
     } catch (err) {
-      toast.error("Failed to save delivery settings");
+      // Surface the API message. This is the reachable write path on the
+      // supplier list, and the API can now refuse it for a reason worth
+      // reading — an attempt to change Active, or to repoint the PromoData id.
+      // "Failed to save delivery settings" would describe none of those, and
+      // would send whoever hit it looking at the delivery fields.
+      toast.error(
+        err?.response?.data?.message || "Failed to save delivery settings"
+      );
     } finally {
       setIsLoading(false);
     }
