@@ -656,27 +656,40 @@ const Supplier = () => {
       };
       
 
-      const response = await axios.put(
-        `/api/suppliers/${_id}`,
-        supplierData,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      // try/catch, because axios rejects on 4xx and this request can now get
+      // one: the API refuses an attempt to change Active, which it cannot
+      // apply. Without this the rejection is unhandled, so the spinner never
+      // stops and the admin is told nothing at all — the worst of the three
+      // outcomes, and worse than the refusal it is failing to report.
+      try {
+        const response = await axios.put(
+          `/api/suppliers/${_id}`,
+          supplierData,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
 
-      if (response.data.success) {
-        toast.success("Supplier Updated Successfully");
-        setUpdateForm(false);
-        setShowForm(false);
-        setValues(initialState);  
-        setIsSubmit(false);
-        setFormErrors({});
-        fetchSupplierMaster();
+        if (response.data.success) {
+          toast.success("Supplier Updated Successfully");
+          setUpdateForm(false);
+          setShowForm(false);
+          setValues(initialState);
+          setIsSubmit(false);
+          setFormErrors({});
+          fetchSupplierMaster();
+        } else {
+          toast.error(response.data.message || "Cannot update Supplier");
+        }
+      } catch (error) {
+        // The API's own message says what to do about it, so show that
+        // rather than a generic failure.
+        toast.error(
+          error?.response?.data?.message || "Could not update the supplier."
+        );
+      } finally {
+        setIsLoading(false);
       }
-      else {
-        toast.error(response.data.message || "Cannot update Employee");
-      }
-      setIsLoading(false);
     }
   };
 
@@ -1056,16 +1069,34 @@ const Supplier = () => {
                     <Row>
                       <Col lg={2}>
                         <div className="form-check mb-2">
+                          {/*
+                            Read-only, deliberately.
+
+                            Active is derived from whether the supplier is
+                            switched off in PromoData; it is not a field of
+                            this record. Ticking this box never changed what
+                            the shop sells — it wrote a column nothing reads
+                            — which is how half the supplier list came to
+                            show Active while being switched off.
+
+                            The API now refuses an attempt to change it
+                            rather than accepting one it cannot apply, so
+                            leaving the box operable would only invite an
+                            error. Switch a supplier in PromoData instead.
+                          */}
                           <Input
                             type="checkbox"
                             name="isActive"
-                            value={values.isActive}
-                            onChange={handlecheck}
-                            checked={values.isActive}
+                            checked={!!values.isActive}
+                            disabled
+                            readOnly
                           />
                           <Label className="form-check-label">
                             Is Active
                           </Label>
+                          <div className="text-muted small">
+                            Set in PromoData. Shown here after the next supplier sync.
+                          </div>
                         </div>
                       </Col>
                     </Row>
