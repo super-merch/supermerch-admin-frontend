@@ -23,6 +23,17 @@ import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 import { getUserQuotes } from "../../functions/Quotation/quotationFunc";
 
+// Forces Cloudinary to serve the asset with a Content-Disposition: attachment
+// header (via the fl_attachment delivery flag) so the browser downloads it
+// instead of navigating to it.
+const getDownloadUrl = (url) => {
+  if (!url) return url;
+  if (url.includes("/upload/") && !url.includes("fl_attachment")) {
+    return url.replace("/upload/", "/upload/fl_attachment/");
+  }
+  return url;
+};
+
 const UserQuotes = () => {
   const { adminData } = useContext(AuthContext);
   const { currentPagePermissions } = useContext(MenuContext);
@@ -268,11 +279,37 @@ const UserQuotes = () => {
               <Row className="mb-3">
                 <Col md={6}>
                   <Label className="text-muted small mb-1">Product</Label>
-                  <p className="fw-medium mb-0">{selectedQuote.product || "N/A"}</p>
+                  <p className="fw-medium mb-0">
+                    {selectedQuote.productId ? (
+                      <a
+                        href={`https://supermerch.com.au/product?ref=${btoa(String(selectedQuote.productId))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {selectedQuote.productName || selectedQuote.product || "N/A"}
+                      </a>
+                    ) : (
+                      selectedQuote.productName || selectedQuote.product || "N/A"
+                    )}
+                  </p>
                 </Col>
                 <Col md={6}>
                   <Label className="text-muted small mb-1">Product ID</Label>
                   <p className="fw-medium mb-0">{selectedQuote.productId || "N/A"}</p>
+                </Col>
+              </Row>
+              <Row className="mb-3">
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Supplier Name</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.supplierName || "N/A"}</p>
+                </Col>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">SKU Number</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.skuNumber || "N/A"}</p>
+                </Col>
+                <Col md={4}>
+                  <Label className="text-muted small mb-1">Product Code</Label>
+                  <p className="fw-medium mb-0">{selectedQuote.productCode || "N/A"}</p>
                 </Col>
               </Row>
               <Row className="mb-3">
@@ -343,9 +380,16 @@ const UserQuotes = () => {
                       style={{ maxHeight: "300px", objectFit: "contain" }}
                       onError={(e) => { e.target.style.display = "none"; }}
                     />
-                    <div className="mt-2">
+                    <div className="mt-2 d-flex gap-2 justify-content-center">
                       <a href={selectedQuote.file} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
                         View Full Image
+                      </a>
+                      <a
+                        href={getDownloadUrl(selectedQuote.file)}
+                        download
+                        className="btn btn-sm btn-primary"
+                      >
+                        Download
                       </a>
                     </div>
                   </div>
