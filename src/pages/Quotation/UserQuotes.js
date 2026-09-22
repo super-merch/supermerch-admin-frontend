@@ -440,7 +440,7 @@ const UserQuotes = () => {
                   <p className="fw-medium mb-0">
                     {selectedQuote.productId ? (
                       <a
-                        href={`https://supermerch.com.au/product?ref=${btoa(String(selectedQuote.productId))}`}
+                        href={`https://www.supermerch.com.au/product/${selectedQuote.productId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
