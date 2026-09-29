@@ -87,6 +87,9 @@ const GlobalPricing = () => {
       });
       if (response.data.success) {
         toast.success(response.data.message || "Global margin updated successfully");
+        // Same reason as the discount handler below: confirm what was stored
+        // rather than leaving the field showing unconfirmed input.
+        await fetchData();
       } else {
         toast.error(response.data.message || "Failed to update global margin");
       }
@@ -115,6 +118,10 @@ const GlobalPricing = () => {
       });
       if (response.data.success) {
         toast.success(response.data.message || "Global discount updated successfully");
+        // Re-read what was actually stored. Without this the page kept showing
+        // whatever was typed and never refreshed after mount, so a tab left
+        // open all day would happily POST its stale value over a later change.
+        await fetchData();
       } else {
         toast.error(response.data.message || "Failed to update global discount");
       }
