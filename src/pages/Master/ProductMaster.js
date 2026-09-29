@@ -962,6 +962,16 @@ const ProductMaster = () => {
                                     Special Tags
                                 </NavLink>
                             </NavItem>
+                            <NavItem>
+                                <NavLink
+                                    style={{ cursor: "pointer" }}
+                                    className={classnames({ active: activeTab === "8" })}
+                                    onClick={() => toggleTab("8")}
+                                >
+                                    <i className="ri-price-tag-line align-middle me-1"></i>
+                                    Product Tags
+                                </NavLink>
+                            </NavItem>
                         </Nav>
 
 
@@ -1740,6 +1750,60 @@ const ProductMaster = () => {
                                                 )}
                                             </Button>
                                         </div>
+                                    </Col>
+                                </Row>
+                            </TabPane>
+
+                            {/* ── Tab 8: Product Tags (read-only view of ProductTagMapping) ── */}
+                            <TabPane tabId="8">
+                                <Row>
+                                    <Col lg={12}>
+                                        <div className="alert alert-info mb-4">
+                                            <i className="ri-information-line align-middle me-2"></i>
+                                            <strong>Product Tags:</strong> the curated occasion/theme tags and
+                                            AI-generated search tags this product carries, from the{" "}
+                                            <a href="/product-tags">Product Tags</a> screen and the
+                                            AI tagging pass. These drive catalog search (including Merch Mate)
+                                            and, for curated tags, the storefront's "shop by occasion" pages.
+                                            Assign or remove tags from the Product Tags screen.
+                                        </div>
+                                    </Col>
+                                    <Col lg={12}>
+                                        <Card className="border">
+                                            <CardHeader className="bg-light">
+                                                <h6 className="mb-0">Tags on this product</h6>
+                                            </CardHeader>
+                                            <CardBody>
+                                                <div className="d-flex flex-wrap gap-2">
+                                                    {(p.productTags || []).map((tag) => (
+                                                        <span
+                                                            key={tag._id || tag.slug}
+                                                            className="p-2 d-inline-flex align-items-center gap-1"
+                                                            style={{
+                                                                backgroundColor: tag.color || "#3b82f6",
+                                                                color: tag.textColor || "#ffffff",
+                                                                borderRadius: 12,
+                                                                fontSize: 13,
+                                                                fontWeight: 600,
+                                                            }}
+                                                            title={tag.aiGenerated ? "AI-generated (search only)" : "Curated"}
+                                                        >
+                                                            {tag.icon && <i className={`${tag.icon}`}></i>}
+                                                            {tag.name}
+                                                            {tag.aiGenerated && (
+                                                                <i
+                                                                    className="ri-robot-2-line ms-1"
+                                                                    title="AI-generated tag — search only, not shown on the storefront's curated tag pages"
+                                                                ></i>
+                                                            )}
+                                                        </span>
+                                                    ))}
+                                                    {(p.productTags || []).length === 0 && (
+                                                        <span className="text-muted">No product tags assigned yet.</span>
+                                                    )}
+                                                </div>
+                                            </CardBody>
+                                        </Card>
                                     </Col>
                                 </Row>
                             </TabPane>
