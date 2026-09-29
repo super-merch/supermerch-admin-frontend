@@ -87,6 +87,13 @@ const ProductMaster = () => {
     // ── Hero image override state ────────────────────────────
     const [isSavingHeroImage, setIsSavingHeroImage] = useState(false);
 
+    // ── Product Tags (ProductTag/ProductTagMapping) assignment ──
+    const [allProductTags, setAllProductTags] = useState([]);
+    const allProductTagsFetched = useRef(false);
+    const [tagToAssign, setTagToAssign] = useState(null);
+    const [isAssigningTag, setIsAssigningTag] = useState(false);
+    const [removingTagId, setRemovingTagId] = useState(null);
+
 
     // ── Lazy-fetch supplier + category lists for filter dropdowns ─
     const fetchSuppliers = useCallback(async (search = "") => {
@@ -241,6 +248,11 @@ const ProductMaster = () => {
             const p = productRes.data?.data || productRes.data;
             setProductDetail(p);
             setManualTags(p.manualSpecialTags || []);
+            setTagToAssign(null);
+            if (!allProductTagsFetched.current) {
+                allProductTagsFetched.current = true;
+                fetchAllProductTags();
+            }
 
 
             const methods = methodsRes.data?.data || [];
@@ -565,6 +577,69 @@ const ProductMaster = () => {
             toast.error("Failed to reset hero image");
         } finally {
             setIsSavingHeroImage(false);
+        }
+    };
+
+    // ── Product Tags (ProductTag/ProductTagMapping) assignment ──
+    // The Product Tags screen only ever managed TAG DEFINITIONS (name, slug,
+    // colour); the backend's own bulk-assign/remove endpoints
+    // (product-tag-mappings/bulk-assign, .../bulk-remove) had no admin UI
+    // calling them at all, so there was no way to actually put a tag ON a
+    // product short of hitting the API directly.
+    const fetchAllProductTags = useCallback(async () => {
+        try {
+            const res = await axios.get(`${apiUrl}/api/product-tags`, {
+                params: { limit: 500, isActive: true },
+            });
+            const list = res.data?.data || [];
+            setAllProductTags(Array.isArray(list) ? list : []);
+        } catch (err) {
+            console.error("Error fetching product tags:", err);
+        }
+    }, []);
+
+    const refreshProductDetail = async () => {
+        const productId = productDetail?.meta?.id;
+        if (!productId) return;
+        const detailRes = await axios.get(`${apiUrl}/api/single-product/${productId}`);
+        setProductDetail(detailRes.data?.data || detailRes.data);
+    };
+
+    const handleAssignTag = async () => {
+        const productId = productDetail?.meta?.id;
+        if (!productId || !tagToAssign) return;
+        setIsAssigningTag(true);
+        try {
+            await axios.post(`${apiUrl}/api/product-tag-mappings/bulk-assign`, {
+                productIds: [String(productId)],
+                tagId: tagToAssign.value,
+            });
+            toast.success(`Tagged "${tagToAssign.label}"`);
+            setTagToAssign(null);
+            await refreshProductDetail();
+        } catch (err) {
+            console.error("Error assigning tag:", err);
+            toast.error("Failed to assign tag");
+        } finally {
+            setIsAssigningTag(false);
+        }
+    };
+
+    const handleRemoveProductTag = async (tagId) => {
+        const productId = productDetail?.meta?.id;
+        if (!productId || !tagId) return;
+        setRemovingTagId(tagId);
+        try {
+            await axios.post(`${apiUrl}/api/product-tag-mappings/bulk-remove`, {
+                productIds: [String(productId)],
+                tagId,
+            });
+            await refreshProductDetail();
+        } catch (err) {
+            console.error("Error removing tag:", err);
+            toast.error("Failed to remove tag");
+        } finally {
+            setRemovingTagId(null);
         }
     };
 
@@ -1774,7 +1849,7 @@ const ProductMaster = () => {
                                                 <h6 className="mb-0">Tags on this product</h6>
                                             </CardHeader>
                                             <CardBody>
-                                                <div className="d-flex flex-wrap gap-2">
+                                                <div className="d-flex flex-wrap gap-2 mb-3">
                                                     {(p.productTags || []).map((tag) => (
                                                         <span
                                                             key={tag._id || tag.slug}
@@ -1796,11 +1871,53 @@ const ProductMaster = () => {
                                                                     title="AI-generated tag — search only, not shown on the storefront's curated tag pages"
                                                                 ></i>
                                                             )}
+                                                            <i
+                                                                className="ri-close-line cursor-pointer"
+                                                                style={{ cursor: "pointer" }}
+                                                                title="Remove this tag from the product"
+                                                                onClick={() => removingTagId ? null : handleRemoveProductTag(tag._id)}
+                                                            >
+                                                                {removingTagId === tag._id ? "…" : null}
+                                                            </i>
                                                         </span>
                                                     ))}
                                                     {(p.productTags || []).length === 0 && (
                                                         <span className="text-muted">No product tags assigned yet.</span>
                                                     )}
+                                                </div>
+                                                <hr />
+                                                <Label className="form-label">Assign a tag</Label>
+                                                <div className="d-flex gap-2 align-items-start" style={{ maxWidth: 480 }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <Select
+                                                            value={tagToAssign}
+                                                            onChange={setTagToAssign}
+                                                            options={allProductTags
+                                                                .filter((t) => !(p.productTags || []).some((pt) => pt._id === t._id))
+                                                                .map((t) => ({ value: t._id, label: t.name }))}
+                                                            placeholder="Choose a tag…"
+                                                            isClearable
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        color="success"
+                                                        onClick={handleAssignTag}
+                                                        disabled={!tagToAssign || isAssigningTag}
+                                                    >
+                                                        {isAssigningTag ? (
+                                                            <span className="spinner-border spinner-border-sm" />
+                                                        ) : (
+                                                            <>
+                                                                <i className="ri-add-line me-1"></i>
+                                                                Add
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                                <div className="mt-2 text-muted" style={{ fontSize: 12 }}>
+                                                    New tag types (name, colour, icon) are created on the{" "}
+                                                    <a href="/product-tags">Product Tags</a> screen — this only
+                                                    assigns an existing tag to this product.
                                                 </div>
                                             </CardBody>
                                         </Card>
