@@ -345,22 +345,25 @@ const Dashboard = () => {
                             </Card>
                         </Col>
 
-                        {/* Total Products */}
+                        {/* Live Products — the headline number is the count a
+                            customer can actually reach, matching Product Master.
+                            The raw collection size is shown underneath as
+                            context, never as the catalogue size. */}
                         <Col xl={3} md={6}>
                             <Card className="card-animate">
                                 <CardBody>
                                     <div className="d-flex align-items-center">
                                         <div className="flex-grow-1">
-                                            <p className="text-uppercase fw-medium text-muted mb-0">Total Products</p>
+                                            <p className="text-uppercase fw-medium text-muted mb-0">Live Products</p>
                                         </div>
                                     </div>
                                     <div className="d-flex align-items-end justify-content-between mt-4">
                                         <div>
                                             <h4 className="fs-22 fw-semibold ff-secondary mb-2">
-                                                {stats?.products?.total || 0}
+                                                {stats?.products?.live ?? "—"}
                                             </h4>
                                             <span className="badge bg-primary-subtle text-primary mb-0">
-                                                <i className="ri-check-line align-middle"></i> {stats?.products?.active || 0} active
+                                                {stats?.products?.total ?? 0} total records
                                             </span>
                                         </div>
                                         <div className="avatar-sm flex-shrink-0">
