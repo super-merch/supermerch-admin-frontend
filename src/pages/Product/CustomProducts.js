@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from "react";
 import {
-  Input,
   Label,
   Card,
   CardBody,
@@ -24,6 +23,8 @@ import { toast } from "react-toastify";
 import LoadingOverlay from "../../Components/Common/LoadingOverlay";
 import { MenuContext } from "../../context/MenuContext";
 
+const MAX_IMAGES = 10;
+
 const CustomProducts = () => {
   const { adminData } = useContext(AuthContext);
   const { currentPagePermissions } = useContext(MenuContext);
@@ -42,15 +43,18 @@ const CustomProducts = () => {
     name: "",
     code: "",
     description: "",
-    heroImage: "",
     prices: [{ ...emptyPriceBreak }],
     colors: "",
+    sizes: "",
     category: "",
-    isActive: true,
   };
 
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  // Image gallery state: `existingImages` holds URLs already saved on the product (edit mode,
+  // removable via the X on each thumbnail); `newFiles`/`newPreviews` hold not-yet-uploaded files
+  // picked in this session. Both lists are merged on submit.
+  const [existingImages, setExistingImages] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+  const [newPreviews, setNewPreviews] = useState([]);
   const imageRef = useRef(null);
 
   const [remove_id, setRemove_id] = useState("");
@@ -73,6 +77,23 @@ const CustomProducts = () => {
       name: "Sr No",
       selector: (row, index) => index + 1,
       sortable: true,
+    },
+    {
+      name: "Image",
+      selector: (row) => {
+        const thumb = row.images?.[0] || row.heroImage;
+        return thumb ? (
+          <img
+            src={thumb}
+            alt={row.name}
+            style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }}
+          />
+        ) : (
+          <span className="text-muted">-</span>
+        );
+      },
+      sortable: false,
+      width: "80px",
     },
     {
       name: "Name",
@@ -188,6 +209,20 @@ const CustomProducts = () => {
     return errors;
   };
 
+  const buildFormData = () => {
+    const formData = new FormData();
+    formData.append("name", values.name);
+    formData.append("code", values.code);
+    formData.append("description", values.description || "");
+    formData.append("prices", JSON.stringify(values.prices));
+    formData.append("colors", values.colors || "");
+    formData.append("sizes", values.sizes || "");
+    formData.append("category", values.category || "");
+    formData.append("existingImages", JSON.stringify(existingImages));
+    newFiles.forEach((file) => formData.append("images", file));
+    return formData;
+  };
+
   const handleClick = async (e) => {
     e.preventDefault();
     const errors = validate(values);
@@ -196,21 +231,8 @@ const CustomProducts = () => {
     if (Object.keys(errors).length === 0) {
       setIsLoading(true);
 
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("code", values.code);
-      formData.append("description", values.description || "");
-      formData.append("prices", JSON.stringify(values.prices));
-      formData.append("colors", values.colors || "");
-      formData.append("category", values.category || "");
-      formData.append("isActive", values.isActive);
-
-      if (selectedFile) {
-        formData.append("heroImage", selectedFile);
-      }
-
       try {
-        const response = await axios.post("/api/custom-products", formData, {
+        const response = await axios.post("/api/custom-products", buildFormData(), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "multipart/form-data",
@@ -219,12 +241,7 @@ const CustomProducts = () => {
 
         if (response.data.success) {
           toast.success(response.data.message || "Custom Product Added Successfully");
-          setShowForm(false);
-          setValues(initialState);
-          setIsSubmit(false);
-          setFormErrors({});
-          setSelectedFile(null);
-          setImagePreview("");
+          handleList();
           fetchCustomProducts();
         } else {
           toast.error(response.data.message || "Cannot add Custom Product");
@@ -244,23 +261,10 @@ const CustomProducts = () => {
     if (Object.keys(errors).length === 0) {
       setIsLoading(true);
 
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("code", values.code);
-      formData.append("description", values.description || "");
-      formData.append("prices", JSON.stringify(values.prices));
-      formData.append("colors", values.colors || "");
-      formData.append("category", values.category || "");
-      formData.append("isActive", values.isActive);
-
-      if (selectedFile) {
-        formData.append("heroImage", selectedFile);
-      }
-
       try {
         const response = await axios.put(
           `/api/custom-products/${_id}`,
-          formData,
+          buildFormData(),
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -271,13 +275,7 @@ const CustomProducts = () => {
 
         if (response.data.success) {
           toast.success("Custom Product Updated Successfully");
-          setUpdateForm(false);
-          setShowForm(false);
-          setValues(initialState);
-          setIsSubmit(false);
-          setFormErrors({});
-          setSelectedFile(null);
-          setImagePreview("");
+          handleList();
           fetchCustomProducts();
         } else {
           toast.error(response.data.message || "Cannot update Custom Product");
@@ -291,16 +289,7 @@ const CustomProducts = () => {
 
   const handleCancel = (e) => {
     e.preventDefault();
-    setIsSubmit(false);
-    setShowForm(false);
-    setUpdateForm(false);
-    setValues(initialState);
-    setFormErrors({});
-    setSelectedFile(null);
-    setImagePreview("");
-    if (imageRef.current) {
-      imageRef.current.value = "";
-    }
+    handleList();
   };
 
   const handleDelete = async (e) => {
@@ -347,17 +336,17 @@ const CustomProducts = () => {
           name: product.name || "",
           code: product.code || "",
           description: product.description || "",
-          heroImage: product.heroImage || "",
           prices: product.prices && product.prices.length > 0
             ? product.prices
             : [{ ...emptyPriceBreak }],
           colors: product.colors || "",
+          sizes: product.sizes || "",
           category: product.category || "",
-          isActive: product.isActive !== undefined ? product.isActive : true,
         });
+        setExistingImages(product.images || []);
+        setNewFiles([]);
+        setNewPreviews([]);
         setShowForm(true);
-        setSelectedFile(null);
-        setImagePreview("");
       } else {
         toast.error("Failed to fetch product details");
       }
@@ -380,23 +369,40 @@ const CustomProducts = () => {
     setValues({ ...values, [name]: value });
   };
 
-  const handlecheck = (e) => {
-    setValues({ ...values, [e.target.name]: e.target.checked });
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const totalCount = existingImages.length + newFiles.length + files.length;
+    if (totalCount > MAX_IMAGES) {
+      toast.error(`You can only have up to ${MAX_IMAGES} images per product`);
+      e.target.value = "";
+      return;
+    }
+
+    const oversized = files.find((f) => f.size > 5 * 1024 * 1024);
+    if (oversized) {
+      toast.error("Each file must be less than 5MB");
+      e.target.value = "";
+      return;
+    }
+
+    setNewFiles((prev) => [...prev, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setNewPreviews((prev) => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
-        e.target.value = "";
-        return;
-      }
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target.result);
-      reader.readAsDataURL(file);
-    }
+  const removeExistingImage = (url) => {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  };
+
+  const removeNewFile = (index) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Price break handlers
@@ -445,8 +451,9 @@ const CustomProducts = () => {
     setIsSubmit(false);
     setValues(initialState);
     setFormErrors({});
-    setSelectedFile(null);
-    setImagePreview("");
+    setExistingImages([]);
+    setNewFiles([]);
+    setNewPreviews([]);
     if (imageRef.current) {
       imageRef.current.value = "";
     }
@@ -505,6 +512,7 @@ const CustomProducts = () => {
                           name="category"
                           value={values.category}
                           onChange={handleChange}
+                          placeholder="Must match an existing sub-category name"
                         />
                         <label className="form-label">Category</label>
                       </div>
@@ -535,49 +543,74 @@ const CustomProducts = () => {
                         />
                         <label className="form-label">Colors (comma separated)</label>
                       </div>
+                      <div className="form-floating mb-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="sizes"
+                          value={values.sizes}
+                          onChange={handleChange}
+                          placeholder="e.g. S, M, L, XL"
+                        />
+                        <label className="form-label">Sizes (comma separated)</label>
+                      </div>
                     </Col>
                   </Row>
 
-                  {/* Hero Image */}
+                  {/* Image Gallery */}
                   <Row>
-                    <Col lg={6}>
+                    <Col lg={12}>
                       <div className="mb-3">
-                        <Label className="form-label">Hero Image</Label>
-                        <div className="d-flex flex-column">
-                          {values.heroImage && !selectedFile && (
-                            <div className="mb-2">
+                        <Label className="form-label">
+                          Images{" "}
+                          <span className="text-muted" style={{ fontSize: "0.8em" }}>
+                            (first image is used as the hero/tile image — up to {MAX_IMAGES})
+                          </span>
+                        </Label>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
+                          {existingImages.map((url) => (
+                            <div key={url} style={{ position: "relative" }}>
                               <img
-                                src={values.heroImage}
-                                alt="Current Product"
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                  objectFit: "cover",
-                                }}
+                                src={url}
+                                alt="Product"
+                                style={{ width: "90px", height: "90px", objectFit: "cover", borderRadius: "4px" }}
                               />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                style={{ position: "absolute", top: -8, right: -8, borderRadius: "50%", padding: "0 6px" }}
+                                onClick={() => removeExistingImage(url)}
+                              >
+                                <i className="ri-close-line"></i>
+                              </button>
                             </div>
-                          )}
-                          {imagePreview && selectedFile && (
-                            <div className="mb-2">
+                          ))}
+                          {newPreviews.map((src, index) => (
+                            <div key={`new-${index}`} style={{ position: "relative" }}>
                               <img
-                                src={imagePreview}
-                                alt="Image Preview"
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                  objectFit: "cover",
-                                }}
+                                src={src}
+                                alt="New upload"
+                                style={{ width: "90px", height: "90px", objectFit: "cover", borderRadius: "4px", border: "2px solid var(--bs-success)" }}
                               />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                style={{ position: "absolute", top: -8, right: -8, borderRadius: "50%", padding: "0 6px" }}
+                                onClick={() => removeNewFile(index)}
+                              >
+                                <i className="ri-close-line"></i>
+                              </button>
                             </div>
-                          )}
-                          <input
-                            type="file"
-                            className="form-control"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            ref={imageRef}
-                          />
+                          ))}
                         </div>
+                        <input
+                          type="file"
+                          className="form-control"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileChange}
+                          ref={imageRef}
+                        />
                       </div>
                     </Col>
                   </Row>
@@ -636,22 +669,6 @@ const CustomProducts = () => {
                     </Row>
                   ))}
 
-                  <div className="mt-3">
-                    <Row>
-                      <Col lg={2}>
-                        <div className="form-check mb-2">
-                          <Input
-                            type="checkbox"
-                            name="isActive"
-                            value={values.isActive}
-                            onChange={handlecheck}
-                            checked={values.isActive}
-                          />
-                          <Label className="form-check-label">Is Active</Label>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
                   <Col lg={12}>
                     <FormsFooter
                       handleSubmit={updateForm ? handleUpdate : handleClick}
@@ -667,7 +684,7 @@ const CustomProducts = () => {
     </CardBody>
   );
 
-  const exportColumns = [{header:"Name",key:"name"},{header:"Code",key:"code"},{header:"Category",key:"category"},{header:"Price",key:"price"},{header:"Active",key:"isActive"}];
+  const exportColumns = [{header:"Name",key:"name"},{header:"Code",key:"code"},{header:"Category",key:"category"},{header:"Price",key:"price"}];
   const fetchAllForExport = async () => { try { const r = await axios.get("/api/custom-products",{params:{page:1,limit:10000},headers:{Authorization:"Bearer "+localStorage.getItem("token")}}); return r.data?.data||[]; } catch(e){return data;} };
 
   document.title = `Custom Products | ${adminData.companyName}`;
